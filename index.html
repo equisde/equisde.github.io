@@ -3,274 +3,865 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Parallax // equisde</title>
-  <meta name="description" content="Parallax (equisde) - Full-Stack, Reverse Engineering & Blockchain Developer">
-  <meta property="og:title" content="Parallax // equisde">
-  <meta property="og:description" content="Software Engineer, Android Reverse Engineering, Blockchain & AI Architecture">
+  <title>PARALLAX // equisde · Principal DevSecOps &amp; Offensive Security Architect</title>
+  <meta name="description" content="Rodrigo Carrasco (Parallax / equisde) - Senior Software Engineer, DevSecOps Architect, Offensive Security Researcher & QA Automation.">
+  <meta property="og:title" content="PARALLAX // equisde">
+  <meta property="og:description" content="Offensive Security · Reverse Engineering · Blockchain Pioneer · Resilient Backend Logic">
   <meta property="og:url" content="https://itsparallax.me">
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Orbitron:wght@600;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  
   <style>
     :root {
-      --bg: #090b10;
-      --card-bg: rgba(16, 20, 30, 0.75);
-      --border: rgba(0, 240, 255, 0.2);
-      --border-hover: rgba(0, 240, 255, 0.6);
+      --bg: #06080d;
+      --card-bg: rgba(11, 15, 25, 0.82);
+      --card-hover: rgba(16, 24, 40, 0.95);
       --neon-cyan: #00f0ff;
       --neon-pink: #ff007f;
       --neon-purple: #9d4edd;
+      --neon-green: #00ff66;
+      --border-subtle: rgba(0, 240, 255, 0.22);
+      --border-glow: rgba(0, 240, 255, 0.7);
       --text: #e2e8f0;
       --text-muted: #94a3b8;
     }
+    
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    
     body {
       background-color: var(--bg);
       color: var(--text);
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2.5rem 1.25rem;
-      background-image: 
-        radial-gradient(ellipse at 20% 20%, rgba(0, 240, 255, 0.08) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(255, 0, 127, 0.08) 0%, transparent 50%);
+      overflow-x: hidden;
+      position: relative;
     }
-    .container {
+
+    /* Ambient Cyber Canvas */
+    #matrix-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.25;
+    }
+
+    /* Subtle CRT Scanlines */
+    .scanlines {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 1;
+      background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%, 
+        rgba(0, 0, 0, 0.25) 50%
+      ), linear-gradient(
+        90deg,
+        rgba(255, 0, 0, 0.03),
+        rgba(0, 255, 0, 0.01),
+        rgba(0, 0, 255, 0.03)
+      );
+      background-size: 100% 3px, 3px 100%;
+      opacity: 0.65;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 2;
       width: 100%;
-      max-width: 860px;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
     }
-    .header {
+
+    /* Sound & Status Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      color: var(--neon-cyan);
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--neon-green);
+      box-shadow: 0 0 10px var(--neon-green);
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.4; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.2); }
+      100% { opacity: 0.4; transform: scale(0.9); }
+    }
+    .audio-btn {
+      background: rgba(255, 0, 127, 0.1);
+      border: 1px solid var(--neon-pink);
+      color: var(--neon-pink);
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      transition: all 0.2s ease;
+    }
+    .audio-btn:hover {
+      background: var(--neon-pink);
+      color: #fff;
+      box-shadow: 0 0 15px rgba(255, 0, 127, 0.6);
+    }
+
+    /* Hero & Glitch Title */
+    .hero {
       text-align: center;
       margin-bottom: 2.5rem;
     }
     .glitch-title {
-      font-family: 'Fira Code', monospace;
-      font-size: 2.4rem;
-      font-weight: 700;
-      color: #fff;
-      text-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
-      letter-spacing: -0.5px;
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(2rem, 6vw, 3.2rem);
+      font-weight: 900;
+      color: #ffffff;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      position: relative;
+      display: inline-block;
+      text-shadow: 0 0 20px rgba(0, 240, 255, 0.7);
     }
-    .glitch-title span { color: var(--neon-cyan); }
-    .subtitle {
-      color: var(--neon-pink);
+    .glitch-title span {
+      color: var(--neon-cyan);
+    }
+    .role-badge {
       font-family: 'Fira Code', monospace;
       font-size: 1.05rem;
-      margin-top: 0.5rem;
+      color: var(--neon-pink);
+      margin-top: 0.6rem;
+      text-shadow: 0 0 10px rgba(255, 0, 127, 0.4);
     }
-    .terminal-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
+
+    /* Cyber Interactive Terminal */
+    .terminal-window {
+      background: #090d16;
+      border: 1px solid var(--border-subtle);
       border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 2rem;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 240, 255, 0.12);
+      overflow: hidden;
+      margin-bottom: 3rem;
+      backdrop-filter: blur(16px);
     }
-    .terminal-header {
+    .terminal-bar {
+      background: rgba(14, 20, 32, 0.95);
+      border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .terminal-dots {
+      display: flex;
+      gap: 7px;
+    }
+    .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+    .dot-r { background: #ff5f56; }
+    .dot-y { background: #ffbd2e; }
+    .dot-g { background: #27c93f; }
+    .terminal-title {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      color: var(--neon-cyan);
+      letter-spacing: 1px;
+    }
+    .terminal-body {
+      padding: 1.5rem;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      min-height: 280px;
+      max-height: 480px;
+      overflow-y: auto;
+    }
+    .term-out {
+      margin-bottom: 1rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .term-input-line {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 1rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      font-family: 'Fira Code', monospace;
-      font-size: 0.85rem;
-      color: var(--text-muted);
     }
-    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-    .dot-red { background: #ff5f56; }
-    .dot-yellow { background: #ffbd2e; }
-    .dot-green { background: #27c93f; }
-    .terminal-body {
-      font-family: 'Fira Code', monospace;
-      font-size: 0.95rem;
-      line-height: 1.7;
+    .prompt-label {
+      color: var(--neon-pink);
+      font-weight: 700;
     }
-    .terminal-line { margin: 0.25rem 0; }
-    .t-key { color: var(--neon-cyan); }
-    .t-val { color: #f8fafc; }
-    .t-dim { color: var(--text-muted); }
-    .section-title {
-      font-family: 'Fira Code', monospace;
-      font-size: 1.25rem;
+    .term-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
       color: #fff;
-      margin: 2rem 0 1rem;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9rem;
     }
-    .section-title::before {
-      content: '//';
+    .term-quick-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 16px;
+      background: rgba(8, 12, 20, 0.9);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .quick-btn {
+      background: rgba(0, 240, 255, 0.07);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      color: var(--neon-cyan);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .quick-btn:hover {
+      background: var(--neon-cyan);
+      color: #000;
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
+    }
+
+    /* VIP Collaborator & Allied Network (IMXNOOBX) */
+    .ally-vip-card {
+      background: linear-gradient(135deg, rgba(9, 13, 22, 0.95), rgba(16, 24, 40, 0.9));
+      border: 2px solid var(--neon-cyan);
+      border-radius: 16px;
+      padding: 2.2rem;
+      margin-bottom: 3.5rem;
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.22), inset 0 0 25px rgba(0, 240, 255, 0.06);
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 2rem;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+    .ally-vip-card:hover {
+      border-color: var(--neon-pink);
+      box-shadow: 0 0 45px rgba(255, 0, 127, 0.32), inset 0 0 30px rgba(255, 0, 127, 0.08);
+      transform: translateY(-2px);
+    }
+    .ally-avatar-wrap {
+      text-align: center;
+      position: relative;
+    }
+    .ally-avatar {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 3px solid var(--neon-cyan);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+      object-fit: cover;
+      display: block;
+      margin: 0 auto 0.75rem;
+      transition: all 0.3s ease;
+    }
+    .ally-vip-card:hover .ally-avatar {
+      border-color: var(--neon-pink);
+      box-shadow: 0 0 25px rgba(255, 0, 127, 0.6);
+      transform: scale(1.05);
+    }
+    .ally-handle {
+      font-family: 'Fira Code', monospace;
+      font-weight: 700;
+      color: var(--neon-cyan);
+      font-size: 1.05rem;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.2s ease;
+    }
+    .ally-handle:hover {
+      color: var(--neon-pink);
+      text-shadow: 0 0 10px var(--neon-pink);
+    }
+    .ally-eyebrow {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      color: var(--neon-pink);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    .ally-name {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.4rem;
+      color: #fff;
+      margin-bottom: 0.75rem;
+    }
+    .ally-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 1rem;
+    }
+    .ally-tag {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      color: var(--neon-cyan);
+    }
+    .ally-tag-pink {
+      background: rgba(255, 0, 127, 0.1);
+      border-color: rgba(255, 0, 127, 0.4);
       color: var(--neon-pink);
     }
+    .ally-desc {
+      color: #c9d1d9;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    .hire-box {
+      background: rgba(0, 0, 0, 0.45);
+      border-left: 3px solid var(--neon-pink);
+      padding: 0.85rem 1.2rem;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 1.25rem;
+      font-size: 0.88rem;
+      color: #d1d5db;
+    }
+    .hire-box b {
+      color: var(--neon-pink);
+    }
+    @media (max-width: 680px) {
+      .ally-vip-card {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding: 1.5rem;
+      }
+      .ally-tags {
+        justify-content: center;
+      }
+    }
+
+    /* Section Headers */
+    .sec-head {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.35rem;
+      color: #ffffff;
+      margin: 2.5rem 0 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      letter-spacing: 1px;
+    }
+    .sec-head::before {
+      content: '⚡';
+      color: var(--neon-cyan);
+      text-shadow: 0 0 10px var(--neon-cyan);
+    }
+
+    /* Grid of Cards */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
     }
     .card {
       background: var(--card-bg);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 10px;
-      padding: 1.25rem;
-      transition: all 0.25s ease;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1.4rem;
       text-decoration: none;
       color: inherit;
-      display: block;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 3px;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+      opacity: 0;
+      transition: opacity 0.25s ease;
     }
     .card:hover {
-      border-color: var(--border-hover);
-      transform: translateY(-3px);
-      box-shadow: 0 10px 25px rgba(0, 240, 255, 0.15);
+      border-color: var(--border-glow);
+      background: var(--card-hover);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 35px rgba(0, 240, 255, 0.18);
+    }
+    .card:hover::before {
+      opacity: 1;
     }
     .card h4 {
-      font-size: 1.1rem;
+      font-family: 'Fira Code', monospace;
+      font-size: 1.15rem;
       color: var(--neon-cyan);
-      margin-bottom: 0.5rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      margin-bottom: 0.6rem;
     }
     .card p {
-      font-size: 0.88rem;
+      font-size: 0.9rem;
       color: var(--text-muted);
-      line-height: 1.5;
+      line-height: 1.55;
     }
-    .stack-tags {
+    .card-footer {
       display: flex;
-      flex-wrap: wrap;
       gap: 8px;
+      flex-wrap: wrap;
       margin-top: 1rem;
     }
-    .tag {
-      background: rgba(0, 240, 255, 0.08);
-      border: 1px solid rgba(0, 240, 255, 0.25);
-      color: var(--neon-cyan);
-      padding: 0.35rem 0.75rem;
-      border-radius: 6px;
+    .chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
       font-family: 'Fira Code', monospace;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 4px;
     }
-    .links-bar {
+
+    /* Stack Pills */
+    .stack-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 3rem;
+    }
+    .pill {
+      background: rgba(0, 240, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      color: #f1f5f9;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+    .pill:hover {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+      transform: scale(1.04);
+    }
+
+    /* Links Footer */
+    .action-links {
       display: flex;
       justify-content: center;
-      gap: 1rem;
-      margin-top: 3rem;
+      gap: 1.25rem;
+      margin-top: 2rem;
       flex-wrap: wrap;
     }
-    .btn {
-      padding: 0.65rem 1.4rem;
-      border-radius: 8px;
-      font-family: 'Fira Code', monospace;
-      font-size: 0.9rem;
-      text-decoration: none;
-      font-weight: 600;
-      transition: all 0.2s ease;
+    .action-btn {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      padding: 12px 26px;
+      border-radius: 10px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.25s ease;
     }
     .btn-cyan {
-      background: rgba(0, 240, 255, 0.12);
+      background: rgba(0, 240, 255, 0.15);
       border: 1px solid var(--neon-cyan);
       color: var(--neon-cyan);
     }
     .btn-cyan:hover {
       background: var(--neon-cyan);
       color: #000;
-      box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.6);
+      transform: translateY(-2px);
     }
     .btn-pink {
-      background: rgba(255, 0, 127, 0.12);
+      background: rgba(255, 0, 127, 0.15);
       border: 1px solid var(--neon-pink);
       color: var(--neon-pink);
     }
     .btn-pink:hover {
       background: var(--neon-pink);
       color: #fff;
-      box-shadow: 0 0 20px rgba(255, 0, 127, 0.5);
+      box-shadow: 0 0 25px rgba(255, 0, 127, 0.6);
+      transform: translateY(-2px);
     }
+
     footer {
-      margin-top: 4rem;
       text-align: center;
+      margin-top: 4rem;
       font-family: 'Fira Code', monospace;
       font-size: 0.8rem;
       color: var(--text-muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 2rem;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <h1 class="glitch-title">equisde <span>// Parallax</span></h1>
-      <p class="subtitle">&gt; Full-Stack &amp; Reverse Engineer &middot; Builder</p>
+
+  <!-- Ambient Matrix Canvas -->
+  <canvas id="matrix-canvas"></canvas>
+  <div class="scanlines"></div>
+
+  <div class="wrapper">
+    
+    <!-- Top System Bar -->
+    <div class="top-bar">
+      <div class="status-badge">
+        <span class="pulse-dot"></span>
+        <span>SYSTEM_ACTIVE // itsparallax.me</span>
+      </div>
+      <button class="audio-btn" id="audio-toggle" onclick="toggleAudio()">🔊 SFX: ON</button>
+    </div>
+
+    <!-- Hero Header -->
+    <header class="hero">
+      <h1 class="glitch-title">PARALLAX <span>// equisde</span></h1>
+      <p class="role-badge">&gt; Staff DevSecOps &amp; Offensive Security Architect</p>
+      <p style="font-family: 'Fira Code', monospace; font-size: 0.88rem; color: #cbd5e1; margin-top: 0.75rem;">
+        ⚡ Core Alliance &amp; Brother-in-Arms with <a href="https://github.com/IMXNOOBX" target="_blank" rel="noopener noreferrer" style="color: var(--neon-cyan); text-decoration: none; font-weight: 700; border-bottom: 1px dashed var(--neon-cyan);">@IMXNOOBX</a> (Protections &amp; Bots)
+      </p>
     </header>
 
-    <div class="terminal-card">
-      <div class="terminal-header">
-        <span class="dot dot-red"></span>
-        <span class="dot dot-yellow"></span>
-        <span class="dot dot-green"></span>
-        <span>system_telemetry.sh</span>
+    <!-- Interactive Terminal Emulator -->
+    <div class="terminal-window">
+      <div class="terminal-bar">
+        <div class="terminal-dots">
+          <span class="dot dot-r"></span>
+          <span class="dot dot-y"></span>
+          <span class="dot dot-g"></span>
+        </div>
+        <div class="terminal-title">guest@parallax-terminal:~</div>
+        <div style="width: 40px;"></div>
       </div>
-      <div class="terminal-body">
-        <div class="terminal-line"><span class="t-key">alias</span>     <span class="t-dim">:</span> <span class="t-val">Parallax (equisde)</span></div>
-        <div class="terminal-line"><span class="t-key">focus</span>     <span class="t-dim">:</span> <span class="t-val">Android Security &middot; Microservices &middot; Blockchain &middot; AI Agents</span></div>
-        <div class="terminal-line"><span class="t-key">domain</span>    <span class="t-dim">:</span> <span class="t-val">itsparallax.me</span> <span class="t-dim">(GitHub Pages)</span></div>
-        <div class="terminal-line"><span class="t-key">network</span>   <span class="t-dim">:</span> <span class="t-val">kisawea.net</span></div>
-        <div class="terminal-line"><span class="t-key">status</span>    <span class="t-dim">:</span> <span class="t-val" style="color: #27c93f;">online &middot; building resilient systems</span></div>
+      
+      <div class="terminal-body" id="term-body">
+        <div class="term-out" id="term-log">┌─ PARALLAX MAINFRAME [v4.8.2] ──────────────────────────────────────────────┐
+│ Type 'help' for available commands or tap the quick buttons below.          │
+│ Architecture: 180+ repositories · Offensive Security · Distributed Systems  │
+└─────────────────────────────────────────────────────────────────────────────┘</div>
+        <div class="term-input-line">
+          <span class="prompt-label">parallax@system:~$</span>
+          <input type="text" id="term-input" class="term-input" autofocus autocomplete="off" spellcheck="false" />
+        </div>
+      </div>
+
+      <div class="term-quick-btns">
+        <button class="quick-btn" onclick="runCmd('whoami')">whoami</button>
+        <button class="quick-btn" onclick="runCmd('allies')">allies (IMXNOOBX)</button>
+        <button class="quick-btn" onclick="runCmd('security')">security</button>
+        <button class="quick-btn" onclick="runCmd('projects')">projects</button>
+        <button class="quick-btn" onclick="runCmd('achievements')">achievements</button>
+        <button class="quick-btn" onclick="runCmd('stack')">stack</button>
+        <button class="quick-btn" onclick="runCmd('clear')">clear</button>
       </div>
     </div>
 
-    <h3 class="section-title">Core Competencies &amp; Stack</h3>
-    <div class="stack-tags">
-      <span class="tag">Go</span>
-      <span class="tag">Python</span>
-      <span class="tag">TypeScript / Node.js</span>
-      <span class="tag">PHP 8.3 / MySQL</span>
-      <span class="tag">C++ / Smali</span>
-      <span class="tag">Kotlin / Android</span>
-      <span class="tag">Docker</span>
-      <span class="tag">Linux / Bash</span>
-      <span class="tag">Three.js / WebGL</span>
-      <span class="tag">Traffic Interception</span>
+    <!-- VIP Collaborator Showcase: IMXNOOBX -->
+    <div class="ally-vip-card">
+      <div class="ally-avatar-wrap">
+        <a href="https://github.com/IMXNOOBX" target="_blank" rel="noopener noreferrer">
+          <img src="https://github.com/IMXNOOBX.png?size=240" alt="IMXNOOBX" class="ally-avatar" />
+        </a>
+        <a href="https://github.com/IMXNOOBX" target="_blank" rel="noopener noreferrer" class="ally-handle">@IMXNOOBX</a>
+      </div>
+      <div>
+        <div class="ally-eyebrow">🤝 VIP ALLIED NETWORK // OPERATOR #01</div>
+        <h2 class="ally-name">⚡ IMXNOOBX — Core Partner &amp; Defense Specialist</h2>
+        <div class="ally-tags">
+          <span class="ally-tag ally-tag-pink">● VERIFIED ALLY</span>
+          <span class="ally-tag">DISCORD BOTS</span>
+          <span class="ally-tag">ANTI-RAID PROTECTIONS</span>
+          <span class="ally-tag">NODE.JS MASTERY</span>
+          <span class="ally-tag">SECURITY AUTOMATION</span>
+        </div>
+        <p class="ally-desc">
+          Hermano de armas y socio técnico imprescindible. Colaboración estrecha en ingeniería inversa de protocolos, seguridad ofensiva, desarrollo de bots de alta concurrencia y herramientas de automatización defensiva.
+        </p>
+        <div class="hire-box">
+          🤖 <b>¿Interesado en un Bot de Discord de Alta Protección? Contrata a IMXNOOBX:</b><br/>
+          Especialista en desarrollo veloz en NodeJS, escudos de seguridad activos y mitigación contra ataques masivos.
+        </div>
+        <a href="https://github.com/IMXNOOBX" target="_blank" rel="noopener noreferrer" class="action-btn btn-cyan" style="font-size: 0.88rem; padding: 10px 22px;">
+          ⚡ ESTABLISH UPLINK CON @IMXNOOBX (GITHUB) &rarr;
+        </a>
+      </div>
     </div>
 
-    <h3 class="section-title">Featured Projects</h3>
+    <!-- Featured Engineering Projects -->
+    <h3 class="sec-head">FEATURED WEAPONS &amp; SYSTEMS</h3>
     <div class="grid">
       <a href="https://github.com/equisde/RoRoIntercept" target="_blank" rel="noopener noreferrer" class="card">
-        <h4>🔍 RoRoIntercept</h4>
-        <p>Herramienta avanzada para Android para interceptar y modificar tráfico HTTP/HTTPS en tiempo real.</p>
+        <div>
+          <h4>🔍 RoRoIntercept</h4>
+          <p>Herramienta Android de bajo nivel para interceptar, auditar y manipular tráfico HTTP/HTTPS en tiempo real estilo Fiddler.</p>
+        </div>
+        <div class="card-footer">
+          <span class="chip">Kotlin</span>
+          <span class="chip">MITM Proxy</span>
+          <span class="chip">Security</span>
+        </div>
       </a>
-      <a href="https://github.com/equisde/ControlRemotoTV-Abuelitos" target="_blank" rel="noopener noreferrer" class="card">
-        <h4>📱 Remote TV Abuelitos</h4>
-        <p>Control remoto para Android TV diseñado con interfaz de alta accesibilidad para personas mayores.</p>
-      </a>
+
       <a href="https://github.com/equisde/fiddler-everywhere-patch-automated" target="_blank" rel="noopener noreferrer" class="card">
-        <h4>🛠️ Fiddler Suite</h4>
-        <p>Automatizaciones y tooling para análisis dinámico y parcheo de redes.</p>
+        <div>
+          <h4>🛠️ Fiddler Everywhere Patch</h4>
+          <p>Suite de instrumentación, desensamblado y parcheo dinámico de bytecode para auditoría de tráfico corporativo.</p>
+        </div>
+        <div class="card-footer">
+          <span class="chip">PowerShell</span>
+          <span class="chip">Bytecode</span>
+          <span class="chip">Reverse Eng</span>
+        </div>
       </a>
+
+      <a href="https://github.com/equisde/ControlRemotoTV-Abuelitos" target="_blank" rel="noopener noreferrer" class="card">
+        <div>
+          <h4>📱 Remote TV Abuelitos</h4>
+          <p>Ingeniería de accesibilidad para Android TV con botones gigantes, protocolo IP de latencia cero y descubrimiento fácil.</p>
+        </div>
+        <div class="card-footer">
+          <span class="chip">Android TV</span>
+          <span class="chip">HTML/JS</span>
+          <span class="chip">Accessibility</span>
+        </div>
+      </a>
+
       <a href="https://github.com/equisde/YuyinODS" target="_blank" rel="noopener noreferrer" class="card">
-        <h4>🤖 YuyinODS</h4>
-        <p>Infraestructura local para servidores de inferencia LLM, flujos de agentes y RAG distribuido.</p>
+        <div>
+          <h4>🤖 YuyinODS</h4>
+          <p>Servidor para inferencia local de IA, ejecución distribuida de agentes autónomos, RAG y workflows multimodales.</p>
+        </div>
+        <div class="card-footer">
+          <span class="chip">AI Engine</span>
+          <span class="chip">Shell</span>
+          <span class="chip">Autonomous</span>
+        </div>
       </a>
     </div>
 
-    <div class="links-bar">
-      <a href="https://github.com/equisde" target="_blank" rel="noopener noreferrer" class="btn btn-cyan">
-        🐙 GitHub Profile
+    <!-- Core Stack -->
+    <h3 class="sec-head">CORE ARSENAL &amp; CAPABILITIES</h3>
+    <div class="stack-cloud">
+      <div class="pill">Go (Golang)</div>
+      <div class="pill">Python (AI &amp; Scripting)</div>
+      <div class="pill">TypeScript &amp; Node.js</div>
+      <div class="pill">PHP 8.3 &amp; SQL Server</div>
+      <div class="pill">Kotlin (Android Internals)</div>
+      <div class="pill">C++ (Daemons &amp; Consensus)</div>
+      <div class="pill">Frida Dynamic Hooking</div>
+      <div class="pill">Burp Suite Pro</div>
+      <div class="pill">Magisk cert-fixer</div>
+      <div class="pill">Three.js (3D Graphics)</div>
+      <div class="pill">Fabric.js (2D Canvas)</div>
+      <div class="pill">Docker &amp; Linux Kernel</div>
+      <div class="pill">Google Cloud &amp; Cloudflare WAF</div>
+      <div class="pill">ESP32 IoT &amp; Mifare NFC</div>
+    </div>
+
+    <!-- Action Links -->
+    <div class="action-links">
+      <a href="https://github.com/equisde" target="_blank" rel="noopener noreferrer" class="action-btn btn-cyan">
+        🐙 GitHub Profile (equisde)
       </a>
-      <a href="https://kisawea.net" target="_blank" rel="noopener noreferrer" class="btn btn-pink">
+      <a href="https://kisawea.net" target="_blank" rel="noopener noreferrer" class="action-btn btn-pink">
         🌐 Network (kisawea.net)
       </a>
     </div>
 
     <footer>
-      <p>&copy; 2026 Parallax (equisde) &middot; Hosted on GitHub Pages via itsparallax.me</p>
+      <p>&copy; 2026 Parallax (Rodrigo Carrasco) &middot; Hosted on GitHub Pages via itsparallax.me</p>
+      <p style="margin-top: 6px; font-size: 0.75rem; color: #64748b;">
+        // Unbreakable Backend Logic &amp; Resilience // Built in alliance with <a href="https://github.com/IMXNOOBX" target="_blank" rel="noopener noreferrer" style="color: var(--neon-cyan); text-decoration: none; font-weight: bold;">@IMXNOOBX</a>
+      </p>
     </footer>
+
   </div>
+
+  <script>
+    // Matrix Cyber Rain Background
+    const canvas = document.getElementById('matrix-canvas');
+    const ctx = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+    
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    const characters = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ<>/*+-={}&%#$';
+    const fontSize = 14;
+    const columns = Math.floor(width / fontSize);
+    const drops = Array(columns).fill(1);
+
+    function drawMatrix() {
+      ctx.fillStyle = 'rgba(6, 8, 13, 0.08)';
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.fillStyle = '#00f0ff';
+      ctx.font = fontSize + 'px monospace';
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = characters.charAt(Math.floor(Math.random() * characters.length));
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+        if (drops[i] * fontSize > height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+    setInterval(drawMatrix, 42);
+
+    // Terminal Audio Synthesizer (Zero dependencies)
+    let audioEnabled = true;
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playBeep(freq = 600, duration = 0.04) {
+      if (!audioEnabled || audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      if (!audioEnabled) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      document.getElementById('audio-toggle').innerText = audioEnabled ? '🔊 SFX: ON' : '🔇 SFX: OFF';
+    }
+
+    // Terminal Logic
+    const termInput = document.getElementById('term-input');
+    const termLog = document.getElementById('term-log');
+    const termBody = document.getElementById('term-body');
+
+    const commands = {
+      help: () => `AVAILABLE SYSTEM COMMANDS:
+  whoami        -> Architect identity, background and philosophy
+  allies        -> Important people and key collaborators (IMXNOOBX)
+  security      -> Offensive security, reversing and destructive QA specs
+  projects      -> Flagship open-source security & system repos
+  achievements  -> Unlocked GitHub badges (Galaxy Brain, Pull Shark, etc.)
+  stack         -> Languages, runtimes and cloud platforms
+  clear         -> Clear terminal output`,
+
+      whoami: () => `[IDENT: RODRIGO CARRASCO // PARALLAX]
+Role      : Senior Software Engineer, Principal DevSecOps & Offensive Security Architect
+Immersion : Coding & Systems since 2004 (age 11) | Reversing since 2006 (age 13)
+Allies    : Core Alliance with @IMXNOOBX (Discord Bots, Protections & Tooling)
+Location  : 100% Global // Fully Remote-Ready
+Core Motto: "My specialty is not testing if code works under ideal conditions, but subjecting
+             business logic to extreme manipulation scenarios to guarantee truly unbreakable
+             backend architectures."`,
+
+      allies: () => `┌─ ALLIED NETWORK ARCHIVE: IMXNOOBX ───────────────────────────────────────────┐
+│ Operator    : IMXNOOBX (@IMXNOOBX)                                           │
+│ Status      : VERIFIED KEY ALLY // TIER 1 COLLABORATOR                       │
+│ Specialty   : Discord Bot Protections · NodeJS Engines · Automation Tooling  │
+│ Security    : Anti-Raid Defense Systems · Custom Security Layers · MITM Tool │
+│ Direct Link : https://github.com/IMXNOOBX                                    │
+│ Intel       : "Interested in a Discord Bot? Hire Him - fast developer,       │
+│                high protections, NodeJS master."                             │
+└──────────────────────────────────────────────────────────────────────────────┘`,
+
+      security: () => `[OFFENSIVE SECURITY & REVERSING TOOLKIT]
+• Vulnerability Testing : Parameter Tampering, IDOR, Race Conditions & Logic Flaws
+• Mobile & Binary Hooks : Frida Dynamic Hooking, Magisk cert-fixer, Il2CppDumper, Smali
+• Protocol Auditing     : Burp Suite Pro, Fiddler Custom Patches, Wireshark, Nuclei, Shodan
+• Testing Pipelines     : 3proxy IP rotation clusters, ephemeral authenticated fuzzing
+• Hardware & NFC        : Mifare Classic RFID/NFC protocol analysis & cloning`,
+
+      projects: () => `[FLAGSHIP REPOSITORIES]
+1. RoRoIntercept   -> Android transparent HTTPS traffic MITM inspection
+2. Fiddler Suite   -> Automated bytecode patcher & telemetry instrumentation
+3. Remote TV       -> Zero-friction accessible Android TV remote
+4. YuyinODS        -> Distributed local AI server and agentic pipelines
+5. Saargo Core     -> Enterprise ERP backends, high-throughput transactional SQL`,
+
+      achievements: () => `[GITHUB ACHIEVEMENTS UNLOCKED]
+🧠 Galaxy Brain    : Verified accepted solutions in GitHub Discussions Q&A
+🎯 Quickdraw       : Sub-5 minute issue closure speed
+🦈 Pull Shark      : 19+ Merged Pull Requests (Bronze Tier x2 active)
+🎲 YOLO            : Production branch merge without prior review
+❄️ Arctic Vault    : Code permanently preserved in the 2020 Arctic Archive`,
+
+      stack: () => `[SYSTEM STACK & RUNTIMES]
+Languages  : Go, Python, TypeScript, PHP 8.3, Kotlin, C++, C#, Bash
+Cloud & Ops: GCP Spot VMs, Cloudflare WAF/Zero Trust, Docker, New Relic
+Visual 3D  : Three.js (3D anatomical calibrators), Fabric.js (2D canvas)
+Hardware   : ESP32-U microcontrollers (Bluetooth A2DP, Wi-Fi), Klipper 3D`
+    };
+
+    function execute(cmd) {
+      playBeep(880, 0.05);
+      const cleanCmd = cmd.trim().toLowerCase();
+      if (!cleanCmd) return;
+
+      let response = '';
+      if (cleanCmd === 'clear') {
+        termLog.innerHTML = '';
+        return;
+      } else if (commands[cleanCmd]) {
+        response = commands[cleanCmd]();
+      } else {
+        response = `Command not recognized: '${cleanCmd}'. Type 'help' for command manual.`;
+      }
+
+      termLog.innerHTML += `\n<span style="color: var(--neon-pink); font-weight: bold;">parallax@system:~$</span> ${cmd}\n${response}\n`;
+      termBody.scrollTop = termBody.scrollHeight;
+    }
+
+    termInput.addEventListener('keydown', (e) => {
+      playBeep(440, 0.02);
+      if (e.key === 'Enter') {
+        const val = termInput.value;
+        termInput.value = '';
+        execute(val);
+      }
+    });
+
+    function runCmd(cmd) {
+      termInput.value = cmd;
+      execute(cmd);
+      termInput.value = '';
+    }
+  </script>
 </body>
 </html>
