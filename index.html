@@ -1,27 +1,28 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PARALLAX // equisde · Principal DevSecOps &amp; Offensive Security Architect</title>
+  <title>PARALLAX // Rodrigo Carrasco · Principal DevSecOps &amp; Offensive Security Architect</title>
   <meta name="description" content="Rodrigo Carrasco (Parallax / equisde) - Senior Software Engineer, DevSecOps Architect, Offensive Security Researcher & QA Automation.">
   <meta property="og:title" content="PARALLAX // equisde">
-  <meta property="og:description" content="Offensive Security · Reverse Engineering · Blockchain Pioneer · Resilient Backend Logic">
+  <meta property="og:description" content="Offensive Security · Reverse Engineering · Blockchain Pioneer · Unbreakable Backend Logic">
   <meta property="og:url" content="https://itsparallax.me">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Orbitron:wght@600;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Orbitron:wght@600;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   
   <style>
     :root {
       --bg: #06080d;
-      --card-bg: rgba(11, 15, 25, 0.82);
+      --card-bg: rgba(11, 15, 25, 0.85);
       --card-hover: rgba(16, 24, 40, 0.95);
       --neon-cyan: #00f0ff;
       --neon-pink: #ff007f;
       --neon-purple: #9d4edd;
       --neon-green: #00ff66;
+      --neon-gold: #ffd700;
       --border-subtle: rgba(0, 240, 255, 0.22);
       --border-glow: rgba(0, 240, 255, 0.7);
       --text: #e2e8f0;
@@ -39,7 +40,7 @@
       position: relative;
     }
 
-    /* Ambient Cyber Canvas */
+    /* Ambient Matrix Rain Canvas */
     #matrix-canvas {
       position: fixed;
       top: 0;
@@ -48,7 +49,8 @@
       height: 100vh;
       z-index: 0;
       pointer-events: none;
-      opacity: 0.25;
+      opacity: 0.22;
+      transition: opacity 0.5s ease;
     }
 
     /* Subtle CRT Scanlines */
@@ -59,7 +61,7 @@
       z-index: 1;
       background: linear-gradient(
         rgba(18, 16, 16, 0) 50%, 
-        rgba(0, 0, 0, 0.25) 50%
+        rgba(0, 0, 0, 0.28) 50%
       ), linear-gradient(
         90deg,
         rgba(255, 0, 0, 0.03),
@@ -74,16 +76,18 @@
       position: relative;
       z-index: 2;
       width: 100%;
-      max-width: 980px;
+      max-width: 1000px;
       margin: 0 auto;
-      padding: 2.5rem 1.25rem 4rem;
+      padding: 2rem 1.25rem 4rem;
     }
 
-    /* Sound & Status Bar */
+    /* Top System Bar */
     .top-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
       margin-bottom: 2rem;
       font-family: 'Fira Code', monospace;
       font-size: 0.8rem;
@@ -97,6 +101,13 @@
       border: 1px solid var(--border-subtle);
       border-radius: 20px;
       color: var(--neon-cyan);
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+    }
+    .status-badge:hover {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
     }
     .pulse-dot {
       width: 8px;
@@ -111,48 +122,118 @@
       50% { opacity: 1; transform: scale(1.2); }
       100% { opacity: 0.4; transform: scale(0.9); }
     }
-    .audio-btn {
-      background: rgba(255, 0, 127, 0.1);
-      border: 1px solid var(--neon-pink);
-      color: var(--neon-pink);
-      padding: 6px 14px;
+    
+    .top-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .ctrl-select {
+      background: #090d16;
+      border: 1px solid var(--border-subtle);
+      color: var(--neon-cyan);
+      padding: 6px 12px;
       border-radius: 20px;
-      cursor: pointer;
       font-family: 'Fira Code', monospace;
       font-size: 0.8rem;
+      cursor: pointer;
+      outline: none;
       transition: all 0.2s ease;
     }
-    .audio-btn:hover {
-      background: var(--neon-pink);
+    .ctrl-select:hover, .ctrl-select:focus {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    }
+    .ctrl-btn {
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid var(--border-subtle);
+      color: var(--neon-cyan);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .ctrl-btn:hover {
+      border-color: var(--neon-pink);
       color: #fff;
-      box-shadow: 0 0 15px rgba(255, 0, 127, 0.6);
+      box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
+      transform: translateY(-1px);
     }
 
-    /* Hero & Glitch Title */
+    /* Hero Section */
     .hero {
       text-align: center;
       margin-bottom: 2.5rem;
+      position: relative;
     }
     .glitch-title {
-      font-family: 'Orbitron', monospace;
-      font-size: clamp(2rem, 6vw, 3.2rem);
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(2.2rem, 6vw, 3.8rem);
       font-weight: 900;
-      color: #ffffff;
-      text-transform: uppercase;
       letter-spacing: 2px;
-      position: relative;
-      display: inline-block;
-      text-shadow: 0 0 20px rgba(0, 240, 255, 0.7);
+      color: #ffffff;
+      text-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
+      margin-bottom: 0.4rem;
     }
     .glitch-title span {
       color: var(--neon-cyan);
+      text-shadow: 0 0 25px rgba(0, 240, 255, 0.8);
     }
     .role-badge {
       font-family: 'Fira Code', monospace;
-      font-size: 1.05rem;
+      font-size: 1.1rem;
       color: var(--neon-pink);
-      margin-top: 0.6rem;
-      text-shadow: 0 0 10px rgba(255, 0, 127, 0.4);
+      margin-top: 0.4rem;
+      text-shadow: 0 0 12px rgba(255, 0, 127, 0.5);
+    }
+    .hero-allies-uplink {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9rem;
+      color: #cbd5e1;
+      margin-top: 0.75rem;
+    }
+    .hero-allies-uplink a {
+      color: var(--neon-cyan);
+      text-decoration: none;
+      font-weight: 700;
+      border-bottom: 1px dashed var(--neon-cyan);
+      transition: all 0.2s;
+    }
+    .hero-allies-uplink a:hover {
+      color: var(--neon-pink);
+      border-bottom-color: var(--neon-pink);
+      text-shadow: 0 0 10px var(--neon-pink);
+    }
+
+    /* HUD Easter Egg Toast */
+    #hud-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      background: rgba(9, 13, 22, 0.95);
+      border: 1px solid var(--neon-cyan);
+      border-left: 4px solid var(--neon-pink);
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+      color: #fff;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 240, 255, 0.3);
+      transform: translateY(120%);
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+    #hud-toast.show {
+      transform: translateY(0);
+      opacity: 1;
     }
 
     /* Cyber Interactive Terminal */
@@ -162,7 +243,7 @@
       border-radius: 12px;
       box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 240, 255, 0.12);
       overflow: hidden;
-      margin-bottom: 3rem;
+      margin-bottom: 3.5rem;
       backdrop-filter: blur(16px);
     }
     .terminal-bar {
@@ -173,10 +254,7 @@
       align-items: center;
       justify-content: space-between;
     }
-    .terminal-dots {
-      display: flex;
-      gap: 7px;
-    }
+    .terminal-dots { display: flex; gap: 7px; }
     .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
     .dot-r { background: #ff5f56; }
     .dot-y { background: #ffbd2e; }
@@ -243,124 +321,393 @@
       color: #000;
       box-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
     }
+    .quick-btn-accent {
+      background: rgba(255, 0, 127, 0.12);
+      border-color: rgba(255, 0, 127, 0.4);
+      color: var(--neon-pink);
+    }
+    .quick-btn-accent:hover {
+      background: var(--neon-pink);
+      color: #fff;
+      box-shadow: 0 0 12px rgba(255, 0, 127, 0.6);
+    }
 
-    /* VIP Collaborator & Allied Network (IMXNOOBX) */
-    .ally-vip-card {
-      background: linear-gradient(135deg, rgba(9, 13, 22, 0.95), rgba(16, 24, 40, 0.9));
-      border: 2px solid var(--neon-cyan);
-      border-radius: 16px;
-      padding: 2.2rem;
+    /* ========================================================
+       ARCADE MINI-GAME: BREACH DEFENDER // DEVSECOPS INTERCEPTOR
+       ======================================================== */
+    .game-section {
+      background: rgba(8, 12, 20, 0.92);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 1.5rem;
       margin-bottom: 3.5rem;
-      box-shadow: 0 0 35px rgba(0, 240, 255, 0.22), inset 0 0 25px rgba(0, 240, 255, 0.06);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 255, 102, 0.1);
       position: relative;
       overflow: hidden;
-      display: grid;
-      grid-template-columns: 140px 1fr;
-      gap: 2rem;
+    }
+    .game-header {
+      display: flex;
+      justify-content: space-between;
       align-items: center;
-      transition: all 0.3s ease;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.15);
     }
-    .ally-vip-card:hover {
-      border-color: var(--neon-pink);
-      box-shadow: 0 0 45px rgba(255, 0, 127, 0.32), inset 0 0 30px rgba(255, 0, 127, 0.08);
-      transform: translateY(-2px);
+    .game-title-wrap h3 {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.3rem;
+      color: var(--neon-green);
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .ally-avatar-wrap {
+    .game-subtitle {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+    .game-hud {
+      display: flex;
+      gap: 16px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+    }
+    .hud-stat {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+    .hud-stat span { color: var(--neon-cyan); font-weight: 700; }
+    
+    #game-canvas-wrap {
+      position: relative;
+      width: 100%;
+      height: 380px;
+      background: #04060a;
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9);
+      cursor: crosshair;
+    }
+    #game-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .game-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(6, 8, 13, 0.88);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      text-align: center;
+      padding: 1.5rem;
+      z-index: 10;
+    }
+    .game-overlay h2 {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.8rem;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 20px var(--neon-cyan);
+    }
+    .game-overlay p {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9rem;
+      color: #c9d1d9;
+      max-width: 500px;
+      line-height: 1.5;
+    }
+    .game-start-btn {
+      background: var(--neon-green);
+      color: #000;
+      border: none;
+      padding: 10px 28px;
+      border-radius: 8px;
+      font-family: 'Orbitron', monospace;
+      font-weight: 800;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: 0 0 25px rgba(0, 255, 102, 0.6);
+      transition: all 0.2s ease;
+    }
+    .game-start-btn:hover {
+      transform: scale(1.06);
+      box-shadow: 0 0 35px rgba(0, 255, 102, 0.9);
+    }
+    .game-controls-hint {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .mobile-game-touch-bar {
+      display: none;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .touch-btn {
+      flex: 1;
+      padding: 10px;
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid var(--neon-cyan);
+      border-radius: 6px;
+      color: var(--neon-cyan);
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+      font-weight: bold;
+      user-select: none;
+    }
+    @media (max-width: 768px) {
+      .mobile-game-touch-bar { display: flex; }
+    }
+
+    /* ========================================================
+       VIP HOLOGRAPHIC SHOWCASE CARD: IMXNOOBX
+       ======================================================== */
+    .vip-card-container {
+      position: relative;
+      margin-bottom: 3.5rem;
+      border-radius: 18px;
+      padding: 2px;
+      background: linear-gradient(135deg, #00f0ff, #ff007f, #ffd700, #00f0ff);
+      background-size: 300% 300%;
+      animation: holoBorder 8s ease infinite;
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.25), 0 0 60px rgba(255, 0, 127, 0.15);
+    }
+    @keyframes holoBorder {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .vip-card-inner {
+      background: linear-gradient(135deg, rgba(8, 12, 22, 0.98), rgba(14, 20, 34, 0.96));
+      border-radius: 16px;
+      padding: 2.2rem;
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 2rem;
+      align-items: start;
+      position: relative;
+      overflow: hidden;
+    }
+    .vip-badge-tag {
+      position: absolute;
+      top: 18px; right: 20px;
+      background: rgba(255, 215, 0, 0.12);
+      border: 1px solid var(--neon-gold);
+      color: var(--neon-gold);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .vip-avatar-box {
       text-align: center;
       position: relative;
     }
-    .ally-avatar {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      border: 3px solid var(--neon-cyan);
-      box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
-      object-fit: cover;
-      display: block;
+    .vip-avatar-radar {
+      position: relative;
+      width: 130px;
+      height: 130px;
       margin: 0 auto 0.75rem;
-      transition: all 0.3s ease;
     }
-    .ally-vip-card:hover .ally-avatar {
-      border-color: var(--neon-pink);
-      box-shadow: 0 0 25px rgba(255, 0, 127, 0.6);
-      transform: scale(1.05);
+    .vip-avatar {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--neon-cyan);
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.5);
+      position: relative;
+      z-index: 2;
     }
-    .ally-handle {
-      font-family: 'Fira Code', monospace;
-      font-weight: 700;
-      color: var(--neon-cyan);
-      font-size: 1.05rem;
+    .radar-ring {
+      position: absolute;
+      top: -6px; left: -6px; width: 142px; height: 142px;
+      border-radius: 50%;
+      border: 1px dashed rgba(0, 240, 255, 0.6);
+      animation: rotateRadar 12s linear infinite;
+      z-index: 1;
+    }
+    @keyframes rotateRadar {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .vip-username {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #fff;
       text-decoration: none;
-      display: inline-block;
-      transition: all 0.2s ease;
+      display: block;
+      margin-bottom: 2px;
     }
-    .ally-handle:hover {
-      color: var(--neon-pink);
-      text-shadow: 0 0 10px var(--neon-pink);
-    }
-    .ally-eyebrow {
+    .vip-username:hover { color: var(--neon-cyan); }
+    .vip-web-link {
       font-family: 'Fira Code', monospace;
       font-size: 0.8rem;
       color: var(--neon-pink);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      font-weight: 700;
-      margin-bottom: 0.4rem;
+      text-decoration: none;
+      font-weight: 600;
     }
-    .ally-name {
+    .vip-web-link:hover { text-decoration: underline; }
+
+    .vip-content-box h2 {
       font-family: 'Orbitron', monospace;
       font-size: 1.4rem;
       color: #fff;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
     }
-    .ally-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
+    .vip-subtitle {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+      color: var(--neon-cyan);
       margin-bottom: 1rem;
     }
-    .ally-tag {
-      padding: 4px 10px;
-      border-radius: 6px;
+    .vip-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 1.1rem;
+    }
+    .v-tag {
+      padding: 3px 9px;
+      border-radius: 5px;
       font-family: 'Fira Code', monospace;
       font-size: 0.75rem;
       font-weight: 600;
-      background: rgba(0, 240, 255, 0.1);
+      background: rgba(0, 240, 255, 0.08);
       border: 1px solid rgba(0, 240, 255, 0.3);
       color: var(--neon-cyan);
     }
-    .ally-tag-pink {
+    .v-tag-pink {
       background: rgba(255, 0, 127, 0.1);
       border-color: rgba(255, 0, 127, 0.4);
       color: var(--neon-pink);
     }
-    .ally-desc {
-      color: #c9d1d9;
-      font-size: 0.95rem;
-      line-height: 1.6;
-      margin-bottom: 1rem;
+    .v-tag-gold {
+      background: rgba(255, 215, 0, 0.1);
+      border-color: rgba(255, 215, 0, 0.4);
+      color: var(--neon-gold);
     }
-    .hire-box {
+
+    .vip-projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 10px;
+      margin: 1.1rem 0;
+    }
+    .vip-proj-item {
       background: rgba(0, 0, 0, 0.45);
-      border-left: 3px solid var(--neon-pink);
-      padding: 0.85rem 1.2rem;
-      border-radius: 0 8px 8px 0;
-      margin-bottom: 1.25rem;
-      font-size: 0.88rem;
-      color: #d1d5db;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s ease;
     }
-    .hire-box b {
+    .vip-proj-item:hover {
+      border-color: var(--neon-cyan);
+      background: rgba(0, 240, 255, 0.08);
+      transform: translateY(-2px);
+    }
+    .vip-proj-item b {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .vip-proj-item p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .brotherhood-quote {
+      background: rgba(0, 0, 0, 0.4);
+      border-left: 3px solid var(--neon-gold);
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      font-style: italic;
+      margin-bottom: 1.25rem;
+    }
+    .brotherhood-quote span {
+      display: block;
+      margin-top: 4px;
+      font-style: normal;
+      font-weight: 700;
+      font-size: 0.75rem;
+      color: var(--neon-gold);
+      font-family: 'Fira Code', monospace;
+    }
+
+    .vip-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .vip-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .vip-btn-cyan {
+      background: rgba(0, 240, 255, 0.15);
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+    }
+    .vip-btn-cyan:hover {
+      background: var(--neon-cyan);
+      color: #000;
+      box-shadow: 0 0 18px rgba(0, 240, 255, 0.5);
+    }
+    .vip-btn-pink {
+      background: rgba(255, 0, 127, 0.15);
+      border: 1px solid var(--neon-pink);
       color: var(--neon-pink);
     }
-    @media (max-width: 680px) {
-      .ally-vip-card {
+    .vip-btn-pink:hover {
+      background: var(--neon-pink);
+      color: #fff;
+      box-shadow: 0 0 18px rgba(255, 0, 127, 0.5);
+    }
+
+    @media (max-width: 768px) {
+      .vip-card-inner {
         grid-template-columns: 1fr;
         text-align: center;
         padding: 1.5rem;
       }
-      .ally-tags {
-        justify-content: center;
-      }
+      .vip-tags { justify-content: center; }
+      .vip-actions { justify-content: center; }
     }
 
     /* Section Headers */
@@ -415,9 +762,7 @@
       transform: translateY(-4px);
       box-shadow: 0 12px 35px rgba(0, 240, 255, 0.18);
     }
-    .card:hover::before {
-      opacity: 1;
-    }
+    .card:hover::before { opacity: 1; }
     .card h4 {
       font-family: 'Fira Code', monospace;
       font-size: 1.15rem;
@@ -427,54 +772,54 @@
     .card p {
       font-size: 0.9rem;
       color: var(--text-muted);
-      line-height: 1.55;
+      line-height: 1.5;
+      margin-bottom: 1.2rem;
     }
     .card-footer {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
-      margin-top: 1rem;
     }
     .chip {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #94a3b8;
-      font-family: 'Fira Code', monospace;
-      font-size: 0.75rem;
-      padding: 3px 8px;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid rgba(0, 240, 255, 0.2);
       border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      color: var(--neon-cyan);
+      font-family: 'Fira Code', monospace;
     }
 
-    /* Stack Pills */
+    /* Stack Cloud */
     .stack-cloud {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin-bottom: 3rem;
+      margin-bottom: 2.5rem;
     }
     .pill {
-      background: rgba(0, 240, 255, 0.06);
-      border: 1px solid var(--border-subtle);
-      color: #f1f5f9;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 8px 16px;
       font-family: 'Fira Code', monospace;
       font-size: 0.85rem;
-      padding: 8px 16px;
-      border-radius: 8px;
+      color: #cbd5e1;
       transition: all 0.2s ease;
     }
     .pill:hover {
-      border-color: var(--neon-cyan);
-      box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
-      transform: scale(1.04);
+      border-color: var(--neon-pink);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(255, 0, 127, 0.3);
     }
 
-    /* Links Footer */
+    /* Action Links */
     .action-links {
       display: flex;
-      justify-content: center;
-      gap: 1.25rem;
-      margin-top: 2rem;
+      gap: 1rem;
       flex-wrap: wrap;
+      margin: 2rem 0;
     }
     .action-btn {
       display: inline-flex;
@@ -528,27 +873,45 @@
   <canvas id="matrix-canvas"></canvas>
   <div class="scanlines"></div>
 
+  <!-- HUD Easter Egg Toast -->
+  <div id="hud-toast">⚡ HUD NOTIFICATION</div>
+
   <div class="wrapper">
     
     <!-- Top System Bar -->
     <div class="top-bar">
-      <div class="status-badge">
+      <div class="status-badge" id="status-toggle" onclick="handleStatusClick()" title="Click to overclock status">
         <span class="pulse-dot"></span>
-        <span>SYSTEM_ACTIVE // itsparallax.me</span>
+        <span id="txt-sys-active">SYSTEM_ACTIVE // itsparallax.me</span>
       </div>
-      <button class="audio-btn" id="audio-toggle" onclick="toggleAudio()">🔊 SFX: ON</button>
+      <div class="top-controls">
+        <select class="ctrl-select" id="lang-select" onchange="changeLanguage(this.value)" title="Select Interface Language">
+          <option value="EN">🇺🇸 English</option>
+          <option value="ES">🇪🇸 Español</option>
+          <option value="PT">🇧🇷 Português</option>
+          <option value="JA">🇯🇵 日本語</option>
+          <option value="DE">🇩🇪 Deutsch</option>
+          <option value="FR">🇫🇷 Français</option>
+          <option value="ZH">🇨🇳 中文</option>
+          <option value="RU">🇷🇺 Русский</option>
+        </select>
+        <button class="ctrl-btn" id="voice-brief-btn" onclick="toggleVoiceBriefing()">🎙️ VOICE BRIEF</button>
+        <button class="ctrl-btn" id="audio-toggle" onclick="toggleAudio()">🔊 SFX: ON</button>
+      </div>
     </div>
 
     <!-- Hero Header -->
     <header class="hero">
       <h1 class="glitch-title">PARALLAX <span>// equisde</span></h1>
-      <p class="role-badge">&gt; Staff DevSecOps &amp; Offensive Security Architect</p>
-      <p style="font-family: 'Fira Code', monospace; font-size: 0.88rem; color: #cbd5e1; margin-top: 0.75rem;">
-        ⚡ Core Alliance &amp; Brother-in-Arms with <a href="https://github.com/IMXNOOBX" target="_blank" rel="noopener noreferrer" style="color: var(--neon-cyan); text-decoration: none; font-weight: 700; border-bottom: 1px dashed var(--neon-cyan);">@IMXNOOBX</a> (Protections &amp; Bots)
+      <p class="role-badge" id="txt-hero-role">&gt; Staff DevSecOps &amp; Offensive Security Architect</p>
+      <p class="hero-allies-uplink" id="txt-hero-alliance">
+        ⚡ Core Alliance with <a href="https://github.com/IMXNOOBX" target="_blank" rel="noopener noreferrer">@IMXNOOBX</a> (cs2-esp, fstick, SAB, Protections)
       </p>
     </header>
 
-    <!-- Interactive Terminal Emulator -->
+    <!-- ========================================================
+         CYBER TERMINAL EMULATOR
+         ======================================================== -->
     <div class="terminal-window">
       <div class="terminal-bar">
         <div class="terminal-dots">
@@ -556,14 +919,15 @@
           <span class="dot dot-y"></span>
           <span class="dot dot-g"></span>
         </div>
-        <div class="terminal-title">guest@parallax-terminal:~</div>
+        <div class="terminal-title">guest@parallax-mainframe:~</div>
         <div style="width: 40px;"></div>
       </div>
       
       <div class="terminal-body" id="term-body">
-        <div class="term-out" id="term-log">┌─ PARALLAX MAINFRAME [v4.8.2] ──────────────────────────────────────────────┐
-│ Type 'help' for available commands or tap the quick buttons below.          │
+        <div class="term-out" id="term-log">┌─ PARALLAX MAINFRAME [v5.0.1-PROD] ─────────────────────────────────────────┐
+│ Type 'help' for command manual, or launch 'game' to trigger arcade defense. │
 │ Architecture: 180+ repositories · Offensive Security · Distributed Systems  │
+│ Secret: Try the Konami Code (↑ ↑ ↓ ↓ ← → ← → B A) for God Mode Overclock.   │
 └─────────────────────────────────────────────────────────────────────────────┘</div>
         <div class="term-input-line">
           <span class="prompt-label">parallax@system:~$</span>
@@ -573,53 +937,137 @@
 
       <div class="term-quick-btns">
         <button class="quick-btn" onclick="runCmd('whoami')">whoami</button>
-        <button class="quick-btn" onclick="runCmd('allies')">allies (IMXNOOBX)</button>
+        <button class="quick-btn quick-btn-accent" onclick="runCmd('allies')">allies (IMXNOOBX)</button>
+        <button class="quick-btn" onclick="runCmd('game')">🎮 game (Breach)</button>
         <button class="quick-btn" onclick="runCmd('security')">security</button>
         <button class="quick-btn" onclick="runCmd('projects')">projects</button>
         <button class="quick-btn" onclick="runCmd('achievements')">achievements</button>
-        <button class="quick-btn" onclick="runCmd('stack')">stack</button>
+        <button class="quick-btn" onclick="runCmd('secret')">easter eggs</button>
         <button class="quick-btn" onclick="runCmd('clear')">clear</button>
       </div>
     </div>
 
-    <!-- VIP Collaborator Showcase: IMXNOOBX -->
-    <div class="ally-vip-card">
-      <div class="ally-avatar-wrap">
-        <a href="https://github.com/IMXNOOBX" target="_blank" rel="noopener noreferrer">
-          <img src="https://github.com/IMXNOOBX.png?size=240" alt="IMXNOOBX" class="ally-avatar" />
-        </a>
-        <a href="https://github.com/IMXNOOBX" target="_blank" rel="noopener noreferrer" class="ally-handle">@IMXNOOBX</a>
+    <!-- ========================================================
+         PLAYABLE ARCADE MINI-GAME: BREACH DEFENDER
+         ======================================================== -->
+    <div class="game-section" id="arcade-module">
+      <div class="game-header">
+        <div class="game-title-wrap">
+          <h3 id="txt-game-title">🛡️ BREACH DEFENDER // DEVSECOPS INTERCEPTOR</h3>
+          <p class="game-subtitle" id="txt-game-sub">Intercept and neutralize incoming security exploits before they breach the backend core.</p>
+        </div>
+        <div class="game-hud">
+          <div class="hud-stat">SCORE: <span id="game-score">0</span></div>
+          <div class="hud-stat">STREAK: <span id="game-streak">0x</span></div>
+          <div class="hud-stat">CORE HEALTH: <span id="game-health">100%</span></div>
+          <div class="hud-stat">HIGH: <span id="game-highscore">0</span></div>
+        </div>
       </div>
-      <div>
-        <div class="ally-eyebrow">🤝 VIP ALLIED NETWORK // OPERATOR #01</div>
-        <h2 class="ally-name">⚡ IMXNOOBX — Core Partner &amp; Defense Specialist</h2>
-        <div class="ally-tags">
-          <span class="ally-tag ally-tag-pink">● VERIFIED ALLY</span>
-          <span class="ally-tag">DISCORD BOTS</span>
-          <span class="ally-tag">ANTI-RAID PROTECTIONS</span>
-          <span class="ally-tag">NODE.JS MASTERY</span>
-          <span class="ally-tag">SECURITY AUTOMATION</span>
+
+      <div id="game-canvas-wrap">
+        <canvas id="game-canvas"></canvas>
+        <div class="game-overlay" id="game-overlay">
+          <h2 id="txt-game-modal-title">DEVSECOPS FIREWALL: READY</h2>
+          <p id="txt-game-modal-desc">
+            Hostile threats detected: <b>IDOR</b>, <b>Race Conditions</b>, <b>Bot Raids</b>, and <b>SQL Injection</b> packets.<br/>
+            Move the interceptor with <b>[←] [→]</b> or <b>[A] [D]</b>. Fire mitigation countermeasures with <b>[Spacebar]</b> or <b>Click</b>.
+          </p>
+          <button class="game-start-btn" id="game-start-btn" onclick="startGame()">INITIATE DEFENSE</button>
         </div>
-        <p class="ally-desc">
-          Hermano de armas y socio técnico imprescindible. Colaboración estrecha en ingeniería inversa de protocolos, seguridad ofensiva, desarrollo de bots de alta concurrencia y herramientas de automatización defensiva.
-        </p>
-        <div class="hire-box">
-          🤖 <b>¿Interesado en un Bot de Discord de Alta Protección? Contrata a IMXNOOBX:</b><br/>
-          Especialista en desarrollo veloz en NodeJS, escudos de seguridad activos y mitigación contra ataques masivos.
+      </div>
+
+      <div class="game-controls-hint">
+        <span>🎮 Controls: <b>A / D</b> or <b>Arrow Keys</b> to Move &middot; <b>Space / Click</b> to Shoot &middot; 10x Streak = <b>EMP Purge</b></span>
+        <span>⚡ Threat Types: IDOR (Pink) &middot; Race Condition (Cyan) &middot; Bot Raid (Gold) &middot; SQLi (Red)</span>
+      </div>
+
+      <!-- Mobile Touch Controls -->
+      <div class="mobile-game-touch-bar">
+        <button class="touch-btn" onmousedown="touchMoveLeft(true)" onmouseup="touchMoveLeft(false)" ontouchstart="touchMoveLeft(true)" ontouchend="touchMoveLeft(false)">◀ MOVE LEFT</button>
+        <button class="touch-btn" onclick="firePlayerBullet()" style="background: rgba(0, 255, 102, 0.2); border-color: var(--neon-green); color: var(--neon-green);">⚡ MITIGATE</button>
+        <button class="touch-btn" onmousedown="touchMoveRight(true)" onmouseup="touchMoveRight(false)" ontouchstart="touchMoveRight(true)" ontouchend="touchMoveRight(false)">MOVE RIGHT ▶</button>
+      </div>
+    </div>
+
+    <!-- ========================================================
+         VIP HOLOGRAPHIC SHOWCASE CARD: IMXNOOBX
+         ======================================================== -->
+    <div class="vip-card-container">
+      <div class="vip-card-inner">
+        <div class="vip-badge-tag">⚡ VIP ALLIED OPERATOR #01</div>
+        
+        <div class="vip-avatar-box">
+          <div class="vip-avatar-radar">
+            <div class="radar-ring"></div>
+            <img src="https://github.com/IMXNOOBX.png?size=240" alt="IMXNOOBX Avatar" class="vip-avatar" />
+          </div>
+          <a href="https://github.com/IMXNOOBX" target="_blank" rel="noopener noreferrer" class="vip-username">IMXNOOBX</a>
+          <a href="https://noob.pm" target="_blank" rel="noopener noreferrer" class="vip-web-link">🌐 noob.pm</a>
         </div>
-        <a href="https://github.com/IMXNOOBX" target="_blank" rel="noopener noreferrer" class="action-btn btn-cyan" style="font-size: 0.88rem; padding: 10px 22px;">
-          ⚡ ESTABLISH UPLINK CON @IMXNOOBX (GITHUB) &rarr;
-        </a>
+
+        <div class="vip-content-box">
+          <h2>⚡ IMXNOOBX — Core Partner &amp; Defense Specialist</h2>
+          <p class="vip-subtitle">// Game Security Researcher &middot; Hardware Hacker &middot; Bot Architect</p>
+          
+          <div class="vip-tags">
+            <span class="v-tag v-tag-gold">● VERIFIED ALLY</span>
+            <span class="v-tag">C++ MEMORY REVERSING</span>
+            <span class="v-tag">ESP32 / M5STICK HARDWARE</span>
+            <span class="v-tag v-tag-pink">ANTI-BOT DEFENSES</span>
+            <span class="v-tag">VENCORD MODS</span>
+            <span class="v-tag">NODE.JS ENGINE</span>
+          </div>
+
+          <p style="color: #cbd5e1; font-size: 0.92rem; line-height: 1.6; margin-bottom: 0.9rem;">
+            Brother-in-arms and primary technical collaborator in low-level memory engineering, protocol reverse engineering, penetration hardware, and hardened Discord bot infrastructures.
+          </p>
+
+          <div class="vip-projects-grid">
+            <a href="https://github.com/IMXNOOBX/cs2-external-esp" target="_blank" rel="noopener noreferrer" class="vip-proj-item">
+              <b>cs2-external-esp <span>⭐ 608+</span></b>
+              <p>Modernized C++ external memory framework and ESP engine for Counter-Strike 2.</p>
+            </a>
+            <a href="https://github.com/IMXNOOBX/fstick" target="_blank" rel="noopener noreferrer" class="vip-proj-item">
+              <b>fstick (M5StickC) <span>⭐ 79+</span></b>
+              <p>Custom wireless penetration and security toolkit for ESP32-PICO hardware.</p>
+            </a>
+            <a href="https://github.com/IMXNOOBX/SAB" target="_blank" rel="noopener noreferrer" class="vip-proj-item">
+              <b>SAB (SimpleAntiBot) <span>Kotlin</span></b>
+              <p>Adaptive server-side defense plugin against flood, raid and spam bots.</p>
+            </a>
+            <a href="https://github.com/IMXNOOBX/vencord-signature" target="_blank" rel="noopener noreferrer" class="vip-proj-item">
+              <b>Vencord Plugins <span>TypeScript</span></b>
+              <p>Message signatures &amp; autoVoiceProtect client modding for Discord power users.</p>
+            </a>
+          </div>
+
+          <div class="brotherhood-quote">
+            "This is my first project in python. Its a simple advanced readme generator for your projects. Tnx to @equisde (Parallax) for helping me in my noobie mistakes :D"
+            <span>— IMXNOOBX (<a href="https://github.com/IMXNOOBX/readme-generator" target="_blank" style="color: var(--neon-gold); text-decoration: underline;">readme-generator</a>)</span>
+          </div>
+
+          <div class="vip-actions">
+            <a href="https://github.com/IMXNOOBX" target="_blank" rel="noopener noreferrer" class="vip-btn vip-btn-cyan">
+              🐙 GITHUB (@IMXNOOBX) &rarr;
+            </a>
+            <a href="https://noob.pm" target="_blank" rel="noopener noreferrer" class="vip-btn vip-btn-pink">
+              🌐 PERSONAL NODE (NOOB.PM) &rarr;
+            </a>
+            <a href="https://github.com/IMXNOOBX" target="_blank" rel="noopener noreferrer" class="vip-btn" style="border: 1px solid var(--neon-gold); color: var(--neon-gold); background: rgba(255, 215, 0, 0.1);">
+              🤖 HIRE HIM: DISCORD BOTS &amp; PROTECTIONS
+            </a>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Featured Engineering Projects -->
-    <h3 class="sec-head">FEATURED WEAPONS &amp; SYSTEMS</h3>
+    <h3 class="sec-head" id="txt-sec-projects">FEATURED WEAPONS &amp; SYSTEMS</h3>
     <div class="grid">
       <a href="https://github.com/equisde/RoRoIntercept" target="_blank" rel="noopener noreferrer" class="card">
         <div>
           <h4>🔍 RoRoIntercept</h4>
-          <p>Herramienta Android de bajo nivel para interceptar, auditar y manipular tráfico HTTP/HTTPS en tiempo real estilo Fiddler.</p>
+          <p id="desc-roro">Low-level Android framework for intercepting, auditing, and manipulating HTTP/HTTPS traffic dynamically in real-time.</p>
         </div>
         <div class="card-footer">
           <span class="chip">Kotlin</span>
@@ -631,7 +1079,7 @@
       <a href="https://github.com/equisde/fiddler-everywhere-patch-automated" target="_blank" rel="noopener noreferrer" class="card">
         <div>
           <h4>🛠️ Fiddler Everywhere Patch</h4>
-          <p>Suite de instrumentación, desensamblado y parcheo dinámico de bytecode para auditoría de tráfico corporativo.</p>
+          <p id="desc-fiddler">Automated bytecode patcher, dynamic instrumentation scripts, and runtime disassembly suite for enterprise traffic inspection.</p>
         </div>
         <div class="card-footer">
           <span class="chip">PowerShell</span>
@@ -643,7 +1091,7 @@
       <a href="https://github.com/equisde/ControlRemotoTV-Abuelitos" target="_blank" rel="noopener noreferrer" class="card">
         <div>
           <h4>📱 Remote TV Abuelitos</h4>
-          <p>Ingeniería de accesibilidad para Android TV con botones gigantes, protocolo IP de latencia cero y descubrimiento fácil.</p>
+          <p id="desc-tv">Accessibility engineering for Android TV with zero-latency IP protocol discovery and simplified interfaces.</p>
         </div>
         <div class="card-footer">
           <span class="chip">Android TV</span>
@@ -654,8 +1102,8 @@
 
       <a href="https://github.com/equisde/YuyinODS" target="_blank" rel="noopener noreferrer" class="card">
         <div>
-          <h4>🤖 YuyinODS</h4>
-          <p>Servidor para inferencia local de IA, ejecución distribuida de agentes autónomos, RAG y workflows multimodales.</p>
+          <h4>🤖 YuyinODS Autonomous AI</h4>
+          <p id="desc-yuyin">Local distributed AI inference engine, autonomous agent pipeline orchestration, and resilient async workers.</p>
         </div>
         <div class="card-footer">
           <span class="chip">AI Engine</span>
@@ -666,7 +1114,7 @@
     </div>
 
     <!-- Core Stack -->
-    <h3 class="sec-head">CORE ARSENAL &amp; CAPABILITIES</h3>
+    <h3 class="sec-head" id="txt-sec-arsenal">CORE ARSENAL &amp; CAPABILITIES</h3>
     <div class="stack-cloud">
       <div class="pill">Go (Golang)</div>
       <div class="pill">Python (AI &amp; Scripting)</div>
@@ -704,89 +1152,453 @@
   </div>
 
   <script>
-    // Matrix Cyber Rain Background
-    const canvas = document.getElementById('matrix-canvas');
-    const ctx = canvas.getContext('2d');
-    let width = canvas.width = window.innerWidth;
-    let height = canvas.height = window.innerHeight;
+    /* ========================================================
+       1. AMBIENT MATRIX DIGITAL RAIN CANVAS
+       ======================================================== */
+    const mCanvas = document.getElementById('matrix-canvas');
+    const mCtx = mCanvas.getContext('2d');
+    let mWidth = mCanvas.width = window.innerWidth;
+    let mHeight = mCanvas.height = window.innerHeight;
     
     window.addEventListener('resize', () => {
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
+      mWidth = mCanvas.width = window.innerWidth;
+      mHeight = mCanvas.height = window.innerHeight;
     });
 
-    const characters = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ<>/*+-={}&%#$';
+    const characters = '01ABCDEFGHIJKLMNOPQRSTUVWXYZアイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
     const fontSize = 14;
-    const columns = Math.floor(width / fontSize);
-    const drops = Array(columns).fill(1);
+    const columns = Math.floor(window.innerWidth / fontSize);
+    const drops = [];
+    for (let i = 0; i < columns; i++) {
+      drops[i] = Math.floor(Math.random() * -50);
+    }
+
+    let matrixColor = '#00f0ff';
+    let matrixSpeed = 42;
 
     function drawMatrix() {
-      ctx.fillStyle = 'rgba(6, 8, 13, 0.08)';
-      ctx.fillRect(0, 0, width, height);
+      mCtx.fillStyle = 'rgba(6, 8, 13, 0.08)';
+      mCtx.fillRect(0, 0, mWidth, mHeight);
 
-      ctx.fillStyle = '#00f0ff';
-      ctx.font = fontSize + 'px monospace';
+      mCtx.fillStyle = matrixColor;
+      mCtx.font = fontSize + 'px monospace';
 
       for (let i = 0; i < drops.length; i++) {
         const text = characters.charAt(Math.floor(Math.random() * characters.length));
-        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        mCtx.fillText(text, i * fontSize, drops[i] * fontSize);
 
-        if (drops[i] * fontSize > height && Math.random() > 0.975) {
+        if (drops[i] * fontSize > mHeight && Math.random() > 0.975) {
           drops[i] = 0;
         }
         drops[i]++;
       }
     }
-    setInterval(drawMatrix, 42);
+    let matrixInterval = setInterval(drawMatrix, matrixSpeed);
 
-    // Terminal Audio Synthesizer (Zero dependencies)
+    /* ========================================================
+       2. SYNTHESIZED WEB AUDIO API ENGINE (ZERO DEPENDENCIES)
+       ======================================================== */
     let audioEnabled = true;
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let audioCtx = null;
 
-    function playBeep(freq = 600, duration = 0.04) {
-      if (!audioEnabled || audioCtx.state === 'suspended') {
+    function getAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
         audioCtx.resume();
       }
-      if (!audioEnabled) return;
-      try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + duration);
-      } catch (e) {}
+      return audioCtx;
     }
+
+    const soundEngine = {
+      click() {
+        if (!audioEnabled) return;
+        try {
+          const ctx = getAudioCtx();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(800, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.03);
+          gain.gain.setValueAtTime(0.04, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.03);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.03);
+        } catch(e) {}
+      },
+      laser() {
+        if (!audioEnabled) return;
+        try {
+          const ctx = getAudioCtx();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(1100, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(160, ctx.currentTime + 0.12);
+          gain.gain.setValueAtTime(0.08, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.12);
+        } catch(e) {}
+      },
+      explosion() {
+        if (!audioEnabled) return;
+        try {
+          const ctx = getAudioCtx();
+          const bufferSize = ctx.sampleRate * 0.15;
+          const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+          }
+          const noise = ctx.createBufferSource();
+          noise.buffer = buffer;
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(600, ctx.currentTime);
+          filter.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.15);
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(0.12, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
+          noise.start();
+        } catch(e) {}
+      },
+      powerup() {
+        if (!audioEnabled) return;
+        try {
+          const ctx = getAudioCtx();
+          const notes = [261.63, 329.63, 392.00, 523.25, 659.25];
+          notes.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.05);
+            gain.gain.setValueAtTime(0.06, ctx.currentTime + idx * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + idx * 0.05 + 0.08);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(ctx.currentTime + idx * 0.05);
+            osc.stop(ctx.currentTime + idx * 0.05 + 0.08);
+          });
+        } catch(e) {}
+      },
+      error() {
+        if (!audioEnabled) return;
+        try {
+          const ctx = getAudioCtx();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(140, ctx.currentTime);
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.2);
+        } catch(e) {}
+      },
+      easterEgg() {
+        if (!audioEnabled) return;
+        try {
+          const ctx = getAudioCtx();
+          const notes = [440, 554.37, 659.25, 880, 1108.73, 1318.51];
+          notes.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.06);
+            gain.gain.setValueAtTime(0.07, ctx.currentTime + idx * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + idx * 0.06 + 0.1);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(ctx.currentTime + idx * 0.06);
+            osc.stop(ctx.currentTime + idx * 0.06 + 0.1);
+          });
+        } catch(e) {}
+      }
+    };
 
     function toggleAudio() {
       audioEnabled = !audioEnabled;
       document.getElementById('audio-toggle').innerText = audioEnabled ? '🔊 SFX: ON' : '🔇 SFX: OFF';
+      soundEngine.click();
+      showToast(audioEnabled ? 'SOUND SYNTHESIZER: ACTIVE' : 'SOUND SYNTHESIZER: MUTED');
     }
 
-    // Terminal Logic
+    /* ========================================================
+       3. MULTILINGUAL SYSTEM & SPEECH SYNTHESIS ENGINE
+       ======================================================== */
+    let currentLang = 'EN';
+    const i18n = {
+      EN: {
+        sysActive: 'SYSTEM_ACTIVE // itsparallax.me',
+        heroRole: '&gt; Staff DevSecOps &amp; Offensive Security Architect',
+        heroAlliance: '⚡ Core Alliance with <a href="https://github.com/IMXNOOBX" target="_blank">@IMXNOOBX</a> (cs2-esp, fstick, SAB, Protections)',
+        gameTitle: '🛡️ BREACH DEFENDER // DEVSECOPS INTERCEPTOR',
+        gameSub: 'Intercept and neutralize incoming security exploits before they breach the backend core.',
+        gameModalTitle: 'DEVSECOPS FIREWALL: READY',
+        gameModalDesc: 'Hostile threats detected: <b>IDOR</b>, <b>Race Conditions</b>, <b>Bot Raids</b>, and <b>SQL Injection</b> packets.<br/>Move the interceptor with <b>[←] [→]</b> or <b>[A] [D]</b>. Fire mitigation countermeasures with <b>[Spacebar]</b> or <b>Click</b>.',
+        gameStartBtn: 'INITIATE DEFENSE',
+        secProjects: 'FEATURED WEAPONS &amp; SYSTEMS',
+        secArsenal: 'CORE ARSENAL &amp; CAPABILITIES',
+        descRoro: 'Low-level Android framework for intercepting, auditing, and manipulating HTTP/HTTPS traffic dynamically in real-time.',
+        descFiddler: 'Automated bytecode patcher, dynamic instrumentation scripts, and runtime disassembly suite for enterprise traffic inspection.',
+        descTv: 'Accessibility engineering for Android TV with zero-latency IP protocol discovery and simplified interfaces.',
+        descYuyin: 'Local distributed AI inference engine, autonomous agent pipeline orchestration, and resilient async workers.',
+        speechBriefing: 'Rodrigo Carrasco, alias Parallax. Senior Software Engineer and Principal DevSecOps Architect. Specializing in offensive security, business logic exploitation, dynamic runtime instrumentation, and unbreakable backend engineering. Long-time brother-in-arms with IMXNOOBX, creator of CS2 External ESP and hardware security toolkits.'
+      },
+      ES: {
+        sysActive: 'SISTEMA_ACTIVO // itsparallax.me',
+        heroRole: '&gt; Arquitecto Principal DevSecOps e Investigador de Seguridad Ofensiva',
+        heroAlliance: '⚡ Alianza Central con <a href="https://github.com/IMXNOOBX" target="_blank">@IMXNOOBX</a> (cs2-esp, fstick, SAB, Protecciones)',
+        gameTitle: '🛡️ DEFENSOR DE BRECHAS // INTERCEPTOR DEVSECOPS',
+        gameSub: 'Intercepta y neutraliza exploits antes de que vulneren el núcleo del backend.',
+        gameModalTitle: 'FIREWALL DEVSECOPS: LISTO',
+        gameModalDesc: 'Amenazas detectadas: paquetes <b>IDOR</b>, <b>Race Conditions</b>, <b>Bot Raids</b> e <b>Inyecciones SQL</b>.<br/>Mueve el interceptor con <b>[←] [→]</b> o <b>[A] [D]</b>. Dispara contramedidas con <b>[Espacio]</b> o <b>Clic</b>.',
+        gameStartBtn: 'INICIAR DEFENSA',
+        secProjects: 'SISTEMAS Y ARMAS DESTACADAS',
+        secArsenal: 'ARSENAL CENTRAL Y CAPACIDADES',
+        descRoro: 'Framework Android de bajo nivel para interceptar, auditar y manipular tráfico HTTP/HTTPS en tiempo real estilo MITM.',
+        descFiddler: 'Suite automatizada de parcheo de bytecode, desensamblado e instrumentación para análisis corporativo.',
+        descTv: 'Ingeniería de accesibilidad para Android TV con descubrimiento por protocolo IP y latencia cero.',
+        descYuyin: 'Servidor local de IA distribuido, tuberías de agentes autónomos y workers asíncronos resilientes.',
+        speechBriefing: 'Rodrigo Carrasco, alias Parallax. Ingeniero de Software Senior y Arquitecto Principal DevSecOps. Especialista en seguridad ofensiva, explotación de fallos de lógica de negocio, instrumentación dinámica y arquitecturas backend resilientes. Hermandad técnica con IMXNOOBX, desarrollador de CS2 External ESP y herramientas de hardware.'
+      },
+      PT: {
+        sysActive: 'SISTEMA_ATIVO // itsparallax.me',
+        heroRole: '&gt; Arquiteto Principal DevSecOps &amp; Especialista em Segurança Ofensiva',
+        heroAlliance: '⚡ Aliança Técnica com <a href="https://github.com/IMXNOOBX" target="_blank">@IMXNOOBX</a> (cs2-esp, fstick, SAB, Proteções)',
+        gameTitle: '🛡️ DEFENSOR DE BRECHAS // INTERCEPTOR DEVSECOPS',
+        gameSub: 'Intercepte e neutralize exploits antes que comprometam o núcleo do backend.',
+        gameModalTitle: 'FIREWALL DEVSECOPS: OPERACIONAL',
+        gameModalDesc: 'Ameaças detectadas: pacotes <b>IDOR</b>, <b>Race Conditions</b>, <b>Bot Raids</b> e <b>Injeções SQL</b>.<br/>Mova o interceptor com <b>[←] [→]</b> ou <b>[A] [D]</b>. Dispare contramedidas com <b>[Espaço]</b> ou <b>Clique</b>.',
+        gameStartBtn: 'INICIAR DEFESA',
+        secProjects: 'SISTEMAS E ARMAS EM DESTAQUE',
+        secArsenal: 'ARSENAL CENTRAL E CAPACIDADES',
+        descRoro: 'Framework Android de baixo nível para interceptar, auditar e manipular tráfego HTTP/HTTPS dinamicamente em tempo real.',
+        descFiddler: 'Suite automatizada de patching de bytecode, desmontagem e instrumentação para inspeção corporativa.',
+        descTv: 'Engenharia de acessibilidade para Android TV com descoberta por protocolo IP de latência zero.',
+        descYuyin: 'Motor local de inferência de IA distribuída, orquestração autônoma e workers assíncronos resilientes.',
+        speechBriefing: 'Rodrigo Carrasco, vulgo Parallax. Engenheiro de Software Sênior e Arquiteto DevSecOps Principal. Especialista em segurança ofensiva, exploração de falhas em lógica de negócios, instrumentação dinâmica e arquiteturas de backend resilientes. Aliança técnica com IMXNOOBX, criador do CS2 External ESP.'
+      },
+      JA: {
+        sysActive: 'システム稼働中 // itsparallax.me',
+        heroRole: '&gt; プリンシパル DevSecOps アーキテクト &amp; オフェンシブ・セキュリティ研究者',
+        heroAlliance: '⚡ コアアライアンス: <a href="https://github.com/IMXNOOBX" target="_blank">@IMXNOOBX</a> (cs2-esp, fstick, SAB, 防御ツール)',
+        gameTitle: '🛡️ ブリーチ・ディフェンダー // DEVSECOPS 防御迎撃システム',
+        gameSub: 'バックエンドの中核が侵害される前に、侵入エクスプロイトを遮断・無力化せよ。',
+        gameModalTitle: 'DEVSECOPS ファイアウォール: 迎撃準備完了',
+        gameModalDesc: '敵対的脅威を検知: <b>IDOR</b>、<b>競合状態</b>、<b>ボット襲来</b>、<b>SQL インジェクション</b>。<br/><b>[←] [→]</b> または <b>[A] [D]</b> で移動。<b>[スペース]</b> または <b>クリック</b> で防御ビーム発射。',
+        gameStartBtn: '迎撃プロトコル開始',
+        secProjects: '主力セキュリティ兵器 &amp; 開発システム',
+        secArsenal: '技術アーセナル &amp; コアケイパビリティ',
+        descRoro: 'HTTP/HTTPS トラフィックをリアルタイムで透過的に傍受・監査・改ざんする低レイヤー Android フレームワーク。',
+        descFiddler: '企業向けトラフィック解析のための自動バイトコードパッチャーおよび動的解析スイート。',
+        descTv: 'ゼロレイテンシ IP プロトコル探索と超簡易 UI を備えた Android TV 向けアクセシビリティ開発。',
+        descYuyin: '分散型ローカル AI 推論基盤、自律型エージェントパイプライン、高可用性非同期ワーカー。',
+        speechBriefing: 'ロドリゴ・カラスコ、通称 Parallax。シニアソフトウェアエンジニア、プリンシパル DevSecOps アーキテクト。オフェンシブ・セキュリティ、業務ロジックの脆弱性分析、動的フック、高可用性バックエンド設計を専門とします。IMXNOOBX との強固な技術提携。'
+      },
+      DE: {
+        sysActive: 'SYSTEM_AKTIV // itsparallax.me',
+        heroRole: '&gt; Principal DevSecOps Architect &amp; Offensive Security Researcher',
+        heroAlliance: '⚡ Strategische Allianz mit <a href="https://github.com/IMXNOOBX" target="_blank">@IMXNOOBX</a> (cs2-esp, fstick, SAB, Absicherung)',
+        gameTitle: '🛡️ BREACH DEFENDER // DEVSECOPS INTERCEPTOR',
+        gameSub: 'Fangen Sie Sicherheits-Exploits ab, bevor sie den Backend-Kern kompromittieren.',
+        gameModalTitle: 'DEVSECOPS FIREWALL: EINSATZBEREIT',
+        gameModalDesc: 'Feindliche Angriffe erkannt: <b>IDOR</b>-, <b>Race-Condition</b>-, <b>Bot-Raid</b>- und <b>SQL-Injection</b>-Pakete.<br/>Bewegen mit <b>[←] [→]</b> oder <b>[A] [D]</b>. Gegenmaßnahmen abfeuern mit <b>[Leertaste]</b> oder <b>Klick</b>.',
+        gameStartBtn: 'ABWEHR STARTEN',
+        secProjects: 'AUSGEWÄHLTE SYSTEME &amp; WERKZEUGE',
+        secArsenal: 'KERNARSENAL &amp; KOMPETENZEN',
+        descRoro: 'Low-Level-Android-Framework zum dynamischen Abfangen und Manipulieren von HTTP/HTTPS-Datenverkehr in Echtzeit.',
+        descFiddler: 'Automatisierter Bytecode-Patcher und dynamische Instrumentierungs-Suite für tiefgehende Netzwerk-Audits.',
+        descTv: 'Barrierefreie Entwicklung für Android TV mit latenzfreier IP-Protokoll-Erkennung.',
+        descYuyin: 'Lokale verteilte KI-Inferenz, autonome Agenten-Pipelines und robuste asynchrone Worker.',
+        speechBriefing: 'Rodrigo Carrasco, alias Parallax. Senior Software Engineer und Principal DevSecOps Architect. Spezialisiert auf offensive Sicherheit, Ausnutzung von Geschäftslogik-Schwachstellen, dynamische Laufzeit-Instrumentierung und hochresiliente Backend-Architekturen. Enge Allianz mit IMXNOOBX.'
+      },
+      FR: {
+        sysActive: 'SYSTÈME_ACTIF // itsparallax.me',
+        heroRole: '&gt; Architecte Principal DevSecOps &amp; Chercheur en Sécurité Offensive',
+        heroAlliance: '⚡ Alliance Majeure avec <a href="https://github.com/IMXNOOBX" target="_blank">@IMXNOOBX</a> (cs2-esp, fstick, SAB, Protections)',
+        gameTitle: '🛡️ BREACH DEFENDER // INTERCEPTEUR DEVSECOPS',
+        gameSub: 'Interceptez et neutralisez les exploits avant qu\'ils ne corrompent le noyau du backend.',
+        gameModalTitle: 'PARE-FEU DEVSECOPS: PRÊT',
+        gameModalDesc: 'Menaces hostiles détectées: paquets <b>IDOR</b>, <b>Race Conditions</b>, <b>Bot Raids</b> et <b>Injections SQL</b>.<br/>Déplacement avec <b>[←] [→]</b> ou <b>[A] [D]</b>. Tirez avec <b>[Espace]</b> ou <b>Clic</b>.',
+        gameStartBtn: 'DÉCLENCHER LA DÉFENSE',
+        secProjects: 'SYSTÈMES &amp; ARMES DE PRÉDILECTION',
+        secArsenal: 'ARSENAL CENTRAL &amp; CAPACITÉS',
+        descRoro: 'Framework Android bas niveau pour intercepter, auditer et manipuler le trafic HTTP/HTTPS en temps réel.',
+        descFiddler: 'Patcher automatique de bytecode et suite d\'instrumentation pour l\'analyse approfondie du trafic d\'entreprise.',
+        descTv: 'Ingénierie d\'accessibilité pour Android TV avec découverte via protocole IP à latence zéro.',
+        descYuyin: 'Moteur d\'inférence IA locale distribuée, orchestration d\'agents autonomes et workers asynchrones résilients.',
+        speechBriefing: 'Rodrigo Carrasco, alias Parallax. Ingénieur logiciel senior et architecte DevSecOps principal. Spécialisé en sécurité offensive, exploitation de la logique métier, rétro-ingénierie et architectures backend hautement résilientes. Alliance technique avec IMXNOOBX.'
+      },
+      ZH: {
+        sysActive: '系统运行中 // itsparallax.me',
+        heroRole: '&gt; 首席 DevSecOps 架构师 &amp; 进攻性安全研究员',
+        heroAlliance: '⚡ 核心同盟: <a href="https://github.com/IMXNOOBX" target="_blank">@IMXNOOBX</a> (cs2-esp, fstick, SAB, 防御武器)',
+        gameTitle: '🛡️ 漏洞拦截防线 // DEVSECOPS 核心拦截器',
+        gameSub: '在敌对漏洞利用突破后端中枢前进行拦截与动态清除。',
+        gameModalTitle: 'DEVSECOPS 防火墙: 部署就绪',
+        gameModalDesc: '探测到敌对载荷：<b>IDOR 越权</b>、<b>条件竞争</b>、<b>僵尸网络突袭</b> 及 <b>SQL 注入</b> 数据包。<br/>使用 <b>[←] [→]</b> 或 <b>[A] [D]</b> 移动。按 <b>[空格]</b> 或 <b>鼠标点击</b> 发射反制光束。',
+        gameStartBtn: '启动防御协议',
+        secProjects: '主力安全装备与核心系统',
+        secArsenal: '技术军火库与综合实力',
+        descRoro: '底层 Android 透明 HTTPS/HTTP 流量动态拦截、中间人抓包与实时篡改框架。',
+        descFiddler: '用于企业级网络流量检测的自动化字节码补丁器与动态插桩分析套件。',
+        descTv: '针对 Android TV 的极简无障碍工程，基于零延迟 IP 协议实现即开即用控制。',
+        descYuyin: '本地分布式 AI 推理引擎、自主智能体流水线编排与高韧性异步工作集群。',
+        speechBriefing: '罗德里戈·卡拉斯科，代号 Parallax。资深软件工程师、首席 DevSecOps 架构师。专注于进攻性安全、业务逻辑漏洞挖掘、动态 Hook 逆向与高韧性高可用后端架构研发。与 IMXNOOBX 保持长期核心技术同盟。'
+      },
+      RU: {
+        sysActive: 'СИСТЕМА_АКТИВНА // itsparallax.me',
+        heroRole: '&gt; Ведущий архитектор DevSecOps &amp; Исследователь безопасности',
+        heroAlliance: '⚡ Ключевой альянс с <a href="https://github.com/IMXNOOBX" target="_blank">@IMXNOOBX</a> (cs2-esp, fstick, SAB, Защита)',
+        gameTitle: '🛡️ BREACH DEFENDER // ПЕРЕХВАТЧИК DEVSECOPS',
+        gameSub: 'Перехватывайте и нейтрализуйте эксплойты до компрометации ядра серверной системы.',
+        gameModalTitle: 'ФАЙРВОЛ DEVSECOPS: ГОТОВ К БОЮ',
+        gameModalDesc: 'Обнаружены враждебные пакеты: <b>IDOR</b>, <b>Race Conditions</b>, <b>Bot Raids</b> и <b>SQL-инъекции</b>.<br/>Движение: <b>[←] [→]</b> или <b>[A] [D]</b>. Огонь контрмерами: <b>[Пробел]</b> или <b>Клик</b>.',
+        gameStartBtn: 'ЗАПУСТИТЬ ОБОРОНУ',
+        secProjects: 'ФЛАГМАНСКИЕ СИСТЕМЫ И ИНСТРУМЕНТЫ',
+        secArsenal: 'ТЕХНИЧЕСКИЙ АРСЕНАЛ И НАВЫКИ',
+        descRoro: 'Низкоуровневый Android-фреймворк для перехвата, аудита и динамической модификации HTTPS-трафика на лету.',
+        descFiddler: 'Автоматический патчер байткода и набор скриптов динамической инструментации для инспекции сетевого трафика.',
+        descTv: 'Инженерия доступности для Android TV с нулевой задержкой обнаружения по IP-протоколам.',
+        descYuyin: 'Локальный распределенный сервер ИИ, оркестрация автономных агентов и отказоустойчивые асинхронные воркеры.',
+        speechBriefing: 'Родриго Карраско, известный как Parallax. Ведущий инженер-программист и главный архитектор DevSecOps. Специализация: наступательная безопасность, поиск уязвимостей бизнес-логики, динамический хукинг и отказоустойчивые бэкенд-системы. Прочный союз с IMXNOOBX.'
+      }
+    };
+
+    function changeLanguage(langKey) {
+      currentLang = langKey || 'EN';
+      const dict = i18n[currentLang] || i18n.EN;
+      
+      document.getElementById('txt-sys-active').innerText = dict.sysActive;
+      document.getElementById('txt-hero-role').innerHTML = dict.heroRole;
+      document.getElementById('txt-hero-alliance').innerHTML = dict.heroAlliance;
+      document.getElementById('txt-game-title').innerText = dict.gameTitle;
+      document.getElementById('txt-game-sub').innerText = dict.gameSub;
+      document.getElementById('txt-game-modal-title').innerText = dict.gameModalTitle;
+      document.getElementById('txt-game-modal-desc').innerHTML = dict.gameModalDesc;
+      document.getElementById('game-start-btn').innerText = dict.gameStartBtn;
+      document.getElementById('txt-sec-projects').innerText = dict.secProjects;
+      document.getElementById('txt-sec-arsenal').innerText = dict.secArsenal;
+      document.getElementById('desc-roro').innerText = dict.descRoro;
+      document.getElementById('desc-fiddler').innerText = dict.descFiddler;
+      document.getElementById('desc-tv').innerText = dict.descTv;
+      document.getElementById('desc-yuyin').innerText = dict.descYuyin;
+      
+      const select = document.getElementById('lang-select');
+      if (select && select.value !== currentLang) select.value = currentLang;
+
+      soundEngine.click();
+      showToast(`LANGUAGE UPDATED: [${currentLang}]`);
+    }
+
+    /* ========================================================
+       4. WEB SPEECH SYNTHESIS VOICE BRIEFING ENGINE
+       ======================================================== */
+    let isSpeaking = false;
+    function toggleVoiceBriefing() {
+      if (!('speechSynthesis' in window)) {
+        showToast('SPEECH SYNTHESIS: NOT SUPPORTED IN THIS BROWSER');
+        return;
+      }
+      if (isSpeaking) {
+        window.speechSynthesis.cancel();
+        isSpeaking = false;
+        document.getElementById('voice-brief-btn').innerText = '🎙️ VOICE BRIEF';
+        showToast('VOICE BRIEFING: STOPPED');
+        return;
+      }
+      
+      const dict = i18n[currentLang] || i18n.EN;
+      const textToSpeak = dict.speechBriefing;
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      
+      const langMap = {
+        EN: 'en-US',
+        ES: 'es-ES',
+        PT: 'pt-BR',
+        JA: 'ja-JP',
+        DE: 'de-DE',
+        FR: 'fr-FR',
+        ZH: 'zh-CN',
+        RU: 'ru-RU'
+      };
+      utterance.lang = langMap[currentLang] || 'en-US';
+      utterance.rate = 1.02;
+      utterance.pitch = 0.98;
+      
+      const voices = window.speechSynthesis.getVoices();
+      const matchedVoice = voices.find(v => v.lang.startsWith(utterance.lang.substring(0, 2)));
+      if (matchedVoice) utterance.voice = matchedVoice;
+      
+      utterance.onstart = () => {
+        isSpeaking = true;
+        document.getElementById('voice-brief-btn').innerText = '⏹️ STOP BRIEF';
+        soundEngine.powerup();
+        showToast(`AI VOICE TRANSMISSION ACTIVE [${currentLang}]`);
+      };
+      utterance.onend = () => {
+        isSpeaking = false;
+        document.getElementById('voice-brief-btn').innerText = '🎙️ VOICE BRIEF';
+        showToast('AI VOICE TRANSMISSION COMPLETE');
+      };
+      utterance.onerror = () => {
+        isSpeaking = false;
+        document.getElementById('voice-brief-btn').innerText = '🎙️ VOICE BRIEF';
+      };
+      
+      window.speechSynthesis.speak(utterance);
+    }
+
+    /* ========================================================
+       4. HUD TOAST NOTIFICATIONS
+       ======================================================== */
+    let toastTimeout = null;
+    function showToast(msg) {
+      const toast = document.getElementById('hud-toast');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3500);
+    }
+
+    /* ========================================================
+       5. INTERACTIVE TERMINAL LOGIC & COMMANDS
+       ======================================================== */
     const termInput = document.getElementById('term-input');
     const termLog = document.getElementById('term-log');
     const termBody = document.getElementById('term-body');
 
     const commands = {
       help: () => `AVAILABLE SYSTEM COMMANDS:
-  whoami        -> Architect identity, background and philosophy
+  whoami        -> Architect identity, background and core philosophy
   allies        -> Important people and key collaborators (IMXNOOBX)
+  game          -> Launch BREACH DEFENDER arcade defense mini-game
   security      -> Offensive security, reversing and destructive QA specs
-  projects      -> Flagship open-source security & system repos
+  projects      -> Flagship open-source security & systems repos
   achievements  -> Unlocked GitHub badges (Galaxy Brain, Pull Shark, etc.)
-  stack         -> Languages, runtimes and cloud platforms
+  stack         -> Languages, runtimes, and infrastructure
+  secret        -> List hidden easter eggs & hotkeys
   clear         -> Clear terminal output`,
 
       whoami: () => `[IDENT: RODRIGO CARRASCO // PARALLAX]
 Role      : Senior Software Engineer, Principal DevSecOps & Offensive Security Architect
 Immersion : Coding & Systems since 2004 (age 11) | Reversing since 2006 (age 13)
-Allies    : Core Alliance with @IMXNOOBX (Discord Bots, Protections & Tooling)
-Location  : 100% Global // Fully Remote-Ready
+Allies    : Core Alliance with @IMXNOOBX (Game Security, Hardware, Bots & Defense)
+Clearance : 100% Global // Fully Remote-Ready
 Core Motto: "My specialty is not testing if code works under ideal conditions, but subjecting
              business logic to extreme manipulation scenarios to guarantee truly unbreakable
              backend architectures."`,
@@ -794,15 +1606,21 @@ Core Motto: "My specialty is not testing if code works under ideal conditions, b
       allies: () => `┌─ ALLIED NETWORK ARCHIVE: IMXNOOBX ───────────────────────────────────────────┐
 │ Operator    : IMXNOOBX (@IMXNOOBX)                                           │
 │ Status      : VERIFIED KEY ALLY // TIER 1 COLLABORATOR                       │
-│ Specialty   : Discord Bot Protections · NodeJS Engines · Automation Tooling  │
-│ Security    : Anti-Raid Defense Systems · Custom Security Layers · MITM Tool │
+│ Specialty   : C++ Memory Reversing · M5StickC Penetration · Anti-Bot SAB     │
+│ Top Repos   : cs2-external-esp (608★) · fstick (79★) · SAB (Kotlin)          │
+│ Node Web    : https://noob.pm                                                │
 │ Direct Link : https://github.com/IMXNOOBX                                    │
-│ Intel       : "Interested in a Discord Bot? Hire Him - fast developer,       │
-│                high protections, NodeJS master."                             │
+│ Brotherhood : "Tnx to @equisde (Parallax) for helping in my noobie mistakes" │
 └──────────────────────────────────────────────────────────────────────────────┘`,
 
+      game: () => {
+        document.getElementById('arcade-module').scrollIntoView({ behavior: 'smooth' });
+        startGame();
+        return `[LAUNCHING DEVSECOPS BREACH DEFENDER ARCADE GAME...]`;
+      },
+
       security: () => `[OFFENSIVE SECURITY & REVERSING TOOLKIT]
-• Vulnerability Testing : Parameter Tampering, IDOR, Race Conditions & Logic Flaws
+• Vulnerability Hunting : Parameter Tampering, IDOR, Race Conditions & Logic Flaws
 • Mobile & Binary Hooks : Frida Dynamic Hooking, Magisk cert-fixer, Il2CppDumper, Smali
 • Protocol Auditing     : Burp Suite Pro, Fiddler Custom Patches, Wireshark, Nuclei, Shodan
 • Testing Pipelines     : 3proxy IP rotation clusters, ephemeral authenticated fuzzing
@@ -819,6 +1637,7 @@ Core Motto: "My specialty is not testing if code works under ideal conditions, b
 🧠 Galaxy Brain    : Verified accepted solutions in GitHub Discussions Q&A
 🎯 Quickdraw       : Sub-5 minute issue closure speed
 🦈 Pull Shark      : 19+ Merged Pull Requests (Bronze Tier x2 active)
+👥 Pair Extraord.  : Co-authored Pull Requests recognized by GitHub API
 🎲 YOLO            : Production branch merge without prior review
 ❄️ Arctic Vault    : Code permanently preserved in the 2020 Arctic Archive`,
 
@@ -826,11 +1645,50 @@ Core Motto: "My specialty is not testing if code works under ideal conditions, b
 Languages  : Go, Python, TypeScript, PHP 8.3, Kotlin, C++, C#, Bash
 Cloud & Ops: GCP Spot VMs, Cloudflare WAF/Zero Trust, Docker, New Relic
 Visual 3D  : Three.js (3D anatomical calibrators), Fabric.js (2D canvas)
-Hardware   : ESP32-U microcontrollers (Bluetooth A2DP, Wi-Fi), Klipper 3D`
+Hardware   : ESP32-U microcontrollers (Bluetooth A2DP, Wi-Fi), Klipper 3D`,
+
+      secret: () => `[EASTER EGGS DISCOVERED]
+1. Konami Code      -> Press ↑ ↑ ↓ ↓ ← → ← → B A on your keyboard
+2. Click Status     -> Click the green status dot in top bar 5 times
+3. Terminal Words   -> Try 'foxy', 'matrix', 'noobx', 'sudo', 'coffee'`,
+
+      noobx: () => {
+        soundEngine.easterEgg();
+        showToast('HONORING BROTHER-IN-ARMS: IMXNOOBX');
+        return `⚡ [UPLINK CONFIRMED: BROTHERHOOD PROTOCOL]
+From compiling custom cryptocurrency daemons to binary instrumentation and game reversing,
+Parallax and IMXNOOBX maintain an unbreakable alliance of technical craftsmanship.
+Check his arsenal at https://github.com/IMXNOOBX and https://noob.pm`;
+      },
+
+      foxy: () => {
+        soundEngine.powerup();
+        return `🦊 [FOXYCOIN ARCHIVE - 2015]
+Early pre-boom altcoin engineered by Parallax.
+Pure P2P proof-of-work consensus, compiled headless daemons, custom wallet architecture,
+and historic community launch on Bitcointalk.`;
+      },
+
+      matrix: () => {
+        soundEngine.easterEgg();
+        matrixColor = matrixColor === '#00f0ff' ? '#00ff66' : (matrixColor === '#00ff66' ? '#ffd700' : '#00f0ff');
+        showToast('MATRIX STREAM: RECALIBRATED');
+        return `Matrix digital stream frequency shifted to ${matrixColor}.`;
+      },
+
+      sudo: () => {
+        soundEngine.error();
+        return `[ACCESS DENIED] User 'guest' is not in the sudoers file. This incident will be reported to /dev/null.`;
+      },
+
+      coffee: () => {
+        soundEngine.powerup();
+        return `☕ [C8H10N4O2 INJECTED] Fueling late-night binary audits and zero-day patches.`;
+      }
     };
 
     function execute(cmd) {
-      playBeep(880, 0.05);
+      soundEngine.click();
       const cleanCmd = cmd.trim().toLowerCase();
       if (!cleanCmd) return;
 
@@ -841,7 +1699,8 @@ Hardware   : ESP32-U microcontrollers (Bluetooth A2DP, Wi-Fi), Klipper 3D`
       } else if (commands[cleanCmd]) {
         response = commands[cleanCmd]();
       } else {
-        response = `Command not recognized: '${cleanCmd}'. Type 'help' for command manual.`;
+        soundEngine.error();
+        response = `Command not recognized: '${cleanCmd}'. Type 'help' for manual.`;
       }
 
       termLog.innerHTML += `\n<span style="color: var(--neon-pink); font-weight: bold;">parallax@system:~$</span> ${cmd}\n${response}\n`;
@@ -849,7 +1708,7 @@ Hardware   : ESP32-U microcontrollers (Bluetooth A2DP, Wi-Fi), Klipper 3D`
     }
 
     termInput.addEventListener('keydown', (e) => {
-      playBeep(440, 0.02);
+      soundEngine.click();
       if (e.key === 'Enter') {
         const val = termInput.value;
         termInput.value = '';
@@ -861,6 +1720,326 @@ Hardware   : ESP32-U microcontrollers (Bluetooth A2DP, Wi-Fi), Klipper 3D`
       termInput.value = cmd;
       execute(cmd);
       termInput.value = '';
+    }
+
+    /* ========================================================
+       6. EASTER EGGS: KONAMI CODE & STATUS OVERCLOCK
+       ======================================================== */
+    const konamiSequence = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+    let konamiIndex = 0;
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key.toLowerCase() === konamiSequence[konamiIndex].toLowerCase()) {
+        konamiIndex++;
+        soundEngine.click();
+        if (konamiIndex === konamiSequence.length) {
+          activateGodMode();
+          konamiIndex = 0;
+        }
+      } else {
+        konamiIndex = 0;
+      }
+    });
+
+    function activateGodMode() {
+      soundEngine.easterEgg();
+      matrixColor = '#ffd700';
+      document.body.style.filter = 'drop-shadow(0 0 15px rgba(255, 215, 0, 0.4))';
+      showToast('⚡ [GOD MODE OVERCLOCK ACTIVATED: KONAMI ACCESS GRANTED]');
+      execute('allies');
+    }
+
+    let statusClicks = 0;
+    function handleStatusClick() {
+      statusClicks++;
+      soundEngine.click();
+      if (statusClicks >= 5) {
+        soundEngine.easterEgg();
+        showToast('🚀 OVERCLOCK MODE: 4.8 GHz // ALL RUNTIMES UNLEASHED');
+        matrixSpeed = 20;
+        clearInterval(matrixInterval);
+        matrixInterval = setInterval(drawMatrix, matrixSpeed);
+        statusClicks = 0;
+      } else {
+        showToast(`MAINFRAME STATUS: OPTIMAL (${statusClicks}/5 for Overclock)`);
+      }
+    }
+
+    /* ========================================================
+       7. PLAYABLE ARCADE GAME: BREACH DEFENDER ENGINE
+       ======================================================== */
+    const gCanvas = document.getElementById('game-canvas');
+    const gCtx = gCanvas.getContext('2d');
+    let gWrap = document.getElementById('game-canvas-wrap');
+
+    function resizeGameCanvas() {
+      gCanvas.width = gWrap.clientWidth;
+      gCanvas.height = gWrap.clientHeight;
+    }
+    window.addEventListener('resize', resizeGameCanvas);
+    resizeGameCanvas();
+
+    let gameRunning = false;
+    let score = 0;
+    let streak = 0;
+    let health = 100;
+    let highScore = parseInt(localStorage.getItem('breach_high_score') || '0', 10);
+    document.getElementById('game-highscore').innerText = highScore;
+
+    const player = {
+      x: gCanvas.width / 2,
+      y: gCanvas.height - 35,
+      width: 44,
+      height: 18,
+      speed: 7,
+      movingLeft: false,
+      movingRight: false
+    };
+
+    let bullets = [];
+    let enemies = [];
+    let particles = [];
+    let lastEnemySpawn = 0;
+
+    const enemyTypes = [
+      { name: 'IDOR', color: '#ff007f', speed: 1.4, points: 15 },
+      { name: 'RACE_COND', color: '#00f0ff', speed: 1.8, points: 25 },
+      { name: 'SQLI', color: '#ff3333', speed: 2.2, points: 30 },
+      { name: 'BOT_RAID', color: '#ffd700', speed: 1.2, points: 20 },
+      { name: 'OVERFLOW', color: '#9d4edd', speed: 2.5, points: 40 }
+    ];
+
+    function startGame() {
+      soundEngine.powerup();
+      resizeGameCanvas();
+      player.x = gCanvas.width / 2;
+      player.y = gCanvas.height - 35;
+      bullets = [];
+      enemies = [];
+      particles = [];
+      score = 0;
+      streak = 0;
+      health = 100;
+      updateGameHud();
+      document.getElementById('game-overlay').style.display = 'none';
+      gameRunning = true;
+      requestAnimationFrame(gameLoop);
+      showToast('DEFENSE PROTOCOL INITIATED // MITIGATE ALL ATTACKS');
+    }
+
+    function updateGameHud() {
+      document.getElementById('game-score').innerText = score;
+      document.getElementById('game-streak').innerText = streak + 'x';
+      document.getElementById('game-health').innerText = health + '%';
+      document.getElementById('game-health').style.color = health > 50 ? 'var(--neon-green)' : (health > 25 ? 'var(--neon-gold)' : 'var(--neon-pink)');
+    }
+
+    // Controls
+    window.addEventListener('keydown', (e) => {
+      if (!gameRunning) return;
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') player.movingLeft = true;
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') player.movingRight = true;
+      if (e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        firePlayerBullet();
+      }
+    });
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') player.movingLeft = false;
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') player.movingRight = false;
+    });
+
+    gCanvas.addEventListener('mousedown', () => {
+      if (gameRunning) firePlayerBullet();
+    });
+
+    gCanvas.addEventListener('mousemove', (e) => {
+      if (!gameRunning) return;
+      const rect = gCanvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      player.x = mouseX;
+      if (player.x < player.width / 2) player.x = player.width / 2;
+      if (player.x > gCanvas.width - player.width / 2) player.x = gCanvas.width - player.width / 2;
+    });
+
+    function touchMoveLeft(isMoving) { player.movingLeft = isMoving; }
+    function touchMoveRight(isMoving) { player.movingRight = isMoving; }
+
+    function firePlayerBullet() {
+      if (!gameRunning) return;
+      soundEngine.laser();
+      // Regular or Double Laser depending on streak
+      if (streak >= 5) {
+        bullets.push({ x: player.x - 12, y: player.y - 6, speed: 9, color: '#00ff66' });
+        bullets.push({ x: player.x + 12, y: player.y - 6, speed: 9, color: '#00ff66' });
+      } else {
+        bullets.push({ x: player.x, y: player.y - 6, speed: 8, color: '#00f0ff' });
+      }
+    }
+
+    function createExplosion(x, y, color) {
+      soundEngine.explosion();
+      for (let i = 0; i < 14; i++) {
+        particles.push({
+          x: x,
+          y: y,
+          vx: (Math.random() - 0.5) * 6,
+          vy: (Math.random() - 0.5) * 6,
+          life: 25,
+          color: color
+        });
+      }
+    }
+
+    function triggerEmpPurge() {
+      soundEngine.easterEgg();
+      showToast('⚡ [10x COMBO EMP PURGE: ZERO TRUST PURGE TRIGGERED!]');
+      enemies.forEach(e => {
+        createExplosion(e.x, e.y, e.color);
+        score += e.points;
+      });
+      enemies = [];
+      updateGameHud();
+    }
+
+    function gameOver() {
+      gameRunning = false;
+      soundEngine.error();
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('breach_high_score', highScore);
+        document.getElementById('game-highscore').innerText = highScore;
+        showToast(`🏆 NEW HIGH SCORE: ${highScore}!`);
+      }
+      const overlay = document.getElementById('game-overlay');
+      overlay.style.display = 'flex';
+      document.getElementById('txt-game-modal-title').innerText = 'BACKEND COMPROMISED';
+      document.getElementById('txt-game-modal-desc').innerHTML = `Final Score: <b>${score}</b> &middot; High Score: <b>${highScore}</b><br/>The vulnerabilities breached the core integrity threshold. Rebuild and defend again!`;
+      document.getElementById('game-start-btn').innerText = 'REBOOT FIREWALL';
+    }
+
+    function gameLoop(timestamp) {
+      if (!gameRunning) return;
+
+      // Clear Canvas
+      gCtx.fillStyle = 'rgba(4, 6, 10, 0.35)';
+      gCtx.fillRect(0, 0, gCanvas.width, gCanvas.height);
+
+      // Player Movement
+      if (player.movingLeft && player.x > player.width / 2) player.x -= player.speed;
+      if (player.movingRight && player.x < gCanvas.width - player.width / 2) player.x += player.speed;
+
+      // Draw Player Interceptor Turret
+      gCtx.save();
+      gCtx.fillStyle = '#00f0ff';
+      gCtx.shadowColor = '#00f0ff';
+      gCtx.shadowBlur = 12;
+      gCtx.beginPath();
+      gCtx.roundRect(player.x - player.width / 2, player.y, player.width, player.height, 4);
+      gCtx.fill();
+      // Turret tip
+      gCtx.fillStyle = streak >= 5 ? '#00ff66' : '#ff007f';
+      gCtx.fillRect(player.x - 4, player.y - 7, 8, 7);
+      gCtx.restore();
+
+      // Spawn Enemies
+      if (timestamp - lastEnemySpawn > Math.max(700, 1500 - score * 3)) {
+        lastEnemySpawn = timestamp;
+        const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+        enemies.push({
+          x: Math.random() * (gCanvas.width - 60) + 30,
+          y: -20,
+          width: 50,
+          height: 20,
+          speed: type.speed + (score * 0.003),
+          name: type.name,
+          color: type.color,
+          points: type.points
+        });
+      }
+
+      // Update Bullets
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.y -= b.speed;
+        gCtx.fillStyle = b.color;
+        gCtx.shadowColor = b.color;
+        gCtx.shadowBlur = 8;
+        gCtx.fillRect(b.x - 2, b.y, 4, 10);
+        gCtx.shadowBlur = 0;
+
+        if (b.y < -10) {
+          bullets.splice(i, 1);
+        }
+      }
+
+      // Update Enemies
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const e = enemies[i];
+        e.y += e.speed;
+
+        // Draw Threat Packet
+        gCtx.fillStyle = 'rgba(10, 15, 25, 0.9)';
+        gCtx.strokeStyle = e.color;
+        gCtx.lineWidth = 1.5;
+        gCtx.beginPath();
+        gCtx.roundRect(e.x - e.width / 2, e.y, e.width, e.height, 4);
+        gCtx.fill();
+        gCtx.stroke();
+
+        gCtx.fillStyle = e.color;
+        gCtx.font = '600 9px monospace';
+        gCtx.textAlign = 'center';
+        gCtx.fillText(e.name, e.x, e.y + 13);
+
+        // Check Collision with Bullets
+        for (let j = bullets.length - 1; j >= 0; j--) {
+          const b = bullets[j];
+          if (b.x > e.x - e.width / 2 && b.x < e.x + e.width / 2 && b.y > e.y && b.y < e.y + e.height) {
+            createExplosion(e.x, e.y, e.color);
+            score += e.points;
+            streak++;
+            bullets.splice(j, 1);
+            enemies.splice(i, 1);
+            updateGameHud();
+
+            if (streak === 10) {
+              triggerEmpPurge();
+            } else if (streak % 5 === 0) {
+              soundEngine.powerup();
+              showToast(`⚡ ${streak}x MITIGATION STREAK! DOUBLE LASER ACTIVE`);
+            }
+            break;
+          }
+        }
+
+        // Enemy Hits Bottom (Breach!)
+        if (e && e.y > gCanvas.height - 20) {
+          soundEngine.error();
+          health -= 20;
+          streak = 0;
+          createExplosion(e.x, gCanvas.height - 10, '#ff3333');
+          enemies.splice(i, 1);
+          updateGameHud();
+          if (health <= 0) {
+            gameOver();
+            return;
+          }
+        }
+      }
+
+      // Update Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        gCtx.fillStyle = p.color;
+        gCtx.fillRect(p.x, p.y, 2.5, 2.5);
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      requestAnimationFrame(gameLoop);
     }
   </script>
 </body>
