@@ -476,6 +476,486 @@
     }
 
     /* ========================================================
+       3D OPEN WORLD // CYBER-CITY & WATCH DOGS STYLES
+       ======================================================== */
+    .game-mode-tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 1.2rem;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+      padding-bottom: 0.8rem;
+    }
+    .mode-tab-btn {
+      background: rgba(11, 15, 25, 0.9);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 10px 18px;
+      color: var(--text-muted);
+      font-family: 'Orbitron', monospace;
+      font-size: 0.88rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .mode-tab-btn.active, .mode-tab-btn:hover {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: var(--neon-cyan);
+      color: #ffffff;
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);
+    }
+    .ow-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .ow-hud-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: rgba(6, 10, 18, 0.85);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 10px 14px;
+    }
+    .ow-user-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ow-avatar-img {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 2px solid var(--neon-cyan);
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+    }
+    .ow-user-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .ow-user-name {
+      font-family: 'Fira Code', monospace;
+      font-weight: bold;
+      font-size: 0.95rem;
+      color: #ffffff;
+    }
+    .ow-user-status {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.72rem;
+      color: var(--neon-gold);
+    }
+    .ow-btn-auth {
+      background: rgba(255, 215, 0, 0.15);
+      border: 1px solid var(--neon-gold);
+      border-radius: 6px;
+      padding: 6px 12px;
+      color: var(--neon-gold);
+      font-family: 'Orbitron', monospace;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .ow-btn-auth:hover {
+      background: var(--neon-gold);
+      color: #000000;
+      box-shadow: 0 0 14px rgba(255, 215, 0, 0.6);
+    }
+    .ow-vehicle-chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .v-chip {
+      background: rgba(14, 20, 32, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      padding: 5px 10px;
+      color: #cbd5e1;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .v-chip.active, .v-chip:hover {
+      border-color: var(--neon-cyan);
+      background: rgba(0, 240, 255, 0.2);
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+    }
+    .ow-top-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .ow-action-btn {
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid var(--neon-cyan);
+      border-radius: 6px;
+      padding: 6px 12px;
+      color: var(--neon-cyan);
+      font-family: 'Orbitron', monospace;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .ow-action-btn:hover {
+      background: var(--neon-cyan);
+      color: #000000;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
+    }
+    .ow-btn-ide {
+      border-color: var(--neon-pink);
+      color: var(--neon-pink);
+      background: rgba(255, 0, 127, 0.1);
+    }
+    .ow-btn-ide:hover {
+      background: var(--neon-pink);
+      color: #ffffff;
+      box-shadow: 0 0 15px rgba(255, 0, 127, 0.6);
+    }
+    .ow-canvas-viewport {
+      position: relative;
+      width: 100%;
+      height: 560px;
+      background: #04060c;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.15);
+    }
+    #openworld-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .ow-profiler-reticle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .reticle-crosshair {
+      width: 32px;
+      height: 32px;
+      border: 2px solid rgba(0, 240, 255, 0.6);
+      border-radius: 50%;
+      position: relative;
+    }
+    .reticle-crosshair::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 4px;
+      height: 4px;
+      background: var(--neon-pink);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .reticle-info {
+      background: rgba(6, 10, 20, 0.92);
+      border: 1px solid var(--neon-cyan);
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.5);
+      border-radius: 6px;
+      padding: 8px 12px;
+      text-align: center;
+      font-family: 'Fira Code', monospace;
+      min-width: 180px;
+    }
+    .r-tag { font-size: 0.68rem; color: var(--neon-pink); font-weight: bold; letter-spacing: 1px; }
+    .r-title { font-size: 0.85rem; color: #ffffff; font-weight: bold; margin: 2px 0; }
+    .r-exploit { font-size: 0.72rem; color: var(--neon-gold); }
+    .r-prompt { font-size: 0.76rem; color: var(--neon-green); font-weight: bold; margin-top: 4px; }
+    .ow-radar-box {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      width: 130px;
+      height: 130px;
+      background: rgba(4, 8, 16, 0.85);
+      border: 2px solid var(--neon-cyan);
+      border-radius: 50%;
+      overflow: hidden;
+      box-shadow: 0 0 18px rgba(0, 240, 255, 0.4);
+      pointer-events: none;
+    }
+    #ow-radar-canvas { width: 100%; height: 100%; display: block; }
+    .radar-sweep {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, rgba(0, 240, 255, 0.3) 0deg, transparent 60deg);
+      animation: radarRotate 3s linear infinite;
+    }
+    @keyframes radarRotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .radar-label {
+      position: absolute;
+      bottom: 6px;
+      width: 100%;
+      text-align: center;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.55rem;
+      color: var(--neon-cyan);
+      letter-spacing: 1px;
+    }
+    .ow-speedometer {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(6, 10, 20, 0.88);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 10px 16px;
+      text-align: right;
+      font-family: 'Orbitron', monospace;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+    }
+    .speed-num { font-size: 2.2rem; font-weight: 900; color: #ffffff; line-height: 1; }
+    .speed-unit { font-size: 0.7rem; color: var(--neon-cyan); }
+    .gear-tag { font-size: 0.75rem; color: var(--neon-gold); font-weight: bold; margin: 4px 0; }
+    .nitro-bar-wrap {
+      width: 100px;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .nitro-bar {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #00f0ff, #ff007f);
+      border-radius: 4px;
+      transition: width 0.1s linear;
+    }
+    .ow-hack-feed {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: none;
+      max-width: 320px;
+    }
+    .hack-toast-item {
+      background: rgba(6, 10, 20, 0.92);
+      border-left: 4px solid var(--neon-cyan);
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.75rem;
+      color: #ffffff;
+      box-shadow: 0 0 14px rgba(0, 240, 255, 0.4);
+      animation: toastIn 0.3s ease;
+    }
+    @keyframes toastIn {
+      from { transform: translateX(20px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .ow-cam-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 10, 20, 0.4);
+      pointer-events: none;
+    }
+    .cam-rec {
+      position: absolute;
+      top: 20px; left: 24px;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.95rem;
+      color: #ff0033;
+      font-weight: bold;
+      animation: blink 1s infinite;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .cam-time {
+      position: absolute;
+      top: 20px; right: 24px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+      color: #ffffff;
+    }
+    .cam-scanlines {
+      width: 100%; height: 100%;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+      background-size: 100% 4px;
+    }
+    .cam-exit-btn {
+      position: absolute;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%);
+      pointer-events: auto;
+      background: #ff0033;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 20px;
+      color: #ffffff;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .ow-chat-wrap {
+      position: absolute;
+      bottom: 20px;
+      left: 170px;
+      width: 260px;
+      background: rgba(6, 10, 20, 0.85);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 8px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.72rem;
+    }
+    .chat-messages {
+      max-height: 80px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .chat-msg { color: #cbd5e1; }
+    .chat-msg.system { color: var(--neon-cyan); font-weight: bold; }
+    .c-user { color: var(--neon-cyan); font-weight: bold; }
+    .chat-input-bar { display: flex; gap: 4px; }
+    .chat-input-bar input {
+      flex: 1;
+      background: rgba(14, 20, 32, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      padding: 4px 8px;
+      color: #ffffff;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.72rem;
+    }
+    .chat-input-bar button {
+      background: var(--neon-cyan);
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      color: #000000;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.68rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .ow-controls-hint {
+      position: absolute;
+      top: 12px;
+      left: 16px;
+      background: rgba(6, 10, 20, 0.75);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+    .ow-cyberdeck-modal {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 720px;
+      max-width: 95vw;
+      background: rgba(8, 12, 22, 0.96);
+      border: 2px solid var(--neon-pink);
+      border-radius: 12px;
+      box-shadow: 0 0 45px rgba(255, 0, 127, 0.4);
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-family: 'Fira Code', monospace;
+    }
+    .ide-header {
+      background: rgba(14, 20, 34, 0.95);
+      border-bottom: 1px solid var(--neon-pink);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .ide-title { font-size: 0.85rem; color: var(--neon-pink); font-weight: bold; font-family: 'Orbitron', monospace; }
+    .ide-actions { display: flex; gap: 8px; align-items: center; }
+    .ide-actions select {
+      background: #060913;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      padding: 6px 8px;
+      color: #ffffff;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.75rem;
+    }
+    .ide-btn-run {
+      background: var(--neon-green);
+      border: none;
+      border-radius: 4px;
+      padding: 6px 14px;
+      color: #000000;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .ide-btn-close {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+      padding: 6px 10px;
+      color: #ffffff;
+      cursor: pointer;
+    }
+    .ide-body {
+      display: flex;
+      flex-direction: column;
+      height: 380px;
+    }
+    #ide-code-editor {
+      flex: 1;
+      background: #05070e;
+      border: none;
+      padding: 14px;
+      color: #38ef7d;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.88rem;
+      resize: none;
+      outline: none;
+      line-height: 1.5;
+    }
+    .ide-console {
+      height: 120px;
+      background: #020409;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 12px;
+      overflow-y: auto;
+    }
+    .console-head { font-size: 0.72rem; color: var(--neon-cyan); font-weight: bold; margin-bottom: 4px; }
+    #ide-console-output { font-size: 0.76rem; color: #cbd5e1; margin: 0; white-space: pre-wrap; }
+    @media (max-width: 768px) {
+      .ow-radar-box { width: 90px; height: 90px; bottom: 10px; left: 10px; }
+      .ow-speedometer { bottom: 10px; right: 10px; padding: 6px 10px; }
+      .speed-num { font-size: 1.6rem; }
+      .ow-chat-wrap { display: none; }
+      .ow-controls-hint { display: none; }
+    }
+
+    /* ========================================================
        VIP HOLOGRAPHIC SHOWCASE CARD: IMXNOOBX
        ======================================================== */
     .vip-card-container {
@@ -866,6 +1346,7 @@
       padding-top: 2rem;
     }
   </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
@@ -1023,41 +1504,177 @@
          PLAYABLE ARCADE MINI-GAME: BREACH DEFENDER
          ======================================================== -->
     <div class="game-section" id="arcade-module">
-      <div class="game-header">
-        <div class="game-title-wrap">
-          <h3 id="txt-game-title">🛡️ BREACH DEFENDER // DEVSECOPS INTERCEPTOR</h3>
-          <p class="game-subtitle" id="txt-game-sub">Intercept and neutralize incoming security exploits before they breach the backend core.</p>
+      <div class="game-mode-tabs">
+        <button class="mode-tab-btn active" id="tab-btn-3d" onclick="switchGameMode('3d')">🌐 3D OPEN WORLD // CYBER-CITY (GTA V &amp; Watch Dogs)</button>
+        <button class="mode-tab-btn" id="tab-btn-2d" onclick="switchGameMode('2d')">🛡️ 2D BREACH DEFENDER (Retro Arcade)</button>
+      </div>
+
+      <!-- ========================================================
+           3D OPEN WORLD // CYBER-CITY GTA V & WATCH DOGS SIMULATOR
+           ======================================================== -->
+      <div id="openworld-container" class="ow-container">
+        <div class="ow-hud-top">
+          <div class="ow-user-badge">
+            <img id="ow-user-avatar" src="https://github.com/equisde.png" alt="Avatar" class="ow-avatar-img" />
+            <div class="ow-user-info">
+              <span class="ow-user-name" id="ow-display-username">@equisde</span>
+              <span class="ow-user-status">⚡ VERIFIED OPERATIVE</span>
+            </div>
+            <button class="ow-btn-auth" onclick="promptGitHubHandle()" title="Cambiar usuario o conectar con GitHub">🎮 SYNC GITHUB</button>
+          </div>
+
+          <!-- Vehicle Selector Chips -->
+          <div class="ow-vehicle-chips">
+            <button class="v-chip" onclick="setPlayerVehicle('foot')" id="vchip-foot" title="A Pie (WASD)">🚶 A Pie [1]</button>
+            <button class="v-chip active" onclick="setPlayerVehicle('supercar')" id="vchip-supercar" title="Superdeportivo (Físicas 4x4 &amp; Drift)">🏎️ Supercar [2]</button>
+            <button class="v-chip" onclick="setPlayerVehicle('bike')" id="vchip-bike" title="Moto Deportiva (Inclinación)">🏍️ Moto [3]</button>
+            <button class="v-chip" onclick="setPlayerVehicle('bicycle')" id="vchip-bicycle" title="Bicicleta Urbana">🚲 Bici [4]</button>
+            <button class="v-chip" onclick="setPlayerVehicle('jet')" id="vchip-jet" title="Caza a Reacción (Vuelo 3D)">✈️ Jet [5]</button>
+            <button class="v-chip" onclick="setPlayerVehicle('hovercraft')" id="vchip-hovercraft" title="Aerodeslizador (Colchón de Aire)">🛸 Hovercraft [6]</button>
+            <button class="v-chip" onclick="setPlayerVehicle('parachute')" id="vchip-parachute" title="Paracaídas de Salto">🪂 Paracaídas [7]</button>
+            <button class="v-chip" onclick="setPlayerVehicle('submarine')" id="vchip-submarine" title="Submarino de Infiltración">🌊 Submarino [8]</button>
+          </div>
+
+          <div class="ow-top-actions">
+            <button class="ow-action-btn ow-btn-ide" onclick="toggleCyberdeckIDE()" title="Abrir Consola de Hacking y Scripting">💻 CYBERDECK IDE [~]</button>
+            <button class="ow-action-btn" onclick="toggle3DFullscreen()" title="Pantalla Completa">⛶</button>
+          </div>
         </div>
-        <div class="game-hud">
-          <div class="hud-stat">SCORE: <span id="game-score">0</span></div>
-          <div class="hud-stat">STREAK: <span id="game-streak">0x</span></div>
-          <div class="hud-stat">CORE HEALTH: <span id="game-health">100%</span></div>
-          <div class="hud-stat">HIGH: <span id="game-highscore">0</span></div>
+
+        <!-- Main 3D Canvas Viewport -->
+        <div class="ow-canvas-viewport" id="ow-viewport">
+          <canvas id="openworld-canvas"></canvas>
+
+          <!-- Watch Dogs Profiler Reticle -->
+          <div class="ow-profiler-reticle" id="ow-reticle">
+            <div class="reticle-crosshair"></div>
+            <div class="reticle-info" id="reticle-info" style="display: none;">
+              <div class="r-tag">TARGET LOCKED</div>
+              <div class="r-title" id="r-target-name">TRAFFIC_LIGHT_NODE_04</div>
+              <div class="r-exploit" id="r-target-exploit">VULN: RACE_CONDITION</div>
+              <div class="r-prompt">[E] EJECUTAR HACK</div>
+            </div>
+          </div>
+
+          <!-- Watch Dogs Surveillance Camera Overlay -->
+          <div class="ow-cam-overlay" id="ow-cam-overlay" style="display: none;">
+            <div class="cam-rec">● REC [CAM_FEED_07] // ENCRYPTED RTSP</div>
+            <div class="cam-time" id="cam-timestamp">2026-10-30 20:45:00</div>
+            <div class="cam-scanlines"></div>
+            <button class="cam-exit-btn" onclick="exitCameraFeed()">✕ SALIR DE CÁMARA [ESC]</button>
+          </div>
+
+          <!-- Mini-Map / Radar -->
+          <div class="ow-radar-box">
+            <canvas id="ow-radar-canvas" width="130" height="130"></canvas>
+            <div class="radar-sweep"></div>
+            <div class="radar-label">CYBER-GRID RADAR</div>
+          </div>
+
+          <!-- Speedometer & Nitro HUD -->
+          <div class="ow-speedometer" id="ow-speedometer">
+            <div class="speed-num" id="speed-value">0</div>
+            <div class="speed-unit">KM/H</div>
+            <div class="gear-tag" id="gear-value">GEAR 1</div>
+            <div class="nitro-bar-wrap">
+              <div class="nitro-bar" id="nitro-bar"></div>
+            </div>
+          </div>
+
+          <!-- Hacking Log / Toast Notifications -->
+          <div class="ow-hack-feed" id="ow-hack-feed"></div>
+
+          <!-- Multiplayer Chat Overlay -->
+          <div class="ow-chat-wrap" id="ow-chat-wrap">
+            <div class="chat-messages" id="ow-chat-messages">
+              <div class="chat-msg system">⚡ GRID SYSTEM: Connected to Cyber-City Peer Mesh.</div>
+              <div class="chat-msg"><span class="c-user">@IMXNOOBX:</span> Welcome to the grid. Defense nodes are active.</div>
+            </div>
+            <form class="chat-input-bar" onsubmit="sendGameChat(event)">
+              <input type="text" id="ow-chat-input" placeholder="Escribe un mensaje en el grid... [T]" maxlength="100" />
+              <button type="submit">ENVIAR</button>
+            </form>
+          </div>
+
+          <!-- Controls Helper Bar -->
+          <div class="ow-controls-hint">
+            <span>🎮 <b>WASD / Flechas</b> Conducir/Mover &middot; <b>Shift</b> Nitro/Sprint &middot; <b>Espacio</b> Freno/Salto &middot; <b>E</b> Hackear &middot; <b>C</b> Cámara &middot; <b>~</b> IDE</span>
+          </div>
+        </div>
+
+        <!-- Floating Cyberdeck IDE Modal -->
+        <div class="ow-cyberdeck-modal" id="ow-cyberdeck-modal" style="display: none;">
+          <div class="ide-header">
+            <div class="ide-title">⚡ CYBERDECK SCRIPTING IDE // LIVE WORLD INJECTION ENGINE</div>
+            <div class="ide-actions">
+              <select id="ide-template-select" onchange="loadIDETemplate(this.value)">
+                <option value="">-- Cargar Script de Hackeo --</option>
+                <option value="traffic">Hack: Semáforos en Verde Masivo</option>
+                <option value="blackout">Hack: Apagón de Red (Blackout)</option>
+                <option value="nitro">Hack: Overclock Nitro Infinito</option>
+                <option value="siphon">Hack: Sifón de Criptomonedas a Ciudadanos</option>
+                <option value="allcars">Hack: Acelerar Todos los Vehículos NPC</option>
+                <option value="jet">Spawn: Invocar Caza a Reacción (Jet)</option>
+              </select>
+              <button class="ide-btn-run" onclick="executeCyberdeckScript()">▶ EJECUTAR CÓDIGO</button>
+              <button class="ide-btn-close" onclick="toggleCyberdeckIDE()">✕</button>
+            </div>
+          </div>
+          <div class="ide-body">
+            <textarea id="ide-code-editor" spellcheck="false">// Escribe código JavaScript real para interactuar con la ciudad 3D:
+city.hackTrafficLights('ALL_GREEN');
+city.triggerBlackout(5000);
+player.setVehicle('supercar');
+console.log('Grid hackeado con éxito por Operador @' + player.username);
+</textarea>
+            <div class="ide-console">
+              <div class="console-head">TERMINAL OUTPUT:</div>
+              <pre id="ide-console-output">&gt; Cyberdeck IDE v3.0 Ready. Type or run scripts.</pre>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div id="game-canvas-wrap">
-        <canvas id="game-canvas"></canvas>
-        <div class="game-overlay" id="game-overlay">
-          <h2 id="txt-game-modal-title">DEVSECOPS FIREWALL: READY</h2>
-          <p id="txt-game-modal-desc">
-            Hostile threats detected: <b>IDOR</b>, <b>Race Conditions</b>, <b>Bot Raids</b>, and <b>SQL Injection</b> packets.<br/>
-            Move the interceptor with <b>[←] [→]</b> or <b>[A] [D]</b>. Fire mitigation countermeasures with <b>[Spacebar]</b> or <b>Click</b>.
-          </p>
-          <button class="game-start-btn" id="game-start-btn" onclick="startGame()">INITIATE DEFENSE</button>
+      <!-- ========================================================
+           PRESERVED 2D RETRO ARCADE (BREACH DEFENDER)
+           ======================================================== -->
+      <div id="retro-2d-container" class="retro-2d-container" style="display: none;">
+        <div class="game-header">
+          <div class="game-title-wrap">
+            <h3 id="txt-game-title">🛡️ BREACH DEFENDER // DEVSECOPS INTERCEPTOR</h3>
+            <p class="game-subtitle" id="txt-game-sub">Intercept and neutralize incoming security exploits before they breach the backend core.</p>
+          </div>
+          <div class="game-hud">
+            <div class="hud-stat">SCORE: <span id="game-score">0</span></div>
+            <div class="hud-stat">STREAK: <span id="game-streak">0x</span></div>
+            <div class="hud-stat">CORE HEALTH: <span id="game-health">100%</span></div>
+            <div class="hud-stat">HIGH: <span id="game-highscore">0</span></div>
+          </div>
         </div>
-      </div>
 
-      <div class="game-controls-hint">
-        <span>🎮 Controls: <b>A / D</b> or <b>Arrow Keys</b> to Move &middot; <b>Space / Click</b> to Shoot &middot; 10x Streak = <b>EMP Purge</b></span>
-        <span>⚡ Threat Types: IDOR (Pink) &middot; Race Condition (Cyan) &middot; Bot Raid (Gold) &middot; SQLi (Red)</span>
-      </div>
+        <div id="game-canvas-wrap">
+          <canvas id="game-canvas"></canvas>
+          <div class="game-overlay" id="game-overlay">
+            <h2 id="txt-game-modal-title">DEVSECOPS FIREWALL: READY</h2>
+            <p id="txt-game-modal-desc">
+              Hostile threats detected: <b>IDOR</b>, <b>Race Conditions</b>, <b>Bot Raids</b>, and <b>SQL Injection</b> packets.<br/>
+              Move the interceptor with <b>[←] [→]</b> or <b>[A] [D]</b>. Fire mitigation countermeasures with <b>[Spacebar]</b> or <b>Click</b>.
+            </p>
+            <button class="game-start-btn" id="game-start-btn" onclick="startGame()">INITIATE DEFENSE</button>
+          </div>
+        </div>
 
-      <!-- Mobile Touch Controls -->
-      <div class="mobile-game-touch-bar">
-        <button class="touch-btn" onmousedown="touchMoveLeft(true)" onmouseup="touchMoveLeft(false)" ontouchstart="touchMoveLeft(true)" ontouchend="touchMoveLeft(false)">◀ MOVE LEFT</button>
-        <button class="touch-btn" onclick="firePlayerBullet()" style="background: rgba(0, 255, 102, 0.2); border-color: var(--neon-green); color: var(--neon-green);">⚡ MITIGATE</button>
-        <button class="touch-btn" onmousedown="touchMoveRight(true)" onmouseup="touchMoveRight(false)" ontouchstart="touchMoveRight(true)" ontouchend="touchMoveRight(false)">MOVE RIGHT ▶</button>
+        <div class="game-controls-hint">
+          <span>🎮 Controls: <b>A / D</b> or <b>Arrow Keys</b> to Move &middot; <b>Space / Click</b> to Shoot &middot; 10x Streak = <b>EMP Purge</b></span>
+          <span>⚡ Threat Types: IDOR (Pink) &middot; Race Condition (Cyan) &middot; Bot Raid (Gold) &middot; SQLi (Red)</span>
+        </div>
+
+        <!-- Mobile Touch Controls -->
+        <div class="mobile-game-touch-bar">
+          <button class="touch-btn" onmousedown="touchMoveLeft(true)" onmouseup="touchMoveLeft(false)" ontouchstart="touchMoveLeft(true)" ontouchend="touchMoveLeft(false)">◀ MOVE LEFT</button>
+          <button class="touch-btn" onclick="firePlayerBullet()" style="background: rgba(0, 255, 102, 0.2); border-color: var(--neon-green); color: var(--neon-green);">⚡ MITIGATE</button>
+          <button class="touch-btn" onmousedown="touchMoveRight(true)" onmouseup="touchMoveRight(false)" ontouchstart="touchMoveRight(true)" ontouchend="touchMoveRight(false)">MOVE RIGHT ▶</button>
+        </div>
       </div>
     </div>
 
@@ -2044,6 +2661,38 @@ and historic community launch on Bitcointalk.`;
 
       requestAnimationFrame(gameLoop);
     }
+  </script>
+  <script src="cyber_city_3d.js"></script>
+  <script>
+    function switchGameMode(mode) {
+      const owBox = document.getElementById('openworld-container');
+      const r2dBox = document.getElementById('retro-2d-container');
+      const btn3d = document.getElementById('tab-btn-3d');
+      const btn2d = document.getElementById('tab-btn-2d');
+
+      if (mode === '3d') {
+        if (owBox) owBox.style.display = 'flex';
+        if (r2dBox) r2dBox.style.display = 'none';
+        if (btn3d) btn3d.classList.add('active');
+        if (btn2d) btn2d.classList.remove('active');
+        if (window.cyberCityEngine && !window.cyberCityEngine.renderer) {
+          window.cyberCityEngine.init('ow-viewport', 'openworld-canvas');
+        }
+      } else {
+        if (owBox) owBox.style.display = 'none';
+        if (r2dBox) r2dBox.style.display = 'block';
+        if (btn3d) btn3d.classList.remove('active');
+        if (btn2d) btn2d.classList.add('active');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        if (window.cyberCityEngine && !window.cyberCityEngine.renderer) {
+          window.cyberCityEngine.init('ow-viewport', 'openworld-canvas');
+        }
+      }, 300);
+    });
   </script>
 </body>
 </html>

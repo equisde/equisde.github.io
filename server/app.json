@@ -1,0 +1,31 @@
+{
+  "name": "Parallax 3D Cyber-City Multiplayer Server",
+  "description": "Multiplayer WebSocket Gateway & GitHub OAuth Token Exchange for Parallax 3D Open World",
+  "repository": "https://github.com/equisde/equisde.github.io",
+  "logo": "https://avatars.githubusercontent.com/u/34652149?v=4",
+  "keywords": ["multiplayer", "threejs", "socket.io", "github-oauth", "watchdogs", "gta"],
+  "env": {
+    "CLIENT_ORIGIN": {
+      "description": "Allowed origin for CORS and redirects",
+      "value": "https://itsparallax.me"
+    },
+    "GITHUB_CLIENT_ID": {
+      "description": "Your GitHub OAuth App Client ID (from github.com/settings/developers)",
+      "required": false
+    },
+    "GITHUB_CLIENT_SECRET": {
+      "description": "Your GitHub OAuth App Client Secret (never exposed to browser)",
+      "required": false
+    },
+    "NODE_ENV": {
+      "description": "Node environment",
+      "value": "production"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "eco"
+    }
+  }
+}
