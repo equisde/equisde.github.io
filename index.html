@@ -948,51 +948,9 @@
     </div>
 
     <!-- ========================================================
-         PLAYABLE ARCADE MINI-GAME: BREACH DEFENDER
-         ======================================================== -->
-    <div class="game-section" id="arcade-module">
-      <div class="game-header">
-        <div class="game-title-wrap">
-          <h3 id="txt-game-title">🛡️ BREACH DEFENDER // DEVSECOPS INTERCEPTOR</h3>
-          <p class="game-subtitle" id="txt-game-sub">Intercept and neutralize incoming security exploits before they breach the backend core.</p>
-        </div>
-        <div class="game-hud">
-          <div class="hud-stat">SCORE: <span id="game-score">0</span></div>
-          <div class="hud-stat">STREAK: <span id="game-streak">0x</span></div>
-          <div class="hud-stat">CORE HEALTH: <span id="game-health">100%</span></div>
-          <div class="hud-stat">HIGH: <span id="game-highscore">0</span></div>
-        </div>
-      </div>
-
-      <div id="game-canvas-wrap">
-        <canvas id="game-canvas"></canvas>
-        <div class="game-overlay" id="game-overlay">
-          <h2 id="txt-game-modal-title">DEVSECOPS FIREWALL: READY</h2>
-          <p id="txt-game-modal-desc">
-            Hostile threats detected: <b>IDOR</b>, <b>Race Conditions</b>, <b>Bot Raids</b>, and <b>SQL Injection</b> packets.<br/>
-            Move the interceptor with <b>[←] [→]</b> or <b>[A] [D]</b>. Fire mitigation countermeasures with <b>[Spacebar]</b> or <b>Click</b>.
-          </p>
-          <button class="game-start-btn" id="game-start-btn" onclick="startGame()">INITIATE DEFENSE</button>
-        </div>
-      </div>
-
-      <div class="game-controls-hint">
-        <span>🎮 Controls: <b>A / D</b> or <b>Arrow Keys</b> to Move &middot; <b>Space / Click</b> to Shoot &middot; 10x Streak = <b>EMP Purge</b></span>
-        <span>⚡ Threat Types: IDOR (Pink) &middot; Race Condition (Cyan) &middot; Bot Raid (Gold) &middot; SQLi (Red)</span>
-      </div>
-
-      <!-- Mobile Touch Controls -->
-      <div class="mobile-game-touch-bar">
-        <button class="touch-btn" onmousedown="touchMoveLeft(true)" onmouseup="touchMoveLeft(false)" ontouchstart="touchMoveLeft(true)" ontouchend="touchMoveLeft(false)">◀ MOVE LEFT</button>
-        <button class="touch-btn" onclick="firePlayerBullet()" style="background: rgba(0, 255, 102, 0.2); border-color: var(--neon-green); color: var(--neon-green);">⚡ MITIGATE</button>
-        <button class="touch-btn" onmousedown="touchMoveRight(true)" onmouseup="touchMoveRight(false)" ontouchstart="touchMoveRight(true)" ontouchend="touchMoveRight(false)">MOVE RIGHT ▶</button>
-      </div>
-    </div>
-
-    <!-- ========================================================
          VIP HOLOGRAPHIC SHOWCASE CARD: IMXNOOBX
          ======================================================== -->
-    <div class="vip-card-container">
+    <div class="vip-card-container" id="allies-module">
       <div class="vip-card-inner">
         <div class="vip-badge-tag">⚡ VIP ALLIED OPERATOR #01</div>
         
@@ -1058,6 +1016,48 @@
             </a>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- ========================================================
+         PLAYABLE ARCADE MINI-GAME: BREACH DEFENDER
+         ======================================================== -->
+    <div class="game-section" id="arcade-module">
+      <div class="game-header">
+        <div class="game-title-wrap">
+          <h3 id="txt-game-title">🛡️ BREACH DEFENDER // DEVSECOPS INTERCEPTOR</h3>
+          <p class="game-subtitle" id="txt-game-sub">Intercept and neutralize incoming security exploits before they breach the backend core.</p>
+        </div>
+        <div class="game-hud">
+          <div class="hud-stat">SCORE: <span id="game-score">0</span></div>
+          <div class="hud-stat">STREAK: <span id="game-streak">0x</span></div>
+          <div class="hud-stat">CORE HEALTH: <span id="game-health">100%</span></div>
+          <div class="hud-stat">HIGH: <span id="game-highscore">0</span></div>
+        </div>
+      </div>
+
+      <div id="game-canvas-wrap">
+        <canvas id="game-canvas"></canvas>
+        <div class="game-overlay" id="game-overlay">
+          <h2 id="txt-game-modal-title">DEVSECOPS FIREWALL: READY</h2>
+          <p id="txt-game-modal-desc">
+            Hostile threats detected: <b>IDOR</b>, <b>Race Conditions</b>, <b>Bot Raids</b>, and <b>SQL Injection</b> packets.<br/>
+            Move the interceptor with <b>[←] [→]</b> or <b>[A] [D]</b>. Fire mitigation countermeasures with <b>[Spacebar]</b> or <b>Click</b>.
+          </p>
+          <button class="game-start-btn" id="game-start-btn" onclick="startGame()">INITIATE DEFENSE</button>
+        </div>
+      </div>
+
+      <div class="game-controls-hint">
+        <span>🎮 Controls: <b>A / D</b> or <b>Arrow Keys</b> to Move &middot; <b>Space / Click</b> to Shoot &middot; 10x Streak = <b>EMP Purge</b></span>
+        <span>⚡ Threat Types: IDOR (Pink) &middot; Race Condition (Cyan) &middot; Bot Raid (Gold) &middot; SQLi (Red)</span>
+      </div>
+
+      <!-- Mobile Touch Controls -->
+      <div class="mobile-game-touch-bar">
+        <button class="touch-btn" onmousedown="touchMoveLeft(true)" onmouseup="touchMoveLeft(false)" ontouchstart="touchMoveLeft(true)" ontouchend="touchMoveLeft(false)">◀ MOVE LEFT</button>
+        <button class="touch-btn" onclick="firePlayerBullet()" style="background: rgba(0, 255, 102, 0.2); border-color: var(--neon-green); color: var(--neon-green);">⚡ MITIGATE</button>
+        <button class="touch-btn" onmousedown="touchMoveRight(true)" onmouseup="touchMoveRight(false)" ontouchstart="touchMoveRight(true)" ontouchend="touchMoveRight(false)">MOVE RIGHT ▶</button>
       </div>
     </div>
 
@@ -1603,7 +1603,9 @@ Core Motto: "My specialty is not testing if code works under ideal conditions, b
              business logic to extreme manipulation scenarios to guarantee truly unbreakable
              backend architectures."`,
 
-      allies: () => `┌─ ALLIED NETWORK ARCHIVE: IMXNOOBX ───────────────────────────────────────────┐
+      allies: () => {
+        document.getElementById('allies-module')?.scrollIntoView({ behavior: 'smooth' });
+        return `┌─ ALLIED NETWORK ARCHIVE: IMXNOOBX ───────────────────────────────────────────┐
 │ Operator    : IMXNOOBX (@IMXNOOBX)                                           │
 │ Status      : VERIFIED KEY ALLY // TIER 1 COLLABORATOR                       │
 │ Specialty   : C++ Memory Reversing · M5StickC Penetration · Anti-Bot SAB     │
@@ -1611,7 +1613,8 @@ Core Motto: "My specialty is not testing if code works under ideal conditions, b
 │ Node Web    : https://noob.pm                                                │
 │ Direct Link : https://github.com/IMXNOOBX                                    │
 │ Brotherhood : "Tnx to @equisde (Parallax) for helping in my noobie mistakes" │
-└──────────────────────────────────────────────────────────────────────────────┘`,
+└──────────────────────────────────────────────────────────────────────────────┘`;
+      },
 
       game: () => {
         document.getElementById('arcade-module').scrollIntoView({ behavior: 'smooth' });
