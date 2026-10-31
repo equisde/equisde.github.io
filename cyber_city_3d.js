@@ -1079,10 +1079,11 @@
 
       this.scene = new THREE.Scene();
       this.scene.background = new THREE.Color(0x0a1122);
-      this.scene.fog = new THREE.FogExp2(0x0a1122, 0.0032);
+      // Ultra-massive 12km x 12km horizon fog & camera frustum
+      this.scene.fog = new THREE.FogExp2(0x0a1122, 0.00022);
 
       const aspect = this.container.clientWidth / this.container.clientHeight;
-      this.camera = new THREE.PerspectiveCamera(65, aspect, 0.2, 850);
+      this.camera = new THREE.PerspectiveCamera(65, aspect, 0.5, 7500);
       this.camera.position.set(0, 4.5, 9);
 
       this.renderer = new THREE.WebGLRenderer({
@@ -1312,7 +1313,11 @@
         { id: 'globe_south', name: 'GLOBE OIL SOUTH', x: -65, z: 140, price: 50 },
         { id: 'xero_west', name: 'XERO GAS MARINA', x: 140, z: 70, price: 50 },
         { id: 'highway_north', name: 'HIGHWAY 1 VINEWOOD STATION', x: 0, z: -920, price: 50 },
-        { id: 'highway_south', name: 'PORT FREEWAY STATION', x: 0, z: 920, price: 50 }
+        { id: 'highway_south', name: 'PORT FREEWAY STATION', x: 0, z: 920, price: 50 },
+        { id: 'sandy_shores_gas', name: 'ROUTE 68 24/7 SANDY SHORES', x: 200, z: -2760, price: 50 },
+        { id: 'paleto_bay_gas', name: 'PALETO BAY COASTAL GAS', x: -1150, z: -5350, price: 50 },
+        { id: 'zancudo_junction_gas', name: 'ZANCUDO HIGHWAY REST STOP', x: -5350, z: -2750, price: 50 },
+        { id: 'lsia_terminal_gas', name: 'LSIA AIRPORT FUEL STATION', x: -1150, z: 2750, price: 50 }
       ];
 
       this.gasStationMeshes = [];
@@ -2361,49 +2366,29 @@
     }
 
     buildRealisticCity() {
-      // 1. Endless Surrounding Ocean (3800m x 3800m)
+      // 1. Endless Surrounding Ocean (24,000m x 24,000m Ultra World Scale)
       const oceanTex = createWaterTexture();
-      oceanTex.repeat.set(38, 38);
+      oceanTex.repeat.set(120, 120);
       const ocean = new THREE.Mesh(
-        new THREE.PlaneGeometry(3800, 3800),
-        new THREE.MeshStandardMaterial({ map: oceanTex, roughness: 0.1, metalness: 0.88, color: 0x003366 })
+        new THREE.PlaneGeometry(24000, 24000),
+        new THREE.MeshStandardMaterial({ map: oceanTex, roughness: 0.12, metalness: 0.85, color: 0x002b4d })
       );
       ocean.rotation.x = -Math.PI / 2;
-      ocean.position.y = -0.15;
+      ocean.position.y = -0.2;
       this.scene.add(ocean);
 
-      // 2. Continental Island Terrain (2400m x 2400m)
+      // 2. Continental Island Base Landmass (12,000m x 12,000m - 2x GTA V Scale)
       const island = new THREE.Mesh(
-        new THREE.PlaneGeometry(2400, 2400),
-        new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.95 })
+        new THREE.PlaneGeometry(12000, 12000),
+        new THREE.MeshStandardMaterial({ color: 0x0d1527, roughness: 0.96 })
       );
       island.rotation.x = -Math.PI / 2;
       island.receiveShadow = true;
       this.scene.add(island);
 
-      // 3. Del Perro Beach Golden Shoreline (West: X: -950 to -450, Z: -1100 to 1100)
-      const beach = new THREE.Mesh(
-        new THREE.PlaneGeometry(260, 2200),
-        new THREE.MeshStandardMaterial({ color: 0xd9b372, roughness: 0.98 })
-      );
-      beach.rotation.x = -Math.PI / 2;
-      beach.position.set(-680, 0.02, 0);
-      this.scene.add(beach);
-
-      // 4. Grand Shipping & Pleasure Canal (1800m long x 55m wide)
-      const waterTex = createWaterTexture();
-      waterTex.repeat.set(2, 45);
-      const canal = new THREE.Mesh(
-        new THREE.PlaneGeometry(55, 1800),
-        new THREE.MeshStandardMaterial({ map: waterTex, roughness: 0.08, metalness: 0.85, color: 0x0088ee })
-      );
-      canal.rotation.x = -Math.PI / 2;
-      canal.position.set(-420, 0.04, 0);
-      this.scene.add(canal);
-
-      // 5. Road Material
+      // 3. Materials Setup
       const roadTex = createAsphaltRoadTexture();
-      roadTex.repeat.set(1, 14);
+      roadTex.repeat.set(1, 40);
       const roadMat = new THREE.MeshStandardMaterial({ map: roadTex, roughness: 0.85, metalness: 0.15 });
       this.roadMaterial = roadMat;
 
@@ -2411,22 +2396,42 @@
       swTex.repeat.set(4, 4);
       const swMat = new THREE.MeshStandardMaterial({ map: swTex, roughness: 0.75 });
 
-      // 6. Perimeter Scenic Highway Circuit (High Speed 4-lane Circuit, 22m wide)
-      const hwWidth = 22;
-      // North Highway
-      const hwN = new THREE.Mesh(new THREE.PlaneGeometry(1800, hwWidth), roadMat);
-      hwN.rotation.x = -Math.PI / 2; hwN.position.set(0, 0.03, -950); hwN.receiveShadow = true; this.scene.add(hwN);
-      // South Highway
-      const hwS = new THREE.Mesh(new THREE.PlaneGeometry(1800, hwWidth), roadMat);
-      hwS.rotation.x = -Math.PI / 2; hwS.position.set(0, 0.03, 950); hwS.receiveShadow = true; this.scene.add(hwS);
-      // West Coastal Highway
-      const hwW = new THREE.Mesh(new THREE.PlaneGeometry(hwWidth, 1900), roadMat);
-      hwW.rotation.x = -Math.PI / 2; hwW.position.set(-900, 0.03, 0); hwW.receiveShadow = true; this.scene.add(hwW);
-      // East Highway
-      const hwE = new THREE.Mesh(new THREE.PlaneGeometry(hwWidth, 1900), roadMat);
-      hwE.rotation.x = -Math.PI / 2; hwE.position.set(900, 0.03, 0); hwE.receiveShadow = true; this.scene.add(hwE);
+      const waterTex = createWaterTexture();
+      waterTex.repeat.set(4, 40);
+      const waterMat = new THREE.MeshStandardMaterial({ map: waterTex, roughness: 0.08, metalness: 0.85, color: 0x0088ee });
 
-      // 7. Downtown Financial Core Grid (Center: -210 to 210)
+      // ========================================================
+      // 4. REGION 7: GREAT OCEAN HIGHWAY INTERSTATE LOOP (~38 km circuit)
+      // ========================================================
+      const hwWidth = 26;
+      // North Shoreline Freeway (Paleto Bay to Mount Gordo)
+      const hwN = new THREE.Mesh(new THREE.PlaneGeometry(10800, hwWidth), roadMat);
+      hwN.rotation.x = -Math.PI / 2; hwN.position.set(0, 0.03, -5400); hwN.receiveShadow = true; this.scene.add(hwN);
+
+      // South Coastway Freeway (LSIA to South Port)
+      const hwS = new THREE.Mesh(new THREE.PlaneGeometry(10800, hwWidth), roadMat);
+      hwS.rotation.x = -Math.PI / 2; hwS.position.set(0, 0.03, 5000); hwS.receiveShadow = true; this.scene.add(hwS);
+
+      // West Ocean Highway (Del Perro to Paleto Bay via Zancudo)
+      const hwW = new THREE.Mesh(new THREE.PlaneGeometry(hwWidth, 10400), roadMat);
+      hwW.rotation.x = -Math.PI / 2; hwW.position.set(-5400, 0.03, -200); hwW.receiveShadow = true; this.scene.add(hwW);
+
+      // East Highway (Mount Gordo to Murrieta Oil Fields)
+      const hwE = new THREE.Mesh(new THREE.PlaneGeometry(hwWidth, 10400), roadMat);
+      hwE.rotation.x = -Math.PI / 2; hwE.position.set(5400, 0.03, -200); hwE.receiveShadow = true; this.scene.add(hwE);
+
+      // Central Los Santos / Senora Freeway (North-South Continental Spine: Chiliad to Downtown LS)
+      const hwC = new THREE.Mesh(new THREE.PlaneGeometry(hwWidth, 10400), roadMat);
+      hwC.rotation.x = -Math.PI / 2; hwC.position.set(0, 0.03, -200); hwC.receiveShadow = true; this.scene.add(hwC);
+
+      // Route 68 Desert Expressway (East-West Connector: Fort Zancudo to Alamo Sea & Senora)
+      const hwR68 = new THREE.Mesh(new THREE.PlaneGeometry(10800, hwWidth), roadMat);
+      hwR68.rotation.x = -Math.PI / 2; hwR68.position.set(0, 0.03, -2800); hwR68.receiveShadow = true; this.scene.add(hwR68);
+
+      // ========================================================
+      // 5. REGION 1: LOS SANTOS METROPOLITAN (Z: 0 to 4800, X: -2600 to 2600)
+      // ========================================================
+      // Downtown Financial Core Grid (Center: -210 to 210)
       const blockSize = 52;
       const streetWidth = 18;
       const step = blockSize + streetWidth;
@@ -2470,7 +2475,7 @@
             const fountain = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 1, 20), new THREE.MeshStandardMaterial({ color: 0x334155 }));
             fountain.position.set(x, 0.8, z); this.scene.add(fountain);
           } else if (dist < 130) {
-            // Giant Corporate Towers
+            // Maze Bank Tower (95m) & Arcadius (75m)
             const towerKey = (x < 0) ? 'building-tower-1' : 'building-tower-2';
             const towerHeight = (x < 0 && z < 0) ? 95 : 75;
             const tower = this.instantiateGLB(towerKey, towerHeight, true);
@@ -2485,48 +2490,122 @@
         }
       }
 
-      // 8. Vinewood Hills & Mansions District (North: Z: -900 to -350)
-      const hillsGround = new THREE.Mesh(
-        new THREE.PlaneGeometry(1600, 600),
-        new THREE.MeshStandardMaterial({ color: 0x164e28, roughness: 0.92 })
+      // Del Perro Beach & Marina (West: X: -2400 to -650, Z: -500 to 1800)
+      const beach = new THREE.Mesh(
+        new THREE.PlaneGeometry(400, 2600),
+        new THREE.MeshStandardMaterial({ color: 0xd9b372, roughness: 0.98 })
       );
-      hillsGround.rotation.x = -Math.PI / 2;
-      hillsGround.position.set(0, 0.1, -650);
-      this.scene.add(hillsGround);
+      beach.rotation.x = -Math.PI / 2;
+      beach.position.set(-780, 0.02, 300);
+      this.scene.add(beach);
 
-      const mansionCoords = [
-        [-320, -450], [-160, -520], [0, -550], [180, -510], [350, -460],
-        [-250, -680], [-80, -720], [120, -710], [280, -670],
-        [-180, -840], [0, -880], [190, -850]
-      ];
-      mansionCoords.forEach(([mx, mz], i) => {
-        const mKey = (i % 3 === 0) ? 'mansion-balcony' : (i % 3 === 1 ? 'mansion-columns' : 'luxury-suite');
-        const mansion = this.instantiateGLB(mKey, 20, true);
-        mansion.position.set(mx, 0.3, mz);
-        this.scene.add(mansion);
-        this.colliders.push({ x: mx, z: mz, r: 16 });
+      // Grand Canal with speedboats
+      const canal = new THREE.Mesh(new THREE.PlaneGeometry(60, 2400), waterMat);
+      canal.rotation.x = -Math.PI / 2;
+      canal.position.set(-520, 0.04, 300);
+      this.scene.add(canal);
 
-        // Pine trees around mansions
-        for (let p = 0; p < 3; p++) {
-          const pine = this.instantiateGLB('tree-pine', 9.5, true);
-          pine.position.set(mx + (p - 1) * 14, 0, mz + 12);
-          this.scene.add(pine);
+      // Del Perro Pier boardwalk jutting into ocean with rotating Ferris Wheel
+      const pier = new THREE.Mesh(
+        new THREE.BoxGeometry(70, 1.2, 380),
+        new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 })
+      );
+      pier.position.set(-1020, 0.6, 200);
+      this.scene.add(pier);
+
+      // Del Perro Ferris Wheel
+      const wheelGroup = new THREE.Group();
+      wheelGroup.position.set(-1020, 22, 320);
+      const rimGeo = new THREE.TorusGeometry(16, 0.6, 12, 32);
+      const rimMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+      const rim = new THREE.Mesh(rimGeo, rimMat);
+      wheelGroup.add(rim);
+      for (let sp = 0; sp < 8; sp++) {
+        const spokeGeo = new THREE.CylinderGeometry(0.15, 0.15, 32, 6);
+        const spoke = new THREE.Mesh(spokeGeo, rimMat);
+        spoke.rotation.z = (sp * Math.PI) / 8;
+        wheelGroup.add(spoke);
+      }
+      this.scene.add(wheelGroup);
+      this.ferrisWheel = wheelGroup;
+
+      // LSIA International Airport (Southwest: X: -2600 to -400, Z: 2400 to 4600)
+      const airportTarmac = new THREE.Mesh(
+        new THREE.PlaneGeometry(2400, 2200),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.88 })
+      );
+      airportTarmac.rotation.x = -Math.PI / 2;
+      airportTarmac.position.set(-1500, 0.02, 3500);
+      this.scene.add(airportTarmac);
+
+      // Dual 2000m Commercial Runways (Runway 21L and 21R)
+      [-1800, -1200].forEach((rx, rIdx) => {
+        const rway = new THREE.Mesh(
+          new THREE.PlaneGeometry(80, 2000),
+          new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.75 })
+        );
+        rway.rotation.x = -Math.PI / 2;
+        rway.position.set(rx, 0.04, 3500);
+        this.scene.add(rway);
+
+        // Runway White Dashed Centerline
+        for (let rz = 2600; rz <= 4400; rz += 80) {
+          const dash = new THREE.Mesh(
+            new THREE.PlaneGeometry(3.5, 36),
+            new THREE.MeshBasicMaterial({ color: 0xffffff })
+          );
+          dash.rotation.x = -Math.PI / 2;
+          dash.position.set(rx, 0.05, rz);
+          this.scene.add(dash);
+        }
+
+        // Green Threshold Approach Lights
+        for (let tx = -35; tx <= 35; tx += 10) {
+          const tLight = new THREE.Mesh(
+            new THREE.BoxGeometry(1.2, 0.8, 1.2),
+            new THREE.MeshBasicMaterial({ color: 0x22c55e })
+          );
+          tLight.position.set(rx + tx, 0.4, 2520);
+          this.scene.add(tLight);
         }
       });
 
-      // 9. South Docks & Industrial Port (South: Z: 350 to 900)
+      // Airport Flight Control Tower (65m tall)
+      const towerBase = new THREE.Mesh(new THREE.CylinderGeometry(5, 7, 58, 16), new THREE.MeshStandardMaterial({ color: 0xe2e8f0 }));
+      towerBase.position.set(-1500, 29, 2550);
+      this.scene.add(towerBase);
+      const towerCab = new THREE.Mesh(new THREE.CylinderGeometry(10, 8, 8, 16), new THREE.MeshStandardMaterial({ color: 0x00f0ff, roughness: 0.2, metalness: 0.8 }));
+      towerCab.position.set(-1500, 62, 2550);
+      this.scene.add(towerCab);
+      this.colliders.push({ x: -1500, z: 2550, r: 12 });
+
+      // 4 Large Aviation Hangars at LSIA
+      [[-2100, 2700], [-2100, 3100], [-2100, 3500], [-2100, 3900]].forEach(([hx, hz], i) => {
+        const hangar = new THREE.Mesh(new THREE.BoxGeometry(85, 20, 65), new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6 }));
+        hangar.position.set(hx, 10, hz);
+        this.scene.add(hangar);
+        this.colliders.push({ x: hx, z: hz, r: 42 });
+
+        // Parked Private Jets
+        const jet = this.instantiateGLB('jet-fighter', 11.0, true);
+        jet.position.set(hx + 75, 0, hz);
+        jet.rotation.y = Math.PI / 2;
+        this.scene.add(jet);
+      });
+
+      // South Docks & Industrial Port (Southeast: X: 200 to 2400, Z: 2600 to 4600)
       const portGround = new THREE.Mesh(
-        new THREE.PlaneGeometry(1400, 580),
-        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 })
+        new THREE.PlaneGeometry(2200, 2000),
+        new THREE.MeshStandardMaterial({ color: 0x182030, roughness: 0.85 })
       );
       portGround.rotation.x = -Math.PI / 2;
-      portGround.position.set(0, 0.1, 640);
+      portGround.position.set(1300, 0.02, 3600);
       this.scene.add(portGround);
 
       const warehouseCoords = [
-        [-280, 480], [-140, 510], [0, 520], [160, 500], [320, 470],
-        [-220, 680], [-60, 710], [100, 700], [260, 670],
-        [-140, 830], [20, 840], [180, 820]
+        [400, 2900], [700, 2900], [1000, 2900], [1300, 2900],
+        [400, 3400], [700, 3400], [1000, 3400], [1300, 3400],
+        [400, 3900], [700, 3900], [1000, 3900], [1300, 3900]
       ];
       warehouseCoords.forEach(([wx, wz], i) => {
         const whKey = (i % 2 === 0) ? 'business-hq' : 'building-d';
@@ -2534,40 +2613,305 @@
         wh.position.set(wx, 0.3, wz);
         this.scene.add(wh);
         this.colliders.push({ x: wx, z: wz, r: 18 });
-
-        const bar = this.instantiateGLB('barrier', 3.5, true);
-        bar.position.set(wx + 14, 0, wz);
-        this.scene.add(bar);
       });
 
-      // Speedboats moored in canal & docks
-      [[-420, 200], [-420, 550], [-420, -200]].forEach(([bx, bz]) => {
-        const boat = this.instantiateGLB('speedboat', 6.5, true);
-        boat.position.set(bx, 0.1, bz);
-        this.scene.add(boat);
-      });
+      // Shipping Container Stacks in Port
+      const containerColors = [0xef4444, 0x3b82f6, 0xeab308, 0x22c55e, 0xf97316];
+      for (let cx = 1600; cx <= 2100; cx += 120) {
+        for (let cz = 3000; cz <= 4200; cz += 140) {
+          const cCol = containerColors[Math.floor(Math.random() * containerColors.length)];
+          const stack = new THREE.Mesh(
+            new THREE.BoxGeometry(24, 12, 48),
+            new THREE.MeshStandardMaterial({ color: cCol, roughness: 0.7 })
+          );
+          stack.position.set(cx, 6, cz);
+          this.scene.add(stack);
+          this.colliders.push({ x: cx, z: cz, r: 24 });
+        }
+      }
 
-      // 10. East Los Santos & Gang Turf (East: X: 280 to 800, Z: -240 to 400)
+      // East Los Santos Gang Turf (East: X: 600 to 2400, Z: 200 to 2200)
       const turfGround = new THREE.Mesh(
-        new THREE.PlaneGeometry(540, 680),
+        new THREE.PlaneGeometry(1800, 2000),
         new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.9 })
       );
       turfGround.rotation.x = -Math.PI / 2;
-      turfGround.position.set(540, 0.1, 80);
+      turfGround.position.set(1500, 0.02, 1200);
       this.scene.add(turfGround);
 
-      const houseCoords = [
-        [360, -180], [480, -180], [600, -180],
-        [360, -40], [480, -40], [600, -40],
-        [360, 120], [480, 120], [600, 120],
-        [360, 260], [480, 260], [600, 260]
+      for (let hx = 750; hx <= 2250; hx += 180) {
+        for (let hz = 400; hz <= 2000; hz += 220) {
+          const house = this.instantiateGLB('house-suburban', 16, true);
+          house.position.set(hx, 0.3, hz);
+          this.scene.add(house);
+          this.colliders.push({ x: hx, z: hz, r: 12 });
+        }
+      }
+
+      // ========================================================
+      // 6. REGION 2: VINEWOOD HILLS & OBSERVATORY (Z: -1800 to -200, X: -2200 to 2200)
+      // ========================================================
+      const hillsGround = new THREE.Mesh(
+        new THREE.PlaneGeometry(4400, 1600),
+        new THREE.MeshStandardMaterial({ color: 0x144020, roughness: 0.92 })
+      );
+      hillsGround.rotation.x = -Math.PI / 2;
+      hillsGround.position.set(0, 0.1, -1000);
+      this.scene.add(hillsGround);
+
+      // 16 Luxury Mansions nestled in the hills
+      const mansionCoords = [
+        [-1200, -650], [-800, -750], [-400, -700], [0, -650], [400, -720], [800, -680], [1200, -740],
+        [-1000, -1100], [-600, -1250], [-200, -1150], [200, -1200], [600, -1180], [1000, -1250],
+        [-800, -1550], [0, -1650], [800, -1580]
       ];
-      houseCoords.forEach(([hx, hz]) => {
-        const house = this.instantiateGLB('house-suburban', 15, true);
-        house.position.set(hx, 0.3, hz);
-        this.scene.add(house);
-        this.colliders.push({ x: hx, z: hz, r: 12 });
+      mansionCoords.forEach(([mx, mz], i) => {
+        const mKey = (i % 3 === 0) ? 'mansion-balcony' : (i % 3 === 1 ? 'mansion-columns' : 'luxury-suite');
+        const mansion = this.instantiateGLB(mKey, 24, true);
+        mansion.position.set(mx, 0.4, mz);
+        this.scene.add(mansion);
+        this.colliders.push({ x: mx, z: mz, r: 18 });
+
+        // Private swimming pools
+        const pool = new THREE.Mesh(new THREE.PlaneGeometry(16, 9), waterMat);
+        pool.rotation.x = -Math.PI / 2;
+        pool.position.set(mx + 18, 0.45, mz);
+        this.scene.add(pool);
+
+        // Pine forests surrounding estates
+        for (let p = 0; p < 4; p++) {
+          const pine = this.instantiateGLB('tree-pine', 11.0, true);
+          pine.position.set(mx + (p - 1.5) * 16, 0, mz + 16);
+          this.scene.add(pine);
+        }
       });
+
+      // Galileo Observatory (Summit plateau at 0, 48, -1350)
+      const obsGroup = new THREE.Group();
+      obsGroup.position.set(0, 48, -1350);
+      const obsBase = new THREE.Mesh(new THREE.CylinderGeometry(32, 36, 16, 24), new THREE.MeshStandardMaterial({ color: 0xf1f5f9 }));
+      obsGroup.add(obsBase);
+      const obsDome = new THREE.Mesh(new THREE.SphereGeometry(15, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3 }));
+      obsDome.position.y = 8;
+      obsGroup.add(obsDome);
+      this.scene.add(obsGroup);
+      this.colliders.push({ x: 0, z: -1350, r: 35 });
+
+      // Iconic 3D VINEWOOD Sign on hillside ridge (Z: -950, Y: 42)
+      const signLetters = ['V', 'I', 'N', 'E', 'W', 'O', 'O', 'D'];
+      const signSpacing = 28;
+      const startX = -((signLetters.length - 1) * signSpacing) / 2;
+      signLetters.forEach((letter, idx) => {
+        const lx = startX + idx * signSpacing;
+        const letterMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(16, 20, 2),
+          new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, emissive: 0x222222 })
+        );
+        letterMesh.position.set(lx, 42, -950);
+        this.scene.add(letterMesh);
+      });
+
+      // ========================================================
+      // 7. REGION 3: GRAND SENORA DESERT & SANDY SHORES (Z: -4200 to -1800, X: -2200 to 2800)
+      // ========================================================
+      const desertGround = new THREE.Mesh(
+        new THREE.PlaneGeometry(5000, 2400),
+        new THREE.MeshStandardMaterial({ color: 0xb5894b, roughness: 0.98 })
+      );
+      desertGround.rotation.x = -Math.PI / 2;
+      desertGround.position.set(300, 0.02, -3000);
+      this.scene.add(desertGround);
+
+      // Sandy Shores Airstrip (1400m desert runway)
+      const desertRunway = new THREE.Mesh(
+        new THREE.PlaneGeometry(55, 1400),
+        new THREE.MeshStandardMaterial({ color: 0x292524, roughness: 0.95 })
+      );
+      desertRunway.rotation.x = -Math.PI / 2;
+      desertRunway.position.set(200, 0.04, -2900);
+      this.scene.add(desertRunway);
+
+      // Sandy Shores Rustic Hangar
+      const desertHangar = new THREE.Mesh(
+        new THREE.BoxGeometry(60, 16, 45),
+        new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 })
+      );
+      desertHangar.position.set(120, 8, -2900);
+      this.scene.add(desertHangar);
+      this.colliders.push({ x: 120, z: -2900, r: 28 });
+
+      // RON Alternates Wind Farm (12 Giant Rotating Wind Turbines)
+      this.windTurbines = [];
+      const windTurbineGeo = new THREE.CylinderGeometry(0.8, 1.8, 52, 12);
+      const windTurbineMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 });
+      for (let tx = 1400; tx <= 2400; tx += 340) {
+        for (let tz = -2200; tz >= -3400; tz -= 400) {
+          const tower = new THREE.Mesh(windTurbineGeo, windTurbineMat);
+          tower.position.set(tx, 26, tz);
+          this.scene.add(tower);
+          this.colliders.push({ x: tx, z: tz, r: 6 });
+
+          // 3-blade rotor hub
+          const rotorHub = new THREE.Group();
+          rotorHub.position.set(tx, 52, tz + 2);
+          for (let b = 0; b < 3; b++) {
+            const blade = new THREE.Mesh(new THREE.BoxGeometry(1.2, 24, 0.3), windTurbineMat);
+            blade.position.y = 12;
+            const bladeArm = new THREE.Group();
+            bladeArm.rotation.z = (b * Math.PI * 2) / 3;
+            bladeArm.add(blade);
+            rotorHub.add(bladeArm);
+          }
+          this.scene.add(rotorHub);
+          this.windTurbines.push(rotorHub);
+        }
+      }
+
+      // Deep Space Satellite Dishes Array (4 x 18m Dishes)
+      [[-1200, -3200], [-1500, -3200], [-1200, -3500], [-1500, -3500]].forEach(([sx, sz]) => {
+        const dishBase = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 3.5, 12, 8), new THREE.MeshStandardMaterial({ color: 0x64748b }));
+        dishBase.position.set(sx, 6, sz);
+        this.scene.add(dishBase);
+        const dishBowl = new THREE.Mesh(new THREE.SphereGeometry(10, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2.5), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.4 }));
+        dishBowl.rotation.x = -Math.PI / 3;
+        dishBowl.position.set(sx, 14, sz);
+        this.scene.add(dishBowl);
+        this.colliders.push({ x: sx, z: sz, r: 12 });
+      });
+
+      // ========================================================
+      // 8. REGION 4: ALAMO SEA & GRAPESEED FARMLANDS (X: 800 to 5200, Z: -5400 to -3000)
+      // ========================================================
+      // Alamo Sea (Giant Inland Hypersaline Lake: 3600m x 2000m)
+      const alamoSeaTex = createWaterTexture();
+      alamoSeaTex.repeat.set(18, 10);
+      const alamoSea = new THREE.Mesh(
+        new THREE.PlaneGeometry(3600, 2000),
+        new THREE.MeshStandardMaterial({ map: alamoSeaTex, roughness: 0.09, metalness: 0.85, color: 0x0284c7 })
+      );
+      alamoSea.rotation.x = -Math.PI / 2;
+      alamoSea.position.set(2800, 0.05, -4200);
+      this.scene.add(alamoSea);
+
+      // Speedboats in Alamo Sea
+      [[2400, -4200], [3200, -4000], [2800, -4400]].forEach(([bx, bz], idx) => {
+        const boat = this.instantiateGLB('speedboat', 6.5, true);
+        boat.position.set(bx, 0.2, bz);
+        this.scene.add(boat);
+      });
+
+      // Grapeseed Agricultural Crop Fields
+      const cropColors = [0xca8a04, 0x15803d, 0x713f12, 0x65a30d];
+      for (let gx = 1200; gx <= 2400; gx += 400) {
+        for (let gz = -4800; gz <= -3600; gz += 400) {
+          const cCol = cropColors[Math.floor(Math.random() * cropColors.length)];
+          const plot = new THREE.Mesh(
+            new THREE.PlaneGeometry(340, 340),
+            new THREE.MeshStandardMaterial({ color: cCol, roughness: 0.95 })
+          );
+          plot.rotation.x = -Math.PI / 2;
+          plot.position.set(gx, 0.06, gz);
+          this.scene.add(plot);
+        }
+      }
+
+      // ========================================================
+      // 9. REGION 5: MOUNT CHILIAD & PALETO BAY (Z: -6000 to -4200, X: -2600 to 2600)
+      // ========================================================
+      // Mount Chiliad Mountain Massif (Peak at Y: 185m at 0, 185, -5300)
+      const chiliadGroup = new THREE.Group();
+      chiliadGroup.position.set(0, 0, -5300);
+
+      const mountainCone = new THREE.Mesh(
+        new THREE.ConeGeometry(950, 185, 32, 16),
+        new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.95 })
+      );
+      mountainCone.position.y = 92.5;
+      chiliadGroup.add(mountainCone);
+
+      // Summit Cable Car Station Platform
+      const summitPlatform = new THREE.Mesh(
+        new THREE.BoxGeometry(45, 6, 45),
+        new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.7 })
+      );
+      summitPlatform.position.y = 186;
+      chiliadGroup.add(summitPlatform);
+
+      // Tall Radio Broadcast Mast (Y: 245m with flashing red beacon)
+      const mastGeo = new THREE.CylinderGeometry(0.5, 1.2, 60, 8);
+      const mastMat = new THREE.MeshStandardMaterial({ color: 0xef4444 });
+      const mast = new THREE.Mesh(mastGeo, mastMat);
+      mast.position.y = 216;
+      chiliadGroup.add(mast);
+
+      const beaconLight = new THREE.PointLight(0xff0000, 3.5, 400);
+      beaconLight.position.y = 246;
+      chiliadGroup.add(beaconLight);
+
+      this.scene.add(chiliadGroup);
+      this.colliders.push({ x: 0, z: -5300, r: 80 });
+
+      // Paleto Bay Coastal Hamlet (Northwest: X: -1600 to -800, Z: -5600 to -5000)
+      for (let px = -1500; px <= -900; px += 180) {
+        for (let pz = -5500; pz <= -5100; pz += 180) {
+          const house = this.instantiateGLB('house-suburban', 15, true);
+          house.position.set(px, 0.3, pz);
+          this.scene.add(house);
+          this.colliders.push({ x: px, z: pz, r: 14 });
+        }
+      }
+
+      // ========================================================
+      // 10. REGION 6: FORT ZANCUDO MILITARY AIRBASE (X: -5600 to -2400, Z: -3800 to -1600)
+      // ========================================================
+      const zancudoBase = new THREE.Mesh(
+        new THREE.PlaneGeometry(3200, 2200),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 })
+      );
+      zancudoBase.rotation.x = -Math.PI / 2;
+      zancudoBase.position.set(-3800, 0.02, -2700);
+      this.scene.add(zancudoBase);
+
+      // Military Heavy Runway (1800m)
+      const zRunway = new THREE.Mesh(
+        new THREE.PlaneGeometry(80, 1800),
+        new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 })
+      );
+      zRunway.rotation.x = -Math.PI / 2;
+      zRunway.position.set(-3900, 0.04, -2700);
+      this.scene.add(zRunway);
+
+      // 4 Hardened Military Aircraft Shelters
+      [[-4300, -3200], [-4300, -2800], [-4300, -2400], [-4300, -2000]].forEach(([hx, hz]) => {
+        const shelter = new THREE.Mesh(new THREE.CylinderGeometry(35, 35, 60, 16, 1, false, 0, Math.PI), new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.8 }));
+        shelter.rotation.z = Math.PI / 2;
+        shelter.position.set(hx, 16, hz);
+        this.scene.add(shelter);
+        this.colliders.push({ x: hx, z: hz, r: 35 });
+
+        // Fighter Jet parked inside shelter
+        const jet = this.instantiateGLB('jet-fighter', 11.0, true);
+        jet.position.set(hx + 30, 0, hz);
+        jet.rotation.y = Math.PI / 2;
+        this.scene.add(jet);
+      });
+
+      // Air Defense Geodesic Radar Domes (2 Domes)
+      [[-3400, -3200], [-3400, -2200]].forEach(([dx, dz]) => {
+        const domeTower = new THREE.Mesh(new THREE.CylinderGeometry(8, 10, 18, 16), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+        domeTower.position.set(dx, 9, dz);
+        this.scene.add(domeTower);
+        const domeSphere = new THREE.Mesh(new THREE.SphereGeometry(12, 16, 16), new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 }));
+        domeSphere.position.set(dx, 26, dz);
+        this.scene.add(domeSphere);
+        this.colliders.push({ x: dx, z: dz, r: 14 });
+      });
+
+      // Military Control Tower (45m tall)
+      const mTower = new THREE.Mesh(new THREE.BoxGeometry(14, 45, 14), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+      mTower.position.set(-3700, 22.5, -2700);
+      this.scene.add(mTower);
+      this.colliders.push({ x: -3700, z: -2700, r: 12 });
     }
 
     setupFullFleetNPCTraffic() {
@@ -2577,6 +2921,7 @@
       ];
       const roads = [-140, -70, 0, 70, 140];
 
+      // 1. Downtown Urban Traffic
       landFleet.forEach((vType, idx) => {
         const roadX = roads[idx % roads.length];
         const z = -220 + (idx * 38);
@@ -2591,6 +2936,8 @@
           speed: (vType === 'motorbike' || vType === 'gta-sports-car') ? 22 : 14,
           roadX: roadX + 3.2,
           dirZ: (idx % 2 === 0 ? 1 : -1),
+          axis: 'z',
+          limit: 850,
           isCarjacked: false,
           isStalled: false,
           driver: {
@@ -2603,53 +2950,79 @@
         });
       });
 
-      // Perimeter Highway & Coastal Cruisers
-      const highwayPatrols = [
-        { type: 'gta-sports-car', x: -900, z: -400, speed: 28, dirZ: 1 },
-        { type: 'police', x: -900, z: 350, speed: 25, dirZ: -1 },
-        { type: 'suv', x: 900, z: -300, speed: 22, dirZ: 1 },
-        { type: 'truck', x: 900, z: 400, speed: 18, dirZ: -1 },
-        { type: 'motorbike', x: -140, z: -450, speed: 26, dirZ: 1 }
+      // 2. Great Ocean Highway & Interstate Long-Distance Patrols (~38 km circuit)
+      const interstatePatrols = [
+        // West Coast Highway (Zancudo / Pacific Coast)
+        { type: 'gta-sports-car', x: -5400, z: -1500, speed: 38, axis: 'z', dir: 1, limit: 5000 },
+        { type: 'gta-police-car', x: -5400, z: 1200, speed: 36, axis: 'z', dir: -1, limit: 5000 },
+        // East Coast Highway
+        { type: 'suv', x: 5400, z: -800, speed: 34, axis: 'z', dir: 1, limit: 5000 },
+        { type: 'truck', x: 5400, z: 2400, speed: 28, axis: 'z', dir: -1, limit: 5000 },
+        // North Shoreline Freeway (Paleto Bay)
+        { type: 'sedan-sports', x: -1500, z: -5400, speed: 35, axis: 'x', dir: 1, limit: 5200 },
+        { type: 'police', x: 1800, z: -5400, speed: 36, axis: 'x', dir: -1, limit: 5200 },
+        // South Coastway Freeway (LSIA / Docks)
+        { type: 'truck', x: -1200, z: 5000, speed: 26, axis: 'x', dir: 1, limit: 5200 },
+        { type: 'gta-sports-car', x: 2200, z: 5000, speed: 40, axis: 'x', dir: -1, limit: 5200 },
+        // Route 68 Desert Expressway
+        { type: 'truck', x: -2500, z: -2800, speed: 30, axis: 'x', dir: 1, limit: 5200 },
+        { type: 'motorbike', x: 1500, z: -2800, speed: 38, axis: 'x', dir: -1, limit: 5200 },
+        // Central Senora Freeway
+        { type: 'gta-police-car', x: 0, z: -3800, speed: 36, axis: 'z', dir: 1, limit: 5000 },
+        { type: 'sedan', x: 0, z: 1800, speed: 30, axis: 'z', dir: -1, limit: 5000 }
       ];
-      highwayPatrols.forEach((hp, idx) => {
+
+      interstatePatrols.forEach((hp, idx) => {
         const car = this.instantiateGLB(hp.type, hp.type === 'truck' ? 7.2 : 4.4, true);
         car.position.set(hp.x, 0, hp.z);
+        if (hp.axis === 'x') car.rotation.y = (hp.dir === 1) ? Math.PI / 2 : -Math.PI / 2;
         this.scene.add(car);
         this.npcVehicles.push({
           mesh: car,
           type: hp.type,
           speed: hp.speed,
           roadX: hp.x,
-          dirZ: hp.dirZ,
+          axis: hp.axis,
+          dir: hp.dir,
+          dirZ: (hp.axis === 'z') ? hp.dir : 0,
+          limit: hp.limit,
           isCarjacked: false,
           isStalled: false,
           driver: {
-            name: `Conductor Autopista #${idx + 1}`,
+            name: `Patrulla Interestatal #${idx + 1}`,
             archetype: hp.type.includes('police') ? 'police' : 'civilian',
-            cash: 200 + Math.floor(Math.random() * 700),
-            bank: 1200 + Math.floor(Math.random() * 4000),
+            cash: 250 + Math.floor(Math.random() * 800),
+            bank: 2000 + Math.floor(Math.random() * 5000),
             hp: 100
           }
         });
       });
 
-      // Air Units
+      // 3. Air Fleet (Helicopters & Jet Fighters across the 12km continent)
+      // Downtown Police/News Chopper
       const heli1 = this.instantiateGLB('helicopter', 8.5, true);
-      heli1.position.set(40, 48, 40);
+      heli1.position.set(40, 52, 40);
       this.scene.add(heli1);
-      this.npcAirUnits.push({ mesh: heli1, type: 'helicopter', altitude: 48, radius: 120, angle: 0, speed: 0.4 });
+      this.npcAirUnits.push({ mesh: heli1, type: 'helicopter', centerX: 0, centerZ: 0, altitude: 52, radius: 180, angle: 0, speed: 0.35 });
 
-      const jet = this.instantiateGLB('jet-fighter', 11.0, true);
-      jet.position.set(0, 115, -300);
+      // Mount Chiliad Summit Tour Chopper
+      const chiliadHeli = this.instantiateGLB('helicopter', 8.5, true);
+      chiliadHeli.position.set(0, 230, -5300);
+      this.scene.add(chiliadHeli);
+      this.npcAirUnits.push({ mesh: chiliadHeli, type: 'helicopter', centerX: 0, centerZ: -5300, altitude: 230, radius: 260, angle: Math.PI, speed: 0.28 });
+
+      // Fort Zancudo Military Air Sortie Jet
+      const jet = this.instantiateGLB('jet-fighter', 12.0, true);
+      jet.position.set(-3900, 140, -5000);
       this.scene.add(jet);
-      this.npcAirUnits.push({ mesh: jet, type: 'jet-fighter', altitude: 115, speedZ: 65 });
+      this.npcAirUnits.push({ mesh: jet, type: 'jet-fighter', speedZ: 85, altitude: 140 });
 
       // Police Chopper (Searchlight Unit on 3+ Stars)
       const policeHeli = this.instantiateGLB('helicopter', 8.5, true);
       policeHeli.position.set(0, -100, 0);
       this.scene.add(policeHeli);
 
-      const searchlight = new THREE.SpotLight(0xffffff, 4.0, 90, Math.PI / 6, 0.35, 1.0);
+      const searchlight = new THREE.SpotLight(0xffffff, 4.0, 140, Math.PI / 6, 0.35, 1.0);
       policeHeli.add(searchlight);
       const sTarget = new THREE.Object3D();
       this.scene.add(sTarget);
@@ -2657,13 +3030,18 @@
 
       this.policeHelicopter = { mesh: policeHeli, light: searchlight, target: sTarget, active: false };
 
-      // Water Units
-      for (let s = 0; s < 2; s++) {
-        const boat = this.instantiateGLB('speedboat', 4.8, true);
-        boat.position.set(-270, 0.1, -120 + s * 240);
+      // 4. Water Fleet (Del Perro Canal, South Docks, and Alamo Sea)
+      const boatLocations = [
+        { x: -520, z: -100, speedZ: 14, minZ: -400, maxZ: 800 },
+        { x: -520, z: 450, speedZ: -14, minZ: -400, maxZ: 800 },
+        { x: 2600, z: -4200, speedZ: 18, minZ: -4800, maxZ: -3400 }
+      ];
+      boatLocations.forEach(bl => {
+        const boat = this.instantiateGLB('speedboat', 5.5, true);
+        boat.position.set(bl.x, 0.15, bl.z);
         this.scene.add(boat);
-        this.npcWaterUnits.push({ mesh: boat, speedZ: (s === 0 ? 16 : -16), type: 'speedboat' });
-      }
+        this.npcWaterUnits.push({ mesh: boat, speedZ: bl.speedZ, minZ: bl.minZ, maxZ: bl.maxZ, type: 'speedboat' });
+      });
     }
 
     setupPedestrianSystem() {
@@ -2678,10 +3056,16 @@
         // East Los Santos Turf
         () => ({ x: 340 + Math.random() * 260, z: -120 + Math.random() * 320 }),
         // South Docks
-        () => ({ x: -150 + Math.random() * 300, z: 480 + Math.random() * 320 })
+        () => ({ x: -150 + Math.random() * 300, z: 480 + Math.random() * 320 }),
+        // Sandy Shores Town
+        () => ({ x: 100 + Math.random() * 200, z: -2900 + Math.random() * 200 }),
+        // Paleto Bay Coastal Boardwalk
+        () => ({ x: -1200 + Math.random() * 300, z: -5350 + Math.random() * 250 }),
+        // LSIA Airport Terminal
+        () => ({ x: -1500 + Math.random() * 200, z: 2700 + Math.random() * 200 })
       ];
 
-      for (let i = 0; i < 36; i++) {
+      for (let i = 0; i < 48; i++) {
         const cKey = charKeys[i % charKeys.length];
         const zonePicker = zones[i % zones.length];
         const { x: px, z: pz } = zonePicker();
@@ -2861,6 +3245,19 @@
     /* ========================================================
      * GTA ONLINE: INTERACTION MENU & PERSONAL VEHICLES
      * ======================================================== */
+    teleportToRegion(x, z, name) {
+      this.player.x = x;
+      this.player.z = z;
+      if (name && name.includes('Chiliad')) this.player.y = 186.5;
+      else if (name && name.includes('Observatorio')) this.player.y = 48.5;
+      else this.player.y = 0.8;
+      this.player.speed = 0;
+      if (this.playerGroup) this.playerGroup.position.set(this.player.x, this.player.y, this.player.z);
+      if (this.camera) this.camera.position.set(this.player.x, this.player.y + 4, this.player.z + 8);
+      this.audio.playCashChime();
+      this.addHackFeedToast(`📍 GPS: Destino alcanzado // ${name ? name.toUpperCase() : 'NUEVA REGIÓN'}`);
+    }
+
     requestPersonalVehicle(vType) {
       // Determine vehicle type
       let targetType = vType;
@@ -3848,29 +4245,39 @@
     updateNPCs(delta) {
       this.npcVehicles.forEach(car => {
         if (!car.isStalled) {
-          car.mesh.position.z += car.speed * car.dirZ * delta;
-          const limitZ = (Math.abs(car.roadX) > 600) ? 950 : 850;
-          if (car.mesh.position.z > limitZ) car.mesh.position.z = -limitZ;
-          if (car.mesh.position.z < -limitZ) car.mesh.position.z = limitZ;
+          const limit = car.limit || 850;
+          if (car.axis === 'x') {
+            car.mesh.position.x += car.speed * car.dir * delta;
+            if (car.mesh.position.x > limit) car.mesh.position.x = -limit;
+            if (car.mesh.position.x < -limit) car.mesh.position.x = limit;
+          } else {
+            car.mesh.position.z += car.speed * (car.dirZ || car.dir || 1) * delta;
+            if (car.mesh.position.z > limit) car.mesh.position.z = -limit;
+            if (car.mesh.position.z < -limit) car.mesh.position.z = limit;
+          }
         }
       });
 
       this.npcAirUnits.forEach(air => {
         if (air.type === 'helicopter') {
           air.angle += air.speed * delta;
-          air.mesh.position.x = Math.cos(air.angle) * air.radius;
-          air.mesh.position.z = Math.sin(air.angle) * air.radius;
+          const cx = air.centerX || 0;
+          const cz = air.centerZ || 0;
+          air.mesh.position.x = cx + Math.cos(air.angle) * air.radius;
+          air.mesh.position.z = cz + Math.sin(air.angle) * air.radius;
           air.mesh.rotation.y = -air.angle + Math.PI / 2;
         } else if (air.type === 'jet-fighter') {
           air.mesh.position.z += air.speedZ * delta;
-          if (air.mesh.position.z > 1200) air.mesh.position.z = -1200;
+          if (air.mesh.position.z > 5800) air.mesh.position.z = -5800;
         }
       });
 
       this.npcWaterUnits.forEach(boat => {
         boat.mesh.position.z += boat.speedZ * delta;
-        if (boat.mesh.position.z > 850) boat.mesh.position.z = -850;
-        if (boat.mesh.position.z < -850) boat.mesh.position.z = 850;
+        const minZ = boat.minZ || -850;
+        const maxZ = boat.maxZ || 850;
+        if (boat.mesh.position.z > maxZ) { boat.mesh.position.z = maxZ; boat.speedZ *= -1; }
+        if (boat.mesh.position.z < minZ) { boat.mesh.position.z = minZ; boat.speedZ *= -1; }
       });
 
       this.npcPedestrians.forEach(npc => {
@@ -3987,7 +4394,7 @@
       const w = radarCanvas.width, h = radarCanvas.height;
       const cx = w / 2, cy = h / 2;
       const spdKmh = Math.abs(this.player.speed) * 3.6;
-      const scale = this.player.inVehicle ? Math.max(0.24, 0.50 - (spdKmh / 160) * 0.22) : 0.52;
+      const scale = this.player.inVehicle ? Math.max(0.045, 0.45 - (spdKmh / 220) * 0.38) : 0.48;
 
       ctx.clearRect(0, 0, w, h);
 
@@ -4012,25 +4419,19 @@
         ctx.restore();
       }
 
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
-      ctx.lineWidth = 4;
-
-      const roads = [-210, -140, -70, 0, 70, 140, 210];
-      roads.forEach(rx => {
-        const sx = cx + (rx - this.player.x) * scale;
-        if (sx >= 0 && sx <= w) { ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, h); ctx.stroke(); }
-        const sy = cy + (rx - this.player.z) * scale;
-        if (sy >= 0 && sy <= h) { ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(w, sy); ctx.stroke(); }
-      });
-
-      // Perimeter Highway Ring on Radar
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
-      ctx.lineWidth = 5;
+      // Great Ocean Highway Ring & Interstates on Radar (~38 km network)
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
+      ctx.lineWidth = 3.5;
       const hwRing = [
-        [-900, -950, 900, -950],
-        [900, -950, 900, 950],
-        [900, 950, -900, 950],
-        [-900, 950, -900, -950]
+        // Perimeter Great Ocean Highway
+        [-5400, -5400, 5400, -5400],
+        [5400, -5400, 5400, 5000],
+        [5400, 5000, -5400, 5000],
+        [-5400, 5000, -5400, -5400],
+        // Central Senora Spine (Chiliad to Downtown LS)
+        [0, -5400, 0, 5000],
+        // Route 68 Desert Expressway (Zancudo to Senora & Alamo Sea)
+        [-5400, -2800, 5400, -2800]
       ];
       hwRing.forEach(([x1, z1, x2, z2]) => {
         const sx1 = cx + (x1 - this.player.x) * scale;
@@ -4039,6 +4440,49 @@
         const sy2 = cy + (z2 - this.player.z) * scale;
         ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
       });
+
+      // Downtown Local Avenues on Radar (drawn when near Downtown)
+      if (Math.hypot(this.player.x, this.player.z) < 1600) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+        ctx.lineWidth = 2.5;
+        const roads = [-210, -140, -70, 0, 70, 140, 210];
+        roads.forEach(rx => {
+          const sx = cx + (rx - this.player.x) * scale;
+          if (sx >= 0 && sx <= w) { ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, h); ctx.stroke(); }
+          const sy = cy + (rx - this.player.z) * scale;
+          if (sy >= 0 && sy <= h) { ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(w, sy); ctx.stroke(); }
+        });
+      }
+
+      // Alamo Sea Water Area on Radar
+      const alamoX = cx + (2800 - this.player.x) * scale;
+      const alamoY = cy + (-4200 - this.player.z) * scale;
+      if (Math.hypot(alamoX - cx, alamoY - cy) < cx + 80) {
+        ctx.fillStyle = 'rgba(2, 132, 199, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(alamoX, alamoY, Math.max(4, 1800 * scale), Math.max(3, 1000 * scale), 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Mount Chiliad Peak Blip (Mountain Icon ⛰️)
+      const chX = cx + (0 - this.player.x) * scale;
+      const chY = cy + (-5300 - this.player.z) * scale;
+      if (Math.hypot(chX - cx, chY - cy) < cx - 6) {
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.fillText('⛰️', chX - 5, chY + 4);
+      }
+
+      // Fort Zancudo Military Zone on Radar (Red Zone)
+      const zx = cx + (-3800 - this.player.x) * scale;
+      const zy = cy + (-2700 - this.player.z) * scale;
+      if (Math.hypot(zx - cx, zy - cy) < cx - 6) {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+        ctx.fillRect(zx - 20 * scale, zy - 15 * scale, 40 * scale, 30 * scale);
+        ctx.fillStyle = '#ef4444';
+        ctx.font = 'bold 7px sans-serif';
+        ctx.fillText('⭐ MIL', zx - 9, zy + 3);
+      }
 
       // Traffic Blips (White)
       ctx.fillStyle = '#ffffff';
@@ -4212,18 +4656,34 @@
       const spdEl = document.getElementById('g3d-speed-val');
       if (spdEl) spdEl.textContent = Math.round(Math.abs(this.player.speed) * 3.6);
 
-      // District Tag based on coordinates (2400m x 2400m Open World)
+      // District Tag based on coordinates (12,000m x 12,000m Continental Scale)
       const distEl = document.getElementById('gta-district-tag');
       if (distEl) {
         const px = this.player.x, pz = this.player.z;
-        const d = Math.hypot(px, pz);
-        if (d > 820) distEl.textContent = 'SAN ANDREAS - PACIFIC HIGHWAY LOOP';
-        else if (pz < -280) distEl.textContent = 'LOS SANTOS - VINEWOOD HILLS & MANSIONS';
-        else if (pz > 280) distEl.textContent = 'LOS SANTOS - SOUTH DOCKS & INDUSTRIAL PORT';
-        else if (px > 280) distEl.textContent = 'LOS SANTOS - EAST LOS SANTOS (TURF WARS)';
-        else if (px < -280) distEl.textContent = 'LOS SANTOS - DEL PERRO BEACH & BOARDWALK';
-        else if (d < 65) distEl.textContent = 'LOS SANTOS - LEGION SQUARE & MAZE BANK';
-        else distEl.textContent = 'LOS SANTOS - DOWNTOWN FINANCIAL DISTRICT';
+        if (pz <= -4500 && Math.abs(px) < 1800) {
+          if (px < -600) distEl.textContent = 'PALETO BAY - PUEBLO COSTERO & BAHÍA NORTE';
+          else distEl.textContent = 'MONTE CHILIAD - CUMBRE NACIONAL (185M)';
+        } else if (Math.abs(px) > 5000 || pz > 4800 || pz < -5350) {
+          distEl.textContent = 'SAN ANDREAS - AUTOPISTA GREAT OCEAN HIGHWAY';
+        } else if (px <= -2400 && pz <= -1600 && pz >= -3800) {
+          distEl.textContent = 'FORT ZANCUDO - BASE MILITAR RESTRINGIDA';
+        } else if (pz <= -1800) {
+          if (px >= 800) distEl.textContent = 'MAR ALAMO SEA & TIERRAS DE GRAPESEED';
+          else distEl.textContent = 'DESIERTO DE GRAND SENORA & SANDY SHORES';
+        } else if (pz <= -200) {
+          distEl.textContent = 'LOS SANTOS - VINEWOOD HILLS & OBSERVATORIO';
+        } else if (pz >= 2400) {
+          if (px <= -400) distEl.textContent = 'AEROPUERTO INTERNACIONAL LSIA';
+          else distEl.textContent = 'PUERTO DE SOUTH DOCKS & TERMINAL INDUSTRIAL';
+        } else if (px >= 600) {
+          distEl.textContent = 'EAST LOS SANTOS - BARRIO & GUERRA DE BANDAS';
+        } else if (px <= -500) {
+          distEl.textContent = 'DEL PERRO BEACH - PLAYA DORADA & CANALES';
+        } else if (Math.hypot(px, pz) < 65) {
+          distEl.textContent = 'LOS SANTOS - DOWNTOWN FINANCIAL // PLAZA LEGION SQUARE & MAZE BANK';
+        } else {
+          distEl.textContent = 'LOS SANTOS - DISTRITO FINANCIERO DOWNTOWN';
+        }
       }
 
       // Context Banner
@@ -4323,6 +4783,14 @@
       this.updateCamera();
       this.updateHUD();
       this.drawRadarMinimap();
+
+      // Dynamic Animated Macro Props (Wind Turbines & Ferris Wheel)
+      if (this.windTurbines) {
+        this.windTurbines.forEach(t => { if (t) t.rotation.z += 1.4 * delta; });
+      }
+      if (this.ferrisWheel) {
+        this.ferrisWheel.rotation.z += 0.22 * delta;
+      }
 
       this.renderer.render(this.scene, this.camera);
     }

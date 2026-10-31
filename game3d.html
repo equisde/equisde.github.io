@@ -769,6 +769,7 @@
 
     <div class="gta-nav-buttons">
       <button class="gta-nav-btn gta-nav-active" onclick="window.toggleGTAInteractionMenu()">[M] INTERACCIÓN</button>
+      <button class="gta-nav-btn" onclick="openGPSWaypointModal()">📍 GPS REGIONES</button>
       <button class="gta-nav-btn gta-nav-gold" onclick="openEyefindBrowser()">🌐 NAVEGADOR EYEFIND</button>
       <button class="gta-nav-btn" onclick="openLSCustomsModal()">🔧 LSC CUSTOMS</button>
       <button class="gta-nav-btn" onclick="openBankModal()">🏦 MAZE BANK</button>
@@ -1022,6 +1023,25 @@
   <!-- Toast Notification Feed -->
   <div class="ow-hack-feed" id="ow-hack-feed"></div>
 
+  <!-- GTA GPS Quick Waypoint Navigation Modal (12km x 12km) -->
+  <div class="g3d-modal" id="gta-gps-modal" style="max-width: 600px;">
+    <div class="modal-head">
+      <h3 class="modal-title">📍 GPS // 7 MACRO-REGIONES (12KM x 12KM SAN ANDREAS)</h3>
+      <button class="modal-close" onclick="openGPSWaypointModal()">✕</button>
+    </div>
+    <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 14px;">Selecciona una región para fijar ruta GPS y desplazarte rápidamente por el mundo abierto:</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+      <button class="gta-nav-btn" style="padding: 11px; font-size: 0.8rem;" onclick="teleportGPS(0, 0, 'Los Santos Downtown / Maze Bank')">🏙️ Los Santos Downtown</button>
+      <button class="gta-nav-btn" style="padding: 11px; font-size: 0.8rem;" onclick="teleportGPS(-1500, 3200, 'Aeropuerto Internacional LSIA')">✈️ Aeropuerto LSIA</button>
+      <button class="gta-nav-btn" style="padding: 11px; font-size: 0.8rem;" onclick="teleportGPS(0, -1100, 'Vinewood Hills & Observatorio')">⭐ Vinewood Hills</button>
+      <button class="gta-nav-btn" style="padding: 11px; font-size: 0.8rem;" onclick="teleportGPS(200, -2800, 'Desierto Grand Senora / Sandy Shores')">🏜️ Desierto Grand Senora</button>
+      <button class="gta-nav-btn" style="padding: 11px; font-size: 0.8rem;" onclick="teleportGPS(2400, -4200, 'Mar Alamo Sea & Grapeseed')">🌊 Alamo Sea & Granjas</button>
+      <button class="gta-nav-btn" style="padding: 11px; font-size: 0.8rem;" onclick="teleportGPS(0, -5300, 'Monte Chiliad (Cumbre 185m)')">⛰️ Monte Chiliad (Cumbre)</button>
+      <button class="gta-nav-btn" style="padding: 11px; font-size: 0.8rem;" onclick="teleportGPS(-3800, -2700, 'Base Militar Fort Zancudo')">🪖 Base Militar Zancudo</button>
+      <button class="gta-nav-btn" style="padding: 11px; font-size: 0.8rem;" onclick="teleportGPS(-5400, 0, 'Great Ocean Highway Circuito')">🏎️ Great Ocean Highway</button>
+    </div>
+  </div>
+
   <!-- GTA Online Single-Session Duplicate Alert Modal -->
   <div id="gta-session-alert-modal" style="display: none; position: fixed; inset: 0; background: rgba(3, 7, 18, 0.94); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
     <div style="background: rgba(15, 23, 42, 0.95); border: 2px solid #ef4444; border-radius: 12px; padding: 32px 28px; max-width: 480px; width: 90%; text-align: center; box-shadow: 0 0 35px rgba(239, 68, 68, 0.45);">
@@ -1057,6 +1077,7 @@
      * ======================================================== */
     let currentMenuIndex = 0;
     const gtaMenuItems = [
+      { id: 'gps_regions', title: '📍 GPS: Desplazamiento Rápido (7 Biomas)', action: () => openGPSWaypointModal() },
       { id: 'req_veh', title: '🚗 Solicitar Vehículo Personal', action: () => window.cyberCityEngine?.requestPersonalVehicle() },
       { id: 'ret_veh', title: '🚗 Devolver Vehículo al Garaje', action: () => window.cyberCityEngine?.returnPersonalVehicle() },
       { id: 'doors_veh', title: '🚪 Control Remoto de Puertas', action: () => window.cyberCityEngine?.toggleVehicleDoors() },
@@ -1070,6 +1091,18 @@
       { id: 'passive_mode', title: '🕊️ Modo Pasivo (Activar / Desactivar)', action: () => window.cyberCityEngine?.togglePassiveMode() },
       { id: 'suicide', title: '💀 Suicidio ($500)', action: () => window.cyberCityEngine?.commitSuicide() }
     ];
+
+    function openGPSWaypointModal() {
+      const modal = document.getElementById('gta-gps-modal');
+      if (modal) modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    function teleportGPS(x, z, name) {
+      if (window.cyberCityEngine) {
+        window.cyberCityEngine.teleportToRegion(x, z, name);
+      }
+      openGPSWaypointModal();
+    }
 
     function renderGTAInteractionMenu() {
       const listEl = document.getElementById('gta-menu-items');

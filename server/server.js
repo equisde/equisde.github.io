@@ -407,7 +407,8 @@ io.on('connection', (socket) => {
 
     const position = data && data.position;
     if (!position || [position.x, position.y, position.z].some(v => !Number.isFinite(Number(v)))) return;
-    if (Math.abs(Number(position.x)) > 1200 || Math.abs(Number(position.z)) > 1200) return;
+    // 12km x 12km ultra world boundary check (coords [-6000, 6000] with margin)
+    if (Math.abs(Number(position.x)) > 6500 || Math.abs(Number(position.z)) > 6500) return;
 
     player.position = { x: Number(position.x), y: Number(position.y), z: Number(position.z) };
     player.rotation = data.rotation;
