@@ -22,6 +22,7 @@
       this.clock = new THREE.Clock();
       this.rafId = null;
       this.lastNetSync = 0;
+      this.isActive = false;
 
       // Mobile & Performance
       this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
@@ -164,8 +165,9 @@
       this.initRadar();
       this.checkUrlForGitHubOAuth();
 
+      this.isActive = true;
       this.animate = this.animate.bind(this);
-      requestAnimationFrame(this.animate);
+      this.rafId = requestAnimationFrame(this.animate);
 
       console.log('⚡ [PARALLAX CYBER-CITY 3D] Ultra Engine Live. Mobile:', this.isMobile);
     }
@@ -1691,7 +1693,26 @@
       }
     }
 
+    setActive(active) {
+      this.isActive = !!active;
+      if (this.isActive) {
+        if (!this.rafId && this.renderer) {
+          this.clock.getDelta(); // Reset delta to prevent giant time step
+          this.rafId = requestAnimationFrame(this.animate);
+        }
+      } else {
+        if (this.rafId) {
+          cancelAnimationFrame(this.rafId);
+          this.rafId = null;
+        }
+      }
+    }
+
     animate() {
+      if (!this.isActive || !this.renderer) {
+        this.rafId = null;
+        return;
+      }
       this.rafId = requestAnimationFrame(this.animate);
       const delta = Math.min(this.clock.getDelta(), 0.1);
 

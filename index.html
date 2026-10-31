@@ -1581,14 +1581,14 @@
          ======================================================== -->
     <div class="game-section" id="arcade-module">
       <div class="game-mode-tabs">
-        <button class="mode-tab-btn active" id="tab-btn-3d" onclick="switchGameMode('3d')">🌐 3D OPEN WORLD // CYBER-CITY (GTA V &amp; Watch Dogs)</button>
-        <button class="mode-tab-btn" id="tab-btn-2d" onclick="switchGameMode('2d')">🛡️ 2D BREACH DEFENDER (Retro Arcade)</button>
+        <button class="mode-tab-btn active" id="tab-btn-2d" onclick="switchGameMode('2d')">🛡️ 2D BREACH DEFENDER (Retro Arcade &middot; Modo Ligero)</button>
+        <button class="mode-tab-btn" id="tab-btn-3d" onclick="switchGameMode('3d')">🌐 3D OPEN WORLD // CYBER-CITY (GTA V &amp; Watch Dogs)</button>
       </div>
 
       <!-- ========================================================
            3D OPEN WORLD // CYBER-CITY GTA V & WATCH DOGS SIMULATOR
            ======================================================== -->
-      <div id="openworld-container" class="ow-container">
+      <div id="openworld-container" class="ow-container" style="display: none;">
         <div class="ow-hud-top">
           <div class="ow-user-badge">
             <img id="ow-user-avatar" src="https://github.com/equisde.png" alt="Avatar" class="ow-avatar-img" />
@@ -1729,7 +1729,7 @@ console.log('Grid hackeado con éxito por Operador @' + player.username);
       <!-- ========================================================
            PRESERVED 2D RETRO ARCADE (BREACH DEFENDER)
            ======================================================== -->
-      <div id="retro-2d-container" class="retro-2d-container" style="display: none;">
+      <div id="retro-2d-container" class="retro-2d-container" style="display: block;">
         <div class="game-header">
           <div class="game-title-wrap">
             <h3 id="txt-game-title">🛡️ BREACH DEFENDER // DEVSECOPS INTERCEPTOR</h3>
@@ -2755,34 +2755,69 @@ and historic community launch on Bitcointalk.`;
   </script>
   <script src="cyber_city_3d.js"></script>
   <script>
+    let activeGameMode = '2d';
+
     function switchGameMode(mode) {
       const owBox = document.getElementById('openworld-container');
       const r2dBox = document.getElementById('retro-2d-container');
       const btn3d = document.getElementById('tab-btn-3d');
       const btn2d = document.getElementById('tab-btn-2d');
 
-      if (mode === '3d') {
-        if (owBox) owBox.style.display = 'flex';
-        if (r2dBox) r2dBox.style.display = 'none';
-        if (btn3d) btn3d.classList.add('active');
-        if (btn2d) btn2d.classList.remove('active');
-        if (window.cyberCityEngine && !window.cyberCityEngine.renderer) {
-          window.cyberCityEngine.init('ow-viewport', 'openworld-canvas');
+      activeGameMode = mode;
+      const is3D = (mode === '3d');
+
+      if (owBox) owBox.style.display = is3D ? 'flex' : 'none';
+      if (r2dBox) r2dBox.style.display = is3D ? 'none' : 'block';
+      if (btn3d) btn3d.classList.toggle('active', is3D);
+      if (btn2d) btn2d.classList.toggle('active', !is3D);
+
+      if (window.cyberCityEngine) {
+        if (is3D) {
+          if (!window.cyberCityEngine.renderer) {
+            window.cyberCityEngine.init('ow-viewport', 'openworld-canvas');
+          } else {
+            window.cyberCityEngine.setActive(true);
+          }
+        } else {
+          window.cyberCityEngine.setActive(false);
         }
-      } else {
-        if (owBox) owBox.style.display = 'none';
-        if (r2dBox) r2dBox.style.display = 'block';
-        if (btn3d) btn3d.classList.remove('active');
-        if (btn2d) btn2d.classList.add('active');
+      }
+
+      if (!is3D && typeof resizeGameCanvas === 'function') {
+        resizeGameCanvas();
       }
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        if (window.cyberCityEngine && !window.cyberCityEngine.renderer) {
-          window.cyberCityEngine.init('ow-viewport', 'openworld-canvas');
+    // Visibility Listener: Freeze GPU & loop when tab is hidden, resume when focused
+    document.addEventListener('visibilitychange', () => {
+      const isVisible = (document.visibilityState === 'visible');
+      if (window.cyberCityEngine) {
+        if (!isVisible) {
+          window.cyberCityEngine.setActive(false);
+        } else if (activeGameMode === '3d') {
+          window.cyberCityEngine.setActive(true);
         }
-      }, 300);
+      }
+
+      if (!isVisible && typeof gameRunning !== 'undefined' && gameRunning) {
+        gameRunning = false;
+        const overlay = document.getElementById('game-overlay');
+        if (overlay) {
+          overlay.style.display = 'flex';
+          const title = document.getElementById('txt-game-modal-title');
+          const desc = document.getElementById('txt-game-modal-desc');
+          const btn = document.getElementById('game-start-btn');
+          if (title) title.innerText = 'SIMULATION PAUSED';
+          if (desc) desc.innerHTML = 'Firewall execution suspended to preserve mobile battery &amp; GPU memory. Click to resume defense.';
+          if (btn) btn.innerText = 'RESUME DEFENSE';
+        }
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof resizeGameCanvas === 'function') {
+        resizeGameCanvas();
+      }
     });
   </script>
 </body>

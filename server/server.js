@@ -42,8 +42,235 @@ app.get('/health', (req, res) => {
     status: 'ONLINE',
     system: 'PARALLAX_CYBER_CITY_AUTHORITATIVE_SERVER',
     playersOnline: connectedPlayers.size,
+    worldState: {
+      blackoutActive: worldObjects.blackoutActive,
+      trafficPhase: worldObjects.trafficPhase,
+      hackedCamerasCount: worldObjects.hackedCameras.size
+    },
+    clientOrigin: CLIENT_ORIGIN,
+    uptimeSeconds: Math.floor(process.uptime()),
     timestamp: new Date().toISOString()
   });
+});
+
+// Root Landing Dashboard (Resolves "Cannot GET /" on Heroku)
+app.get('/', (req, res) => {
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PARALLAX CYBER-CITY // Heroku Server Grid</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --neon-cyan: #00f0ff;
+      --neon-pink: #ff007f;
+      --neon-green: #00ff66;
+      --neon-gold: #ffd700;
+      --bg-dark: #050811;
+      --card-bg: rgba(10, 16, 30, 0.85);
+      --border: rgba(0, 240, 255, 0.3);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-dark);
+      background-image:
+        radial-gradient(circle at 50% 20%, rgba(0, 240, 255, 0.08) 0%, transparent 60%),
+        linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 30px 30px, 30px 30px;
+      color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .c2-card {
+      width: 100%;
+      max-width: 780px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 0 40px rgba(0, 240, 255, 0.15), inset 0 0 20px rgba(0, 240, 255, 0.05);
+      padding: 36px 32px;
+      backdrop-filter: blur(12px);
+    }
+    .c2-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 255, 102, 0.15);
+      border: 1px solid var(--neon-green);
+      color: var(--neon-green);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--neon-green);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--neon-green);
+      animation: pulse 1.6s infinite ease-in-out;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+    h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.85rem;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: 1.5px;
+      text-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+      margin-bottom: 8px;
+    }
+    .c2-desc {
+      color: #94a3b8;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .stat-box {
+      background: rgba(6, 11, 22, 0.8);
+      border: 1px solid rgba(0, 240, 255, 0.18);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .stat-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+    .stat-value { font-family: 'Orbitron', monospace; font-size: 1.3rem; font-weight: 700; color: var(--neon-cyan); margin-top: 4px; }
+    .actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .c2-btn {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-decoration: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #00f0ff, #0077aa);
+      color: #030814;
+      border: 1px solid var(--neon-cyan);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 28px rgba(0, 240, 255, 0.65);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--neon-cyan);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      background: rgba(0, 240, 255, 0.1);
+      border-color: var(--neon-cyan);
+    }
+    .footer-note {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.72rem;
+      color: #64748b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="c2-card">
+    <div class="c2-badge">
+      <div class="pulse-dot"></div>
+      AUTHORITATIVE GRID ONLINE
+    </div>
+    <h1>PARALLAX CYBER-CITY // C2 NODE</h1>
+    <p class="c2-desc">
+      Servidor autoritativo de telemetría, WebSocket multijugador y autenticación GitHub OAuth para el mundo abierto 3D y simulador Watch Dogs de Parallax.
+    </p>
+
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-label">Operativos en Línea</div>
+        <div class="stat-value" id="disp-players">${connectedPlayers.size}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Estado de Red</div>
+        <div class="stat-value" style="color: var(--neon-green);" id="disp-grid">${worldObjects.blackoutActive ? 'BLACKOUT' : 'ACTIVO'}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Semáforos</div>
+        <div class="stat-value" style="color: var(--neon-gold); font-size: 1.05rem;" id="disp-traffic">${worldObjects.trafficPhase}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Heroku Dyno</div>
+        <div class="stat-value" style="font-size: 1.05rem;">ECO / NODE 20</div>
+      </div>
+    </div>
+
+    <div class="actions-row">
+      <a href="${CLIENT_ORIGIN}#arcade-module" class="c2-btn btn-primary">
+        🎮 JUGAR EN IT’SPARALLAX.ME &rarr;
+      </a>
+      <a href="/auth/github" class="c2-btn btn-secondary">
+        ⚡ CONECTAR CON GITHUB
+      </a>
+      <a href="/health" class="c2-btn btn-secondary" target="_blank">
+        📡 TELEMETRÍA JSON
+      </a>
+    </div>
+
+    <div class="footer-note">
+      <span>Architect: <b>Rodrigo Carrasco (Parallax / equisde)</b> &middot; Alliance: <b>IMXNOOBX</b></span>
+      <span>Heroku Student Pack Protected</span>
+    </div>
+  </div>
+
+  <script>
+    // Live update telemetry polling every 4 seconds
+    setInterval(async () => {
+      try {
+        const res = await fetch('/health');
+        if (res.ok) {
+          const d = await res.json();
+          document.getElementById('disp-players').textContent = d.playersOnline;
+          document.getElementById('disp-grid').textContent = d.worldState?.blackoutActive ? 'BLACKOUT' : 'ACTIVO';
+          document.getElementById('disp-traffic').textContent = d.worldState?.trafficPhase || 'AUTO';
+        }
+      } catch (e) {}
+    }, 4000);
+  </script>
+</body>
+</html>`;
+  res.send(html);
 });
 
 // Step 1: Initiate GitHub OAuth Login
