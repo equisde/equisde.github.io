@@ -4,20 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>PARALLAX // GTA ONLINE ULTRA 3D (Full Open World & Multiplayer)</title>
-  <meta name="description" content="Simulador 3D Open World estilo GTA Online por Rodrigo Carrasco (Parallax / equisde). Flota 100% NPC en tierra, mar y aire, Los Santos Customs, soporte aéreo de helicóptero policial, carjacking y chat de crews.">
+  <meta name="description" content="Simulador 3D Open World estilo GTA Online por Rodrigo Carrasco (Parallax / equisde). Flota 100% NPC en tierra, mar y aire, HUD canónico de GTA Online, menú de interacción [M], navegador Eyefind para compra de vehículos, persistencia de estacionamiento en la calle y leveling de RP.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700;800&family=Chakra+Petch:wght@500;700;900&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #03050a;
-      --card-bg: rgba(6, 11, 22, 0.92);
+      --card-bg: rgba(6, 11, 22, 0.94);
       --neon-cyan: #00f0ff;
       --neon-pink: #ff007f;
-      --neon-green: #00ff66;
+      --neon-green: #22c55e;
       --neon-gold: #ffd700;
-      --neon-orange: #ffaa00;
+      --neon-orange: #ff9900;
       --border: rgba(0, 240, 255, 0.32);
+      --gta-menu-bg: rgba(14, 18, 27, 0.96);
+      --gta-menu-header: #0b0f19;
+      --gta-menu-orange: #ff9900;
+      --gta-menu-hover: #1e293b;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
     html, body {
@@ -26,7 +30,7 @@
       overflow: hidden;
       background: var(--bg);
       color: #e2e8f0;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     #ow-viewport {
       position: absolute;
@@ -43,73 +47,50 @@
       touch-action: none;
     }
 
-    /* Top HUD */
-    .g3d-top-hud {
+    /* ========================================================
+     * GTA ONLINE TOP NAVIGATION BAR
+     * ======================================================== */
+    .gta-top-nav-bar {
       position: absolute;
-      top: 14px;
+      top: 12px;
       left: 16px;
       right: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 12px;
-      z-index: 20;
+      z-index: 25;
       pointer-events: none;
     }
     .hud-interactive { pointer-events: auto; }
-    .g3d-user-badge {
+    .gta-player-badge {
       display: flex;
       align-items: center;
       gap: 10px;
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 8px;
       padding: 6px 14px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+      pointer-events: auto;
     }
-    .g3d-avatar {
+    .gta-avatar-img {
       width: 36px;
       height: 36px;
       border-radius: 50%;
       border: 2px solid var(--neon-cyan);
     }
-    .g3d-u-name { font-family: 'Orbitron', monospace; font-size: 0.88rem; font-weight: 700; color: #fff; }
-    .g3d-u-role { font-size: 0.65rem; color: var(--neon-cyan); letter-spacing: 1px; }
+    .gta-p-name { font-family: 'Orbitron', monospace; font-size: 0.88rem; font-weight: 700; color: #fff; }
+    .gta-p-crew { font-size: 0.65rem; color: var(--neon-cyan); letter-spacing: 1px; font-weight: 600; }
 
-    .g3d-center-stats {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 8px 18px;
-      backdrop-filter: blur(10px);
-    }
-    .g3d-wanted-stars {
-      font-size: 1.3rem;
-      letter-spacing: 4px;
-      color: #64748b;
-      transition: color 0.2s;
-    }
-    .g3d-cash-pill {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: var(--neon-gold);
-      background: rgba(255, 215, 0, 0.12);
-      border: 1px solid var(--neon-gold);
-      border-radius: 6px;
-      padding: 4px 10px;
-    }
-
-    .g3d-top-actions {
+    .gta-nav-buttons {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
+      pointer-events: auto;
     }
-    .g3d-btn {
+    .gta-nav-btn {
       font-family: 'Orbitron', monospace;
       font-size: 0.72rem;
       font-weight: 700;
@@ -117,288 +98,647 @@
       padding: 7px 11px;
       border-radius: 6px;
       border: 1px solid var(--border);
-      background: rgba(8, 15, 28, 0.88);
-      color: var(--neon-cyan);
+      background: rgba(8, 15, 28, 0.92);
+      color: #cbd5e1;
       cursor: pointer;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(8px);
+    }
+    .gta-nav-btn:hover {
+      background: var(--neon-cyan);
+      color: #000;
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 14px rgba(0, 240, 255, 0.6);
+    }
+    .gta-nav-active {
+      background: rgba(255, 153, 0, 0.22);
+      border-color: var(--neon-orange);
+      color: var(--neon-orange);
+    }
+    .gta-nav-active:hover {
+      background: var(--neon-orange);
+      color: #000;
+    }
+    .gta-nav-gold {
+      border-color: var(--neon-gold);
+      color: var(--neon-gold);
+      background: rgba(255, 215, 0, 0.12);
+    }
+    .gta-nav-gold:hover {
+      background: var(--neon-gold);
+      color: #000;
+    }
+    .gta-nav-exit {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #f87171;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      transition: all 0.15s ease;
-      backdrop-filter: blur(8px);
     }
-    .g3d-btn:hover {
-      background: rgba(0, 240, 255, 0.22);
-      border-color: var(--neon-cyan);
-      box-shadow: 0 0 15px rgba(0, 240, 255, 0.45);
-      transform: translateY(-1px);
-    }
-    .g3d-btn-gold {
-      border-color: rgba(255, 215, 0, 0.5);
-      color: var(--neon-gold);
-    }
-    .g3d-btn-exit {
-      border-color: rgba(255, 0, 127, 0.5);
-      color: var(--neon-pink);
+    .gta-nav-exit:hover {
+      background: #ef4444;
+      color: #fff;
     }
 
-    /* Contextual Action Prompt */
-    .g3d-context-banner {
+    /* ========================================================
+     * GTA ONLINE: TOP-RIGHT CANONICAL HUD (CASH, BANK, WEAPON)
+     * ======================================================== */
+    .gta-top-right-hud {
       position: absolute;
-      top: 76px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(6, 12, 24, 0.94);
-      border: 2px solid var(--neon-cyan);
-      border-radius: 8px;
-      padding: 10px 22px;
+      top: 60px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      z-index: 24;
+      pointer-events: none;
+    }
+    .gta-weapon-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(5, 9, 18, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      padding: 6px 14px;
+      backdrop-filter: blur(10px);
+    }
+    .gta-weapon-title {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      letter-spacing: 1px;
+    }
+    .gta-ammo-counter {
       font-family: 'Orbitron', monospace;
-      font-size: 0.84rem;
+      font-size: 0.95rem;
       font-weight: 700;
       color: #fff;
-      z-index: 25;
-      box-shadow: 0 0 25px rgba(0, 240, 255, 0.4);
-      text-align: center;
+    }
+    .gta-stars-row {
+      font-size: 1.4rem;
+      letter-spacing: 4px;
+      color: #64748b;
+      transition: color 0.2s;
+      text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+    }
+    .gta-money-card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      position: relative;
+    }
+    .gta-cash-digits {
+      font-family: 'Chakra Petch', 'Orbitron', monospace;
+      font-size: 1.85rem;
+      font-weight: 900;
+      color: #22c55e;
+      letter-spacing: 1.5px;
+      text-shadow: 0 2px 10px rgba(34, 197, 94, 0.6);
+    }
+    .gta-bank-digits {
+      font-family: 'Chakra Petch', 'Orbitron', monospace;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 1px;
+      opacity: 0.92;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    }
+    .gta-delta-float {
+      position: absolute;
+      top: -24px;
+      right: 0;
+      font-family: 'Chakra Petch', monospace;
+      font-size: 1.15rem;
+      font-weight: 900;
+      opacity: 0;
+      transform: translateY(0);
+      transition: all 0.4s ease-out;
+      pointer-events: none;
+      text-shadow: 0 0 10px currentColor;
     }
 
-    /* Watch Dogs Profiler Reticle */
+    /* ========================================================
+     * GTA ONLINE: TOP-CENTER RP & LEVELING BAR
+     * ======================================================== */
+    .gta-top-center-rp {
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      z-index: 24;
+      pointer-events: none;
+    }
+    .gta-rp-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(14, 165, 233, 0.25);
+      border: 1px solid #0ea5e9;
+      border-radius: 4px;
+      padding: 2px 10px;
+    }
+    .gta-rp-label { font-family: 'Orbitron', monospace; font-size: 0.68rem; font-weight: 700; color: #7dd3fc; }
+    .gta-rp-num { font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 900; color: #fff; }
+    .gta-rp-track {
+      width: 220px;
+      height: 7px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(14, 165, 233, 0.4);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .gta-rp-progress {
+      height: 100%;
+      background: linear-gradient(90deg, #0284c7, #38bdf8);
+      box-shadow: 0 0 8px #0ea5e9;
+      transition: width 0.3s ease-out;
+    }
+    .gta-rp-numeric {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+    }
+
+    /* ========================================================
+     * GTA ONLINE: BOTTOM-LEFT RADAR & VITALS (HP, ARMOR, STAMINA)
+     * ======================================================== */
+    .gta-bottom-left-radar {
+      position: absolute;
+      bottom: 18px;
+      left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 22;
+      pointer-events: none;
+    }
+    .gta-radar-frame {
+      width: 144px;
+      height: 144px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      background: rgba(2, 6, 14, 0.85);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0, 240, 255, 0.15);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #ow-radar-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .gta-vitals-cluster {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      width: 144px;
+    }
+    .gta-bar-wrap {
+      width: 100%;
+      height: 5px;
+      background: rgba(15, 23, 42, 0.85);
+      border-radius: 2px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .gta-bar-fill {
+      height: 100%;
+      transition: width 0.2s ease-out;
+    }
+    .fill-hp { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+    .fill-armor { background: #3b82f6; box-shadow: 0 0 6px #3b82f6; }
+    .fill-stamina { background: #eab308; box-shadow: 0 0 6px #eab308; }
+    .gta-district-tag {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+      width: 180px;
+    }
+
+    /* ========================================================
+     * GTA ONLINE: TOP-LEFT INTERACTION MENU [M]
+     * ======================================================== */
+    .gta-menu-box {
+      position: absolute;
+      top: 60px;
+      left: 20px;
+      width: 290px;
+      background: var(--gta-menu-bg);
+      border: 1px solid rgba(255, 153, 0, 0.6);
+      border-radius: 6px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 20px rgba(255, 153, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      z-index: 30;
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+    .gta-menu-header {
+      background: var(--gta-menu-header);
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--gta-menu-orange);
+    }
+    .gta-menu-title {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: 1.5px;
+    }
+    .gta-menu-sub {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--gta-menu-orange);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .gta-menu-items {
+      display: flex;
+      flex-direction: column;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+    .gta-menu-row {
+      padding: 9px 14px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .gta-menu-row:hover, .gta-menu-row.active {
+      background: #f1f5f9;
+      color: #0b0f19;
+      font-weight: 700;
+    }
+    .gta-menu-footer {
+      background: #090d16;
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.62rem;
+      color: #94a3b8;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* ========================================================
+     * GTA ONLINE: EYEFIND WEB BROWSER MODAL
+     * ======================================================== */
+    .eyefind-modal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(880px, 94vw);
+      height: min(620px, 90vh);
+      background: #0f172a;
+      border: 1px solid #38bdf8;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      z-index: 40;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(56, 189, 248, 0.3);
+      overflow: hidden;
+    }
+    .eyefind-titlebar {
+      background: #0284c7;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .eyefind-addressbar {
+      background: #1e293b;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #334155;
+    }
+    .eyefind-url {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 4px;
+      color: #38bdf8;
+      padding: 4px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+    }
+    .eyefind-dealers-tabs {
+      display: flex;
+      background: #0b0f19;
+      border-bottom: 1px solid #334155;
+      overflow-x: auto;
+    }
+    .dealer-tab-btn {
+      padding: 10px 18px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #94a3b8;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .dealer-tab-btn.active, .dealer-tab-btn:hover {
+      color: #fff;
+      background: rgba(56, 189, 248, 0.12);
+      border-bottom-color: #38bdf8;
+    }
+    .eyefind-showroom {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+      background: #0b1120;
+    }
+    .veh-card {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .veh-card:hover {
+      transform: translateY(-2px);
+      border-color: #38bdf8;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+    .veh-brand { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+    .veh-name { font-family: 'Chakra Petch', sans-serif; font-size: 1.05rem; font-weight: 700; color: #fff; }
+    .veh-price { font-family: 'Chakra Petch', monospace; font-size: 1.15rem; font-weight: 900; color: #22c55e; }
+    .veh-spec-row { display: flex; justify-content: space-between; font-size: 0.68rem; color: #cbd5e1; }
+    .veh-spec-bar { width: 110px; height: 5px; background: #334155; border-radius: 3px; overflow: hidden; }
+    .veh-spec-fill { height: 100%; background: #38bdf8; }
+    .veh-buy-btn {
+      margin-top: 4px;
+      padding: 8px 12px;
+      background: #22c55e;
+      border: none;
+      border-radius: 6px;
+      color: #052e16;
+      font-weight: 800;
+      font-size: 0.76rem;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .veh-buy-btn:hover {
+      background: #16a34a;
+      color: #fff;
+    }
+
+    /* Context Banner */
+    .g3d-context-banner {
+      position: absolute;
+      top: 130px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(3, 7, 18, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 20px;
+      font-size: 0.85rem;
+      color: #fff;
+      z-index: 21;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+      pointer-events: none;
+    }
+
+    /* Speedometer Cockpit */
+    .g3d-cockpit {
+      position: absolute;
+      bottom: 22px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 20;
+      pointer-events: none;
+    }
+    .speedo-wrap {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      backdrop-filter: blur(10px);
+    }
+    .speed-num { font-family: 'Orbitron', monospace; font-size: 1.6rem; font-weight: 900; color: #fff; }
+    .speed-unit { font-size: 0.6rem; color: var(--neon-cyan); letter-spacing: 1px; }
+
+    /* Multiplayer Chat */
+    .g3d-chat-container {
+      position: absolute;
+      bottom: 84px;
+      left: 175px;
+      width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 20;
+    }
+    .chat-feed {
+      max-height: 105px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.72rem;
+      color: #cbd5e1;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+      pointer-events: none;
+    }
+    .chat-msg { background: rgba(0, 0, 0, 0.45); padding: 2px 6px; border-radius: 4px; }
+    .chat-input {
+      background: rgba(3, 7, 18, 0.8);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.75rem;
+      color: #fff;
+      outline: none;
+    }
+    .chat-input:focus { border-color: var(--neon-cyan); }
+
+    /* WASTED Banner */
+    .g3d-wasted-banner {
+      position: absolute;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(185, 28, 28, 0.45);
+      backdrop-filter: blur(8px) grayscale(80%);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    .wasted-title {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 5rem;
+      font-weight: 900;
+      color: #ef4444;
+      text-shadow: 0 0 40px rgba(0, 0, 0, 0.9), 0 0 20px #dc2626;
+      letter-spacing: 12px;
+    }
+
+    /* Profiler Reticle */
     .ow-profiler-reticle {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       pointer-events: none;
-      z-index: 15;
+      z-index: 10;
     }
     .reticle-crosshair {
-      width: 32px;
-      height: 32px;
-      border: 2px dashed rgba(0, 240, 255, 0.8);
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.7);
       border-radius: 50%;
+      box-shadow: 0 0 6px rgba(0, 240, 255, 0.8);
     }
     .reticle-info {
       position: absolute;
-      left: 42px;
-      top: -14px;
-      background: rgba(6, 12, 24, 0.92);
+      top: -30px;
+      left: 24px;
+      background: rgba(4, 8, 16, 0.9);
       border: 1px solid var(--neon-cyan);
       border-radius: 6px;
-      padding: 8px 12px;
-      width: 240px;
-      font-size: 0.72rem;
-      backdrop-filter: blur(8px);
-      box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+      padding: 6px 12px;
+      width: 200px;
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.3);
+      font-size: 0.68rem;
     }
-    .r-head { color: #fff; font-weight: 700; font-family: 'Orbitron', monospace; margin-bottom: 2px; }
-    .r-occ { color: var(--neon-cyan); font-size: 0.65rem; margin-bottom: 2px; }
-    .r-bank { color: var(--neon-gold); font-size: 0.68rem; margin-bottom: 4px; font-weight: 700; }
-    .r-exploit { color: var(--neon-pink); font-size: 0.65rem; font-weight: 700; }
-
-    /* Radar Minimap */
-    .g3d-radar-box {
-      position: absolute;
-      bottom: 24px;
-      left: 20px;
-      width: 140px;
-      height: 140px;
-      background: rgba(4, 7, 14, 0.88);
-      border: 2px solid var(--neon-cyan);
-      border-radius: 50%;
-      overflow: hidden;
-      z-index: 20;
-      box-shadow: 0 0 25px rgba(0, 240, 255, 0.35);
-      backdrop-filter: blur(6px);
-    }
-    #ow-radar-canvas { width: 100%; height: 100%; }
-
-    /* Cockpit Dashboard */
-    .g3d-cockpit {
-      position: absolute;
-      bottom: 24px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 18px;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
-      z-index: 20;
-      min-width: 240px;
-    }
-    .speedo-wrap { display: flex; align-items: baseline; gap: 4px; }
-    .speed-num { font-family: 'Orbitron', monospace; font-size: 2.2rem; font-weight: 900; color: #fff; text-shadow: 0 0 15px var(--neon-cyan); }
-    .speed-unit { font-size: 0.7rem; color: var(--neon-cyan); }
-    .weapon-hud-card {
-      background: rgba(0, 240, 255, 0.08);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 6px 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.72rem;
-      color: var(--neon-cyan);
-    }
-
-    /* Multiplayer Chat */
-    .g3d-chat-container {
-      position: absolute;
-      bottom: 180px;
-      left: 20px;
-      width: 320px;
-      background: rgba(4, 8, 16, 0.85);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px;
-      z-index: 25;
-      backdrop-filter: blur(8px);
-    }
-    .chat-feed {
-      height: 90px;
-      overflow-y: auto;
-      font-size: 0.72rem;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .chat-input {
-      width: 100%;
-      background: rgba(0,0,0,0.6);
-      border: 1px solid var(--border);
-      color: #fff;
-      padding: 4px 8px;
-      font-size: 0.72rem;
-      border-radius: 4px;
-      margin-top: 6px;
-      outline: none;
-    }
-
-    /* WASTED Fullscreen Banner */
-    .g3d-wasted-banner {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      background: radial-gradient(circle, rgba(180, 0, 0, 0.4), rgba(10, 0, 0, 0.95));
-      z-index: 999;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      backdrop-filter: grayscale(0.85) sepia(0.3);
-    }
-    .wasted-title {
-      font-family: 'Orbitron', monospace;
-      font-size: 5rem;
-      font-weight: 900;
-      color: #e11d48;
-      text-shadow: 0 0 40px #ff0033;
-      letter-spacing: 6px;
-      animation: pulseWasted 1.5s infinite;
-    }
-    @keyframes pulseWasted { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    .r-head { font-weight: 700; color: var(--neon-cyan); }
+    .r-occ { color: #94a3b8; font-size: 0.62rem; }
+    .r-bank { color: var(--neon-gold); font-weight: 700; margin-top: 2px; }
+    .r-exploit { color: var(--neon-green); font-weight: 700; margin-top: 4px; }
 
     /* Modals */
     .g3d-modal {
-      display: none;
-      position: fixed;
-      top: 50%; left: 50%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
       transform: translate(-50%, -50%);
-      width: 90%; max-width: 520px;
-      background: rgba(7, 12, 24, 0.96);
-      border: 2px solid var(--neon-cyan);
-      border-radius: 14px;
-      padding: 22px;
-      z-index: 100;
-      backdrop-filter: blur(16px);
-      box-shadow: 0 0 50px rgba(0, 240, 255, 0.35);
+      width: min(520px, 92vw);
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: none;
       flex-direction: column;
       gap: 14px;
-      max-height: 85vh;
-      overflow-y: auto;
+      z-index: 50;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 0 40px rgba(0, 240, 255, 0.25);
     }
-    .modal-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-    .modal-title { font-family: 'Orbitron', monospace; font-size: 1.05rem; color: #fff; font-weight: 700; }
-    .modal-close { background: none; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer; }
-    .modal-close:hover { color: var(--neon-pink); }
-    .dynasty-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .buy-btn {
-      font-family: 'Orbitron', monospace;
-      font-size: 0.75rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, var(--neon-cyan), #007799);
+    .modal-head { display: flex; justify-content: space-between; align-items: center; }
+    .modal-title { font-family: 'Orbitron', monospace; font-size: 0.95rem; font-weight: 700; color: #fff; }
+    .modal-close {
+      background: transparent;
       border: none;
-      color: #030814;
-      padding: 8px 14px;
-      border-radius: 6px;
+      color: #94a3b8;
+      font-size: 1.2rem;
       cursor: pointer;
     }
-    .buy-btn:hover { box-shadow: 0 0 15px var(--neon-cyan); }
+    .modal-close:hover { color: #fff; }
 
-    /* Feed Toasts */
-    .ow-hack-feed {
-      position: absolute;
-      bottom: 28px;
-      left: 175px;
-      display: flex;
-      flex-direction: column-reverse;
-      gap: 6px;
-      max-width: 380px;
-      pointer-events: none;
-      z-index: 25;
-    }
-
-    /* Mobile Controls */
+    /* Mobile Touch Buttons */
     .ow-mobile-actions-cluster {
-      display: none;
       position: absolute;
       bottom: 24px;
-      right: 20px;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      right: 18px;
+      display: none;
+      flex-wrap: wrap;
       gap: 8px;
-      z-index: 50;
-      touch-action: none;
+      max-width: 220px;
+      z-index: 22;
+    }
+    @media (max-width: 768px) {
+      .ow-mobile-actions-cluster { display: flex; }
+      .gta-menu-box { width: 260px; left: 10px; top: 55px; }
+      .gta-top-right-hud { right: 10px; top: 55px; }
+      .gta-bottom-left-radar { bottom: 10px; left: 10px; }
     }
     .m-act-btn {
-      width: 50px; height: 50px;
-      border-radius: 50%;
+      padding: 10px 14px;
       font-family: 'Orbitron', monospace;
-      font-size: 0.58rem; font-weight: 900;
-      cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: rgba(8, 15, 28, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
     }
-    .m-btn-gas { background: rgba(0, 255, 102, 0.25); border: 2px solid var(--neon-green); color: var(--neon-green); }
-    .m-btn-brake { background: rgba(255, 0, 51, 0.25); border: 2px solid #ff0033; color: #ff0033; }
-    .m-btn-carjack { background: rgba(255, 0, 85, 0.25); border: 2px solid #ff0055; color: #ff0055; }
-    .m-btn-hack { background: rgba(0, 240, 255, 0.25); border: 2px solid var(--neon-cyan); color: var(--neon-cyan); }
-    .m-btn-greet { background: rgba(0, 240, 255, 0.25); border: 2px solid var(--neon-cyan); color: #fff; }
-    .m-btn-provoke { background: rgba(255, 170, 0, 0.25); border: 2px solid var(--neon-orange); color: #fff; }
-    .m-btn-fire { background: rgba(255, 170, 0, 0.25); border: 2px solid var(--neon-orange); color: var(--neon-orange); }
+    .m-btn-gas { border-color: #22c55e; color: #22c55e; }
+    .m-btn-brake { border-color: #ef4444; color: #ef4444; }
+    .m-btn-carjack { border-color: #f59e0b; color: #f59e0b; }
+    .m-btn-menu { border-color: #ff9900; color: #ff9900; }
 
-    @media (max-width: 900px) {
-      .ow-mobile-actions-cluster { display: grid; }
-      .g3d-center-stats { display: none; }
-      .g3d-cockpit { display: none; }
-      .g3d-chat-container { display: none; }
-      .ow-hack-feed { left: 16px; bottom: 165px; max-width: 280px; }
+    /* Toast Feed */
+    .ow-hack-feed {
+      position: absolute;
+      top: 175px;
+      left: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 22;
+      pointer-events: none;
+    }
+    .ow-hack-toast {
+      background: rgba(3, 7, 18, 0.88);
+      border-left: 3px solid var(--neon-cyan);
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 0.72rem;
+      color: #e2e8f0;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
 
+  <!-- 3D Viewport -->
   <div id="ow-viewport">
     <canvas id="openworld-canvas"></canvas>
 
@@ -413,38 +753,67 @@
     </div>
   </div>
 
+  <!-- Context Prompt Banner -->
   <div class="g3d-context-banner" id="g3d-context-prompt" style="display: none;"></div>
 
-  <!-- Top HUD Bar -->
-  <div class="g3d-top-hud">
-    <div class="g3d-user-badge hud-interactive">
-      <img id="ow-user-avatar" src="https://github.com/equisde.png" alt="Avatar" class="g3d-avatar" />
+  <!-- Top Navigation Bar -->
+  <div class="gta-top-nav-bar">
+    <div class="gta-player-badge">
+      <img id="ow-user-avatar" src="https://github.com/equisde.png" alt="Avatar" class="gta-avatar-img">
       <div>
-        <div class="g3d-u-name" id="ow-display-username">@equisde</div>
-        <div class="g3d-u-role">⚡ PARALLAX C2 [IMX CREW]</div>
+        <div class="gta-p-name" id="ow-display-username">@equisde</div>
+        <div class="gta-p-crew">★ PARALLAX [IMX CREW]</div>
       </div>
     </div>
 
-    <div class="g3d-center-stats">
-      <div class="g3d-wanted-stars" id="g3d-wanted-stars">☆☆☆☆☆</div>
-      <div class="g3d-cash-pill" id="g3d-cash-display">$1,500</div>
-    </div>
-
-    <div class="g3d-top-actions hud-interactive">
-      <button class="g3d-btn g3d-btn-gold" onclick="openLeaderboardModal()">🏆 RANKING</button>
-      <button class="g3d-btn" onclick="openLSCustomsModal()">🔧 LSC CUSTOMS</button>
-      <button class="g3d-btn" onclick="openBankModal()">🏦 MAZE BANK</button>
-      <button class="g3d-btn" onclick="openRealEstateModal()">🏡 DYNASTY 8</button>
-      <button class="g3d-btn" onclick="openBusinessModal()">🏢 SECUROSERV</button>
-      <button class="g3d-btn" onclick="openSmartphone()">📱 MÓVIL</button>
-      <button class="g3d-btn" onclick="toggleVehicleModal()">🚗 GARAJE</button>
-      <a href="https://itsparallax.me" class="g3d-btn g3d-btn-exit">⬅ SALIR</a>
+    <div class="gta-nav-buttons">
+      <button class="gta-nav-btn gta-nav-active" onclick="window.toggleGTAInteractionMenu()">[M] INTERACCIÓN</button>
+      <button class="gta-nav-btn gta-nav-gold" onclick="openEyefindBrowser()">🌐 NAVEGADOR EYEFIND</button>
+      <button class="gta-nav-btn" onclick="openLSCustomsModal()">🔧 LSC CUSTOMS</button>
+      <button class="gta-nav-btn" onclick="openBankModal()">🏦 MAZE BANK</button>
+      <button class="gta-nav-btn" onclick="openSmartphone()">📱 TELÉFONO</button>
+      <button class="gta-nav-btn" onclick="openLeaderboardModal()">🏆 RANKING</button>
+      <a href="https://itsparallax.me" class="gta-nav-btn gta-nav-exit">⬅ SALIR</a>
     </div>
   </div>
 
-  <!-- Radar Minimap -->
-  <div class="g3d-radar-box">
-    <canvas id="ow-radar-canvas" width="140" height="140"></canvas>
+  <!-- Top-Right Canonical GTA Online HUD -->
+  <div class="gta-top-right-hud">
+    <div class="gta-weapon-card">
+      <span id="gta-weapon-name" class="gta-weapon-title">PISTOLA 9MM</span>
+      <span id="gta-ammo-val" class="gta-ammo-counter">12 / 120</span>
+    </div>
+    <div id="gta-stars" class="gta-stars-row">☆☆☆☆☆</div>
+    <div class="gta-money-card">
+      <div id="gta-cash-val" class="gta-cash-digits">$ 1,500</div>
+      <div id="gta-bank-val" class="gta-bank-digits">$ 50,000</div>
+      <div id="gta-cash-delta" class="gta-delta-float"></div>
+    </div>
+  </div>
+
+  <!-- Top-Center Canonical GTA Online RP & Leveling Bar -->
+  <div class="gta-top-center-rp">
+    <div class="gta-rp-badge">
+      <span class="gta-rp-label">RANK</span>
+      <span id="gta-rank-val" class="gta-rp-num">24</span>
+    </div>
+    <div class="gta-rp-track">
+      <div id="gta-rp-fill" class="gta-rp-progress" style="width: 45%;"></div>
+    </div>
+    <div id="gta-rp-points" class="gta-rp-numeric">12,450 / 15,000 RP</div>
+  </div>
+
+  <!-- Bottom-Left Radar Minimap & Vital Bars -->
+  <div class="gta-bottom-left-radar">
+    <div class="gta-radar-frame">
+      <canvas id="ow-radar-canvas" width="144" height="144"></canvas>
+    </div>
+    <div class="gta-vitals-cluster">
+      <div class="gta-bar-wrap"><div id="bar-hp-fill" class="gta-bar-fill fill-hp" style="width: 100%;"></div></div>
+      <div class="gta-bar-wrap"><div id="bar-armor-fill" class="gta-bar-fill fill-armor" style="width: 100%;"></div></div>
+      <div class="gta-bar-wrap"><div id="bar-stamina-fill" class="gta-bar-fill fill-stamina" style="width: 100%;"></div></div>
+    </div>
+    <div id="gta-district-tag" class="gta-district-tag">LOS SANTOS - VINEWOOD BOULEVARD</div>
   </div>
 
   <!-- Cockpit HUD -->
@@ -453,16 +822,49 @@
       <span class="speed-num" id="g3d-speed-val">0</span>
       <span class="speed-unit">KM/H</span>
     </div>
-    <div class="weapon-hud-card">
-      <span id="weapon-name">🔫 PISTOLA 9MM</span>
-      <span style="color: var(--neon-green);" id="weapon-ammo">[1] Puños [2] Pistola [3] Rifle [Q] Radio [V] Cámara</span>
+  </div>
+
+  <!-- Top-Left Canonical Interaction Menu [M] -->
+  <div id="gta-interaction-menu" class="gta-menu-box" style="display: none;">
+    <div class="gta-menu-header">
+      <div class="gta-menu-title">MENÚ DE INTERACCIÓN</div>
+      <div class="gta-menu-sub" id="gta-menu-sub">OPCIONES GENERALES</div>
+    </div>
+    <div class="gta-menu-items" id="gta-menu-items">
+      <!-- Items dynamically rendered by renderGTAInteractionMenu() -->
+    </div>
+    <div class="gta-menu-footer">
+      <span>[▲/▼] NAVEGAR</span>
+      <span>[ENTER] ACCIÓN</span>
+      <span>[M / ESC] CERRAR</span>
+    </div>
+  </div>
+
+  <!-- Eyefind Web Browser (Vehicle Dealerships) -->
+  <div id="eyefind-browser-modal" class="eyefind-modal" style="display: none;">
+    <div class="eyefind-titlebar">
+      <span>EYEFIND // INTERNET BROWSER — TRAVEL & TRANSPORT</span>
+      <button class="modal-close" style="color:#fff;" onclick="openEyefindBrowser()">✕</button>
+    </div>
+    <div class="eyefind-addressbar">
+      <span style="color:#94a3b8; font-size:0.75rem;">🔒 https://</span>
+      <input type="text" class="eyefind-url" value="www.eyefind.info/travel-and-transport" readonly>
+    </div>
+    <div class="eyefind-dealers-tabs">
+      <button class="dealer-tab-btn active" onclick="switchDealerTab('legendary')">🏎️ LEGENDARY MOTORSPORT</button>
+      <button class="dealer-tab-btn" onclick="switchDealerTab('southern')">🚗 SOUTHERN SAN ANDREAS</button>
+      <button class="dealer-tab-btn" onclick="switchDealerTab('elitas')">🚁 ELITÁS TRAVEL</button>
+      <button class="dealer-tab-btn" onclick="switchDealerTab('docktease')">🚤 DOCKTEASE</button>
+    </div>
+    <div class="eyefind-showroom" id="eyefind-showroom">
+      <!-- Dynamic Vehicle Cards -->
     </div>
   </div>
 
   <!-- Multiplayer Chat -->
   <div class="g3d-chat-container">
     <div class="chat-feed" id="g3d-chat-feed">
-      <div class="chat-msg"><span style="color:#ffd700;">[SISTEMA]</span> Sesión GTA Online activa con sincronización de flota y crews.</div>
+      <div class="chat-msg"><span style="color:#ffd700;">[SISTEMA]</span> Sesión GTA Online conectada. Flota aérea, naval y terrestre sincronizada.</div>
     </div>
     <input type="text" class="chat-input" id="g3d-chat-input" placeholder="Presiona Enter para enviar [T]..." onkeydown="if(event.key==='Enter'){window.cyberCityEngine?.sendMultiplayerChatMessage(this.value); this.value=''; this.blur();}" />
   </div>
@@ -477,12 +879,11 @@
   <div class="ow-mobile-actions-cluster">
     <button class="m-act-btn m-btn-gas" onclick="window.cyberCityEngine?.onKeyDown({key:'w'}); setTimeout(()=>window.cyberCityEngine?.onKeyUp({key:'w'}), 300);">⚡ GAS</button>
     <button class="m-act-btn m-btn-brake" onclick="window.cyberCityEngine?.onKeyDown({key:'s'}); setTimeout(()=>window.cyberCityEngine?.onKeyUp({key:'s'}), 300);">🛑 FRENO</button>
-    <button class="m-act-btn m-btn-carjack" onclick="window.cyberCityEngine?.onKeyDown({key:'f'})">🚗 ROBAR</button>
-    <button class="m-act-btn m-btn-hack" onclick="window.cyberCityEngine?.executeCurrentWatchDogsHack()">💥 HACK</button>
-    <button class="m-act-btn m-btn-greet" onclick="window.cyberCityEngine?.socialGreet()">🗣️ SALUDAR</button>
-    <button class="m-act-btn m-btn-provoke" onclick="window.cyberCityEngine?.socialAntagonize()">🤬 PROVOCAR</button>
-    <button class="m-act-btn m-btn-fire" onclick="window.cyberCityEngine?.fireWeapon()">🔫 DISPARAR</button>
-    <button class="m-act-btn" style="border: 2px solid #9d4edd; color: #9d4edd;" onclick="openSmartphone()">📱 MÓVIL</button>
+    <button class="m-act-btn m-btn-carjack" onclick="window.cyberCityEngine?.onKeyDown({key:'f'})">🚗 ACCIÓN [F]</button>
+    <button class="m-act-btn m-btn-menu" onclick="window.toggleGTAInteractionMenu()">📋 MENÚ [M]</button>
+    <button class="m-act-btn" onclick="window.cyberCityEngine?.executeCurrentWatchDogsHack()">💥 HACK</button>
+    <button class="m-act-btn" onclick="window.cyberCityEngine?.fireWeapon()">🔫 DISPARAR</button>
+    <button class="m-act-btn" onclick="openEyefindBrowser()">🌐 EYEFIND</button>
   </div>
 
   <!-- Los Santos Customs (Tuning Modal) -->
@@ -492,13 +893,31 @@
       <button class="modal-close" onclick="openLSCustomsModal()">✕</button>
     </div>
     <div style="font-size: 0.78rem; color: #94a3b8;">
-      Personaliza tu bólido con pintura exclusiva, tubos de neón bajo chasis y mejoras de rendimiento.
+      Personaliza tu vehículo con acabados de alta gama, neón bajo chasis y mejoras de motor.
     </div>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-      <button class="buy-btn" style="background: #111; color: #fff;" onclick="window.cyberCityEngine?.applyCustomTuning(0x111111, 0x00f0ff, true, true); openLSCustomsModal();">🎨 Negro Mate + Neón Cyan</button>
-      <button class="buy-btn" style="background: #dc2626; color: #fff;" onclick="window.cyberCityEngine?.applyCustomTuning(0xdc2626, 0xff0055, true, true); openLSCustomsModal();">🎨 Rojo Furia + Neón Rosa</button>
-      <button class="buy-btn" style="background: #0284c7; color: #fff;" onclick="window.cyberCityEngine?.applyCustomTuning(0x0284c7, 0x00f0ff, true, true); openLSCustomsModal();">🎨 Azul Eléctrico + Neón Cyan</button>
-      <button class="buy-btn" style="background: #eab308; color: #000;" onclick="window.cyberCityEngine?.applyCustomTuning(0xeab308, 0xffd700, true, true); openLSCustomsModal();">🎨 Oro Vinewood + Neón Dorado</button>
+      <button class="gta-nav-btn" style="background: #111; color: #fff;" onclick="window.cyberCityEngine?.applyCustomTuning(0x111111, 0x00f0ff, true, true); openLSCustomsModal();">🎨 Negro Mate + Neón Cyan</button>
+      <button class="gta-nav-btn" style="background: #dc2626; color: #fff;" onclick="window.cyberCityEngine?.applyCustomTuning(0xdc2626, 0xff0055, true, true); openLSCustomsModal();">🎨 Rojo Furia + Neón Rosa</button>
+      <button class="gta-nav-btn" style="background: #0284c7; color: #fff;" onclick="window.cyberCityEngine?.applyCustomTuning(0x0284c7, 0x00f0ff, true, true); openLSCustomsModal();">🎨 Azul Eléctrico + Neón Cyan</button>
+      <button class="gta-nav-btn" style="background: #eab308; color: #000;" onclick="window.cyberCityEngine?.applyCustomTuning(0xeab308, 0xffd700, true, true); openLSCustomsModal();">🎨 Oro Vinewood + Neón Dorado</button>
+    </div>
+  </div>
+
+  <!-- Maze Bank ATM Modal -->
+  <div class="g3d-modal" id="g3d-bank-modal">
+    <div class="modal-head">
+      <h3 class="modal-title">🏦 MAZE BANK // TERMINAL ATM</h3>
+      <button class="modal-close" onclick="openBankModal()">✕</button>
+    </div>
+    <div style="font-size: 0.8rem; color: #94a3b8; display: flex; flex-direction: column; gap: 4px;">
+      <div>Efectivo en Mano: <b style="color: #22c55e;" id="bank-modal-cash">$1,500</b></div>
+      <div>Saldo en Cuenta Maze Bank: <b style="color: #fff;" id="bank-modal-balance">$50,000</b></div>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+      <button class="gta-nav-btn" onclick="depositAllCash()">📥 Depositar Todo</button>
+      <button class="gta-nav-btn" onclick="withdrawCash(1000)">📤 Retirar $1,000</button>
+      <button class="gta-nav-btn" onclick="withdrawCash(5000)">📤 Retirar $5,000</button>
+      <button class="gta-nav-btn" style="border-color: #ef4444; color:#ef4444;" onclick="hackCorporateVault()">⚡ Hackear Bóveda</button>
     </div>
   </div>
 
@@ -509,10 +928,10 @@
       <button class="modal-close" onclick="openSmartphone()">✕</button>
     </div>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-      <button class="buy-btn" style="padding: 12px; font-size: 0.7rem;" onclick="callMechanicPrompt(); openSmartphone();">🚘 Llamar al Mecánico</button>
-      <button class="buy-btn" style="padding: 12px; font-size: 0.7rem;" onclick="window.cyberCityEngine?.executeCurrentWatchDogsHack(); openSmartphone();">💥 Hackear Objetivo</button>
-      <button class="buy-btn" style="padding: 12px; font-size: 0.7rem;" onclick="window.cyberCityEngine?.socialGreet(); openSmartphone();">🗣️ Saludar Vecino</button>
-      <button class="buy-btn" style="padding: 12px; font-size: 0.7rem;" onclick="window.cyberCityEngine?.socialAntagonize(); openSmartphone();">🤬 Provocar Pelea</button>
+      <button class="gta-nav-btn" style="padding: 12px;" onclick="window.cyberCityEngine?.requestPersonalVehicle(); openSmartphone();">🚘 Llamar al Mecánico</button>
+      <button class="gta-nav-btn" style="padding: 12px;" onclick="openEyefindBrowser(); openSmartphone();">🌐 Internet (Eyefind)</button>
+      <button class="gta-nav-btn" style="padding: 12px;" onclick="window.cyberCityEngine?.executeCurrentWatchDogsHack(); openSmartphone();">💥 Hackear Objetivo</button>
+      <button class="gta-nav-btn" style="padding: 12px;" onclick="window.cyberCityEngine?.socialGreet(); openSmartphone();">🗣️ Saludar Vecino</button>
     </div>
   </div>
 
@@ -530,88 +949,164 @@
     </div>
   </div>
 
-  <!-- Maze Bank ATM Modal -->
-  <div class="g3d-modal" id="g3d-bank-modal">
-    <div class="modal-head">
-      <h3 class="modal-title">🏦 MAZE BANK — CAJERO AUTOMÁTICO</h3>
-      <button class="modal-close" onclick="openBankModal()">✕</button>
-    </div>
-    <div style="font-size: 0.82rem; color: #94a3b8; line-height: 1.6;">
-      <div>Efectivo: <b style="color: var(--neon-gold);" id="bank-modal-cash">$1,500</b></div>
-      <div>Saldo Cuenta: <b style="color: var(--neon-cyan);" id="bank-modal-balance">$50,000</b></div>
-    </div>
-    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-      <button class="buy-btn" onclick="depositAllCash()">📥 Depositar Efectivo</button>
-      <button class="buy-btn" style="background: rgba(0, 240, 255, 0.2); color: #fff;" onclick="withdrawCash(1000)">📤 Retirar $1,000</button>
-      <button class="buy-btn" style="background: linear-gradient(135deg, #ff007f, #990033); color: #fff;" onclick="hackCorporateVault()">⚡ Ciberataque a Bóveda (+$3,500)</button>
-    </div>
-  </div>
-
-  <!-- Dynasty 8 Real Estate Modal -->
-  <div class="g3d-modal" id="g3d-realestate-modal">
-    <div class="modal-head">
-      <h3 class="modal-title">🏡 DYNASTY 8 REAL ESTATE</h3>
-      <button class="modal-close" onclick="openRealEstateModal()">✕</button>
-    </div>
-    <div class="dynasty-card">
-      <div>
-        <div style="font-weight: 700; color: #fff;">Mansión Vinewood Hills</div>
-        <div style="font-size: 0.7rem; color: #94a3b8;">Helipuerto privado y garaje para 10 autos.</div>
-      </div>
-      <button class="buy-btn" onclick="buyProperty('Mansión Vinewood', 25000)">$25,000</button>
-    </div>
-    <div class="dynasty-card">
-      <div>
-        <div style="font-weight: 700; color: #fff;">Suite Penthouse Eclipse</div>
-        <div style="font-size: 0.7rem; color: #94a3b8;">Piso 45 con helipuerto en la azotea.</div>
-      </div>
-      <button class="buy-btn" onclick="buyProperty('Penthouse Eclipse', 15000)">$15,000</button>
-    </div>
-  </div>
-
-  <!-- SecuroServ Business Modal -->
-  <div class="g3d-modal" id="g3d-business-modal">
-    <div class="modal-head">
-      <h3 class="modal-title">🏢 SECUROSERV — NEGOCIOS VIP</h3>
-      <button class="modal-close" onclick="openBusinessModal()">✕</button>
-    </div>
-    <div class="dynasty-card">
-      <div>
-        <div style="font-weight: 700; color: #fff;">Club Nocturno Cyberpunk</div>
-        <div style="font-size: 0.7rem; color: #94a3b8;">Ingresos pasivos: +$450/min.</div>
-      </div>
-      <button class="buy-btn" onclick="buyBusiness('Club Nocturno', 18000)">$18,000</button>
-    </div>
-    <button class="buy-btn" style="background: linear-gradient(135deg, #00ff66, #009933); color: #000; width: 100%; margin-top: 8px;" onclick="collectBusinessIncome()">💰 RECOGER GANANCIAS ACUMULADAS</button>
-  </div>
-
+  <!-- Toast Notification Feed -->
   <div class="ow-hack-feed" id="ow-hack-feed"></div>
 
+  <!-- Three.js + GLTFLoader -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="cyber_city_3d.js"></script>
+
   <script>
-    function toggleVehicleModal() {
-      const types = ['gta-sports-car', 'gta-police-car', 'helicopter', 'jet-fighter', 'motorbike', 'gta-bus', 'sedan', 'suv', 'truck', 'ambulance', 'speedboat', 'foot'];
-      const next = prompt('Selecciona Vehículo GTA Online:\n- gta-sports-car (Deportivo GT)\n- gta-police-car (Patrulla LSPD)\n- helicopter (Helicóptero Maverick)\n- jet-fighter (Caza Militar Lazer)\n- motorbike (Motocicleta)\n- gta-bus (Autobús)\n- sedan (Sedán)\n- suv (SUV)\n- truck (Camión)\n- ambulance (Ambulancia)\n- speedboat (Lancha)\n- foot (A pie)', window.cyberCityEngine?.player?.vehicleType || 'gta-sports-car');
-      if (next && window.cyberCityEngine) {
-        window.cyberCityEngine.applyVehicleMesh(next.trim().toLowerCase());
+    /* ========================================================
+     * GTA ONLINE INTERACTION MENU CONTROLLER [M]
+     * ======================================================== */
+    let currentMenuIndex = 0;
+    const gtaMenuItems = [
+      { id: 'req_veh', title: '🚗 Solicitar Vehículo Personal', action: () => window.cyberCityEngine?.requestPersonalVehicle() },
+      { id: 'ret_veh', title: '🚗 Devolver Vehículo al Garaje', action: () => window.cyberCityEngine?.returnPersonalVehicle() },
+      { id: 'doors_veh', title: '🚪 Control Remoto de Puertas', action: () => window.cyberCityEngine?.toggleVehicleDoors() },
+      { id: 'securo_ceo', title: '💼 SecuroServ: Registrarse/Retirarse CEO', action: () => window.cyberCityEngine?.toggleSecuroServCEO() },
+      { id: 'snack_ego', title: '🍫 Inventario: Comer Snack (+25 HP)', action: () => window.cyberCityEngine?.consumeSnack('egochaser') },
+      { id: 'armor_heavy', title: '🛡️ Inventario: Chaleco Superpesado (+50 Blindaje)', action: () => window.cyberCityEngine?.equipBodyArmor('super_heavy') },
+      { id: 'passive_mode', title: '🕊️ Modo Pasivo (Activar / Desactivar)', action: () => window.cyberCityEngine?.togglePassiveMode() },
+      { id: 'suicide', title: '💀 Suicidio ($500)', action: () => window.cyberCityEngine?.commitSuicide() }
+    ];
+
+    function renderGTAInteractionMenu() {
+      const listEl = document.getElementById('gta-menu-items');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+      gtaMenuItems.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = 'gta-menu-row' + (idx === currentMenuIndex ? ' active' : '');
+        row.innerHTML = `<span>${item.title}</span><span style="font-size:0.65rem; opacity:0.6;">❯</span>`;
+        row.onclick = () => {
+          currentMenuIndex = idx;
+          renderGTAInteractionMenu();
+          item.action();
+        };
+        listEl.appendChild(row);
+      });
+    }
+
+    window.toggleGTAInteractionMenu = function() {
+      const menu = document.getElementById('gta-interaction-menu');
+      if (!menu) return;
+      const isOpen = menu.style.display === 'flex';
+      menu.style.display = isOpen ? 'none' : 'flex';
+      if (!isOpen) {
+        renderGTAInteractionMenu();
+      }
+    };
+
+    window.addEventListener('keydown', (e) => {
+      const menu = document.getElementById('gta-interaction-menu');
+      if (!menu || menu.style.display !== 'flex') return;
+
+      if (e.key === 'ArrowUp') {
+        currentMenuIndex = (currentMenuIndex - 1 + gtaMenuItems.length) % gtaMenuItems.length;
+        renderGTAInteractionMenu();
+        e.preventDefault();
+      } else if (e.key === 'ArrowDown') {
+        currentMenuIndex = (currentMenuIndex + 1) % gtaMenuItems.length;
+        renderGTAInteractionMenu();
+        e.preventDefault();
+      } else if (e.key === 'Enter') {
+        if (gtaMenuItems[currentMenuIndex]) {
+          gtaMenuItems[currentMenuIndex].action();
+        }
+        e.preventDefault();
+      } else if (e.key === 'Escape') {
+        menu.style.display = 'none';
+        e.preventDefault();
+      }
+    });
+
+    /* ========================================================
+     * EYEFIND VEHICLE DEALERSHIPS CATALOGUE
+     * ======================================================== */
+    const VEHICLE_CATALOG = {
+      legendary: [
+        { key: 'gta-sports-car', name: 'Truffade Nero GT', brand: 'Legendary Motorsport', price: 1440000, speed: 96, accel: 92, brake: 88, traction: 94 },
+        { key: 'sedan-sports', name: 'Pegassi Zentorno', brand: 'Legendary Motorsport', price: 725000, speed: 94, accel: 90, brake: 85, traction: 90 },
+        { key: 'suv-luxury', name: 'Grotti Turismo R', brand: 'Legendary Motorsport', price: 500000, speed: 90, accel: 88, brake: 82, traction: 88 },
+        { key: 'race-car', name: 'Progen T20 Hypercar', brand: 'Legendary Motorsport', price: 2200000, speed: 98, accel: 95, brake: 92, traction: 96 }
+      ],
+      southern: [
+        { key: 'sedan', name: 'Karin Sultan RS', brand: 'Southern SA Super Autos', price: 12000, speed: 75, accel: 72, brake: 70, traction: 76 },
+        { key: 'suv', name: 'Benefactor Dubsta 6x6', brand: 'Southern SA Super Autos', price: 85000, speed: 70, accel: 65, brake: 62, traction: 85 },
+        { key: 'truck', name: 'Vapid Sandking XL', brand: 'Southern SA Super Autos', price: 45000, speed: 65, accel: 60, brake: 58, traction: 82 },
+        { key: 'motorbike', name: 'Pegassi Bati 801', brand: 'Southern SA Super Autos', price: 15000, speed: 92, accel: 90, brake: 72, traction: 80 }
+      ],
+      elitas: [
+        { key: 'helicopter', name: 'Buzzard Attack Chopper', brand: 'Elitás Travel', price: 1750000, speed: 85, accel: 82, brake: 88, traction: 90 },
+        { key: 'fighter-jet', name: 'Western Besra Military Jet', brand: 'Elitás Travel', price: 1150000, speed: 100, accel: 98, brake: 90, traction: 95 }
+      ],
+      docktease: [
+        { key: 'speedboat', name: 'Speedboat Tropic Supercharged', brand: 'DockTease', price: 400000, speed: 78, accel: 75, brake: 78, traction: 80 }
+      ]
+    };
+
+    let currentDealerTab = 'legendary';
+
+    function switchDealerTab(tabKey) {
+      currentDealerTab = tabKey;
+      const tabBtns = document.querySelectorAll('.dealer-tab-btn');
+      tabBtns.forEach(b => b.classList.remove('active'));
+      event?.target?.classList.add('active');
+      renderShowroom();
+    }
+
+    function renderShowroom() {
+      const showroom = document.getElementById('eyefind-showroom');
+      if (!showroom) return;
+      showroom.innerHTML = '';
+      const list = VEHICLE_CATALOG[currentDealerTab] || [];
+      list.forEach(v => {
+        const card = document.createElement('div');
+        card.className = 'veh-card';
+        card.innerHTML = `
+          <div class="veh-brand">${v.brand}</div>
+          <div class="veh-name">${v.name}</div>
+          <div class="veh-price">$ ${v.price.toLocaleString()}</div>
+          <div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
+            <div class="veh-spec-row"><span>Velocidad</span><div class="veh-spec-bar"><div class="veh-spec-fill" style="width:${v.speed}%;"></div></div></div>
+            <div class="veh-spec-row"><span>Aceleración</span><div class="veh-spec-bar"><div class="veh-spec-fill" style="width:${v.accel}%;"></div></div></div>
+            <div class="veh-spec-row"><span>Frenada</span><div class="veh-spec-bar"><div class="veh-spec-fill" style="width:${v.brake}%;"></div></div></div>
+            <div class="veh-spec-row"><span>Tracción</span><div class="veh-spec-bar"><div class="veh-spec-fill" style="width:${v.traction}%;"></div></div></div>
+          </div>
+          <button class="veh-buy-btn" onclick="executeBuyVehicle('${v.key}', '${v.name}', ${v.price}, '${v.brand}')">COMPRAR AHORA</button>
+        `;
+        showroom.appendChild(card);
+      });
+    }
+
+    function executeBuyVehicle(key, name, price, brand) {
+      if (!window.cyberCityEngine) return;
+      const ok = window.cyberCityEngine.buyVehicleOnline(key, name, price, brand);
+      if (ok) {
+        openEyefindBrowser();
+        setTimeout(() => {
+          if (confirm(`🎉 ¡Vehículo adquirido! ¿Deseas que el mecánico te lo entregue ahora mismo en la calle?`)) {
+            window.cyberCityEngine.requestPersonalVehicle(key);
+          }
+        }, 400);
       }
     }
 
-    function callMechanicPrompt() {
-      const v = prompt('Mecánico: "¿Qué vehículo quieres que te entregue?"\n- gta-sports-car\n- motorbike\n- gta-police-car\n- suv\n- helicopter', 'gta-sports-car');
-      if (v && window.cyberCityEngine) {
-        window.cyberCityEngine.callMechanicDelivery(v.trim().toLowerCase());
+    function openEyefindBrowser() {
+      const m = document.getElementById('eyefind-browser-modal');
+      if (!m) return;
+      const isOpen = m.style.display === 'flex';
+      m.style.display = isOpen ? 'none' : 'flex';
+      if (!isOpen) {
+        renderShowroom();
       }
     }
 
     function openLSCustomsModal() {
       const m = document.getElementById('lsc-tuning-modal');
-      if (!m) return;
-      m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
-    }
-
-    function openLeaderboardModal() {
-      const m = document.getElementById('g3d-leaderboard-modal');
       if (!m) return;
       m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
     }
@@ -633,6 +1128,7 @@
       if (!window.cyberCityEngine) return;
       const p = window.cyberCityEngine.player;
       p.bank += p.cash;
+      window.cyberCityEngine.triggerCashDelta(`+$${p.cash.toLocaleString()}`, true);
       window.cyberCityEngine.addHackFeedToast(`🏦 Depositaste $${p.cash.toLocaleString()} en Maze Bank.`);
       p.cash = 0;
       openBankModal();
@@ -644,9 +1140,10 @@
       if (p.bank >= amt) {
         p.bank -= amt;
         p.cash += amt;
+        window.cyberCityEngine.triggerCashDelta(`+$${amt.toLocaleString()}`, true);
         window.cyberCityEngine.addHackFeedToast(`🏧 Retiraste $${amt.toLocaleString()}.`);
       } else {
-        alert('Fondos bancarios insuficientes.');
+        alert('Fondos bancarios insuficientes en Maze Bank.');
       }
       openBankModal();
     }
@@ -654,69 +1151,24 @@
     function hackCorporateVault() {
       if (!window.cyberCityEngine) return;
       const p = window.cyberCityEngine.player;
-      if (p.battery < 20) { alert('Batería insuficiente.'); return; }
+      if (p.battery < 20) { alert('Batería insuficiente para exploit bancario.'); return; }
       p.battery -= 20;
       p.cash += 3500;
       window.cyberCityEngine.audio?.playCashChime();
       window.cyberCityEngine.addWantedHeat(2);
-      window.cyberCityEngine.addHackFeedToast('⚡ BÓVEDA HACKEADA: +$3,500.');
+      window.cyberCityEngine.triggerCashDelta('+$3,500', true);
+      window.cyberCityEngine.addHackFeedToast('⚡ BÓVEDA HACKEADA: +$3,500 acreditados.');
       openBankModal();
-    }
-
-    function openRealEstateModal() {
-      const m = document.getElementById('g3d-realestate-modal');
-      if (!m) return;
-      m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
-    }
-
-    function buyProperty(name, price) {
-      if (!window.cyberCityEngine) return;
-      const p = window.cyberCityEngine.player;
-      if (p.bank + p.cash >= price) {
-        if (p.bank >= price) p.bank -= price;
-        else { const rem = price - p.bank; p.bank = 0; p.cash -= rem; }
-        p.properties.push(name);
-        window.cyberCityEngine.audio?.playCashChime();
-        window.cyberCityEngine.addHackFeedToast(`🏡 ¡Has adquirido ${name}!`);
-        openRealEstateModal();
-      } else {
-        alert(`Fondos insuficientes para ${name}.`);
-      }
-    }
-
-    function openBusinessModal() {
-      const m = document.getElementById('g3d-business-modal');
-      if (!m) return;
-      m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
-    }
-
-    function buyBusiness(name, price) {
-      if (!window.cyberCityEngine) return;
-      const p = window.cyberCityEngine.player;
-      if (p.bank + p.cash >= price) {
-        if (p.bank >= price) p.bank -= price;
-        else { const rem = price - p.bank; p.bank = 0; p.cash -= rem; }
-        p.businesses.push(name);
-        window.cyberCityEngine.audio?.playCashChime();
-        window.cyberCityEngine.addHackFeedToast(`🏢 ¡Negocio adquirido! ${name}`);
-        openBusinessModal();
-      } else {
-        alert(`Fondos insuficientes para ${name}.`);
-      }
-    }
-
-    function collectBusinessIncome() {
-      if (!window.cyberCityEngine) return;
-      const p = window.cyberCityEngine.player;
-      const inc = (p.businesses.length > 0) ? p.businesses.length * 1200 : 800;
-      p.cash += inc;
-      window.cyberCityEngine.audio?.playCashChime();
-      window.cyberCityEngine.addHackFeedToast(`💰 +$${inc.toLocaleString()} recolectados.`);
-      openBusinessModal();
     }
 
     function openSmartphone() {
       const m = document.getElementById('cyber-phone-modal');
+      if (!m) return;
+      m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function openLeaderboardModal() {
+      const m = document.getElementById('g3d-leaderboard-modal');
       if (!m) return;
       m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
     }
