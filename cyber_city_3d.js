@@ -677,6 +677,21 @@
       this.lootDrops = [];
       this.allies = [];
 
+      // World & Atmosphere Simulation (24H Day/Night Cycle & Dynamic Weather)
+      this.worldTime = 12.0; // Starts at 12:00 PM (Midday)
+      this.timeSpeed = 0.05; // 1 real sec = 0.05 game hours (full 24h = ~8 real minutes)
+      this.weatherState = 'CLEAR'; // 'CLEAR', 'RAIN', 'STORM', 'FOG'
+      this.weatherTimer = 180;
+      this.rainParticles = null;
+      this.rainGeo = null;
+      this.rainMat = null;
+      this.rainPositions = null;
+      this.roadMaterial = null;
+
+      // Fuel & Gas Stations System
+      this.gasStations = [];
+      this.gasStationMeshes = [];
+
       this.cameraMode = 0;
       this.isWasted = false;
       this.isPassiveMode = false;
@@ -725,7 +740,8 @@
         stamina: 100,
         cash: this.session.cash !== undefined ? this.session.cash : 1500,
         bank: this.session.bank !== undefined ? this.session.bank : 50000,
-        fuel: 100,
+        fuel: this.session.fuel !== undefined ? this.session.fuel : 100,
+        isStalled: false,
         battery: 100,
         wanted: 0,
         wantedTimer: 0,
@@ -830,6 +846,7 @@
 
       this.setupModelRegistry();
       this.buildRealisticCity();
+      this.setupGasStations();
       this.setupFullFleetNPCTraffic();
       this.setupPedestrianSystem();
       this.setupEasterEggs();
@@ -848,6 +865,7 @@
     setupLighting() {
       const amb = new THREE.AmbientLight(0x405578, 1.4);
       this.scene.add(amb);
+      this.ambientLight = amb;
 
       const sun = new THREE.DirectionalLight(0xfff6e5, 2.2);
       sun.position.set(80, 160, 90);
@@ -861,15 +879,19 @@
       sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
       sun.shadow.bias = -0.0004;
       this.scene.add(sun);
+      this.sunLight = sun;
 
       const fill = new THREE.DirectionalLight(0x00f0ff, 0.7);
       fill.position.set(-90, 40, -80);
       this.scene.add(fill);
+      this.fillLight = fill;
 
       const pmrem = new THREE.PMREMGenerator(this.renderer);
       const envScene = new THREE.Scene();
       envScene.add(new THREE.HemisphereLight(0x00f0ff, 0x110522, 1.6));
       this.scene.environment = pmrem.fromScene(envScene).texture;
+
+      this.setupDynamicAtmosphere();
     }
 
     setupModelRegistry() {
@@ -1002,6 +1024,7 @@
       const roadTex = createAsphaltRoadTexture();
       roadTex.repeat.set(1, 14);
       const roadMat = new THREE.MeshStandardMaterial({ map: roadTex, roughness: 0.85, metalness: 0.15 });
+      this.roadMaterial = roadMat;
 
       const blockSize = 52;
       const streetWidth = 18;
@@ -1870,7 +1893,10 @@
         if (input) { input.focus(); e.preventDefault(); }
       }
 
-      if (k === 'e') this.executeCurrentWatchDogsHack();
+      if (k === 'e') {
+        if (this.checkAndExecuteRefuel()) return;
+        this.executeCurrentWatchDogsHack();
+      }
       if (k === 'g') this.socialGreet();
       if (k === 'h') this.socialAntagonize();
 
@@ -1926,14 +1952,23 @@
       let isBraking = false;
       let isAccelerating = false;
 
-      if (this.keys.forward) {
-        p.speed = Math.min(p.maxSpeed, p.speed + p.accel * delta);
-        isAccelerating = true;
-      } else if (this.keys.backward) {
-        p.speed = Math.max(-p.maxSpeed * 0.4, p.speed - p.accel * delta);
-        isBraking = true;
+      // Aquaplaning reduction when raining
+      const tireGrip = (this.weatherState === 'RAIN' || this.weatherState === 'STORM') ? 0.68 : 1.0;
+
+      if (!p.isStalled) {
+        if (this.keys.forward) {
+          p.speed = Math.min(p.maxSpeed, p.speed + p.accel * tireGrip * delta);
+          isAccelerating = true;
+        } else if (this.keys.backward) {
+          p.speed = Math.max(-p.maxSpeed * 0.4, p.speed - p.accel * tireGrip * delta);
+          isBraking = true;
+        } else {
+          p.speed *= (1 - 1.8 * delta);
+        }
       } else {
-        p.speed *= (1 - 1.8 * delta);
+        // Engine stalled - deceleration to complete stop
+        p.speed *= (1 - 3.2 * delta);
+        if (Math.abs(p.speed) < 0.1) p.speed = 0;
       }
 
       if (this.keys.brake) {
@@ -1966,7 +2001,25 @@
           this.audio.playTireSqueal(false);
         }
 
-        this.audio.playEngineRPM(speedNorm, p.speed * 3.6);
+        // Dynamic Fuel Consumption
+        if (p.fuel > 0) {
+          const baseIdle = 0.015;
+          const speedFactor = speedNorm * 0.038;
+          const throttleFactor = isAccelerating ? 0.045 : 0.0;
+          const cons = (baseIdle + speedFactor + throttleFactor) * delta;
+          p.fuel = Math.max(0, p.fuel - cons);
+
+          if (p.fuel <= 0) {
+            p.isStalled = true;
+            this.addHackFeedToast('⚠️ MOTOR CALADO: Sin combustible. Reposta en una gasolinera o desciende a pie [F].');
+          }
+        }
+
+        if (p.isStalled) {
+          this.audio.stopEngine();
+        } else {
+          this.audio.playEngineRPM(speedNorm, p.speed * 3.6);
+        }
       } else {
         this.audio.stopEngine();
         this.audio.playTireSqueal(false);
@@ -2136,6 +2189,23 @@
         if (Math.hypot(bx - cx, by - cy) < cx - 6) ctx.fillRect(bx - 3, by - 3, 6, 6);
       });
 
+      // Gas Station Blips (Orange pump icon ⛽)
+      if (this.gasStations) {
+        this.gasStations.forEach(gs => {
+          const bx = cx + (gs.x - this.player.x) * scale;
+          const by = cy + (gs.z - this.player.z) * scale;
+          if (Math.hypot(bx - cx, by - cy) < cx - 6) {
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(bx, by, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 7px sans-serif';
+            ctx.fillText('⛽', bx - 3.5, by + 2.5);
+          }
+        });
+      }
+
       // Player Arrow
       ctx.save();
       ctx.translate(cx, cy);
@@ -2154,6 +2224,26 @@
 
       const bankEl = document.getElementById('gta-bank-val');
       if (bankEl) bankEl.textContent = `$ ${this.player.bank.toLocaleString()}`;
+
+      // World Clock (24H Format)
+      const clockEl = document.getElementById('gta-clock-time');
+      if (clockEl) {
+        const hh = Math.floor(this.worldTime);
+        const mm = Math.floor((this.worldTime % 1) * 60);
+        clockEl.textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+      }
+
+      // Weather Badge
+      const weatherEl = document.getElementById('gta-weather-badge');
+      if (weatherEl) {
+        const icons = {
+          CLEAR: '☀️ DESPEJADO',
+          RAIN: '🌧️ LLUVIA',
+          STORM: '⛈️ TORMENTA',
+          FOG: '🌫️ NIEBLA'
+        };
+        weatherEl.textContent = icons[this.weatherState] || this.weatherState;
+      }
 
       // Wanted Stars
       const starsEl = document.getElementById('gta-stars');
@@ -2190,6 +2280,37 @@
       const staminaFill = document.getElementById('bar-stamina-fill');
       if (staminaFill) staminaFill.style.width = `${Math.max(0, this.player.stamina)}%`;
 
+      // Fuel Bar & Meter
+      const fuelWrap = document.getElementById('bar-fuel-wrap');
+      const fuelFill = document.getElementById('bar-fuel-fill');
+      const fuelVal = document.getElementById('gta-fuel-val');
+      if (fuelWrap) {
+        if (this.player.inVehicle) {
+          fuelWrap.style.display = 'block';
+          if (fuelVal) {
+            fuelVal.style.display = 'block';
+            fuelVal.textContent = `⛽ ${Math.round(this.player.fuel)}%`;
+            fuelVal.style.color = (this.player.fuel < 15) ? '#ef4444' : ((this.player.fuel < 40) ? '#f59e0b' : '#22c55e');
+          }
+          if (fuelFill) {
+            fuelFill.style.width = `${Math.max(0, this.player.fuel)}%`;
+            if (this.player.fuel < 15) {
+              fuelFill.style.background = '#ef4444';
+              fuelFill.style.boxShadow = '0 0 6px #ef4444';
+            } else if (this.player.fuel < 40) {
+              fuelFill.style.background = '#f59e0b';
+              fuelFill.style.boxShadow = '0 0 6px #f59e0b';
+            } else {
+              fuelFill.style.background = '#22c55e';
+              fuelFill.style.boxShadow = '0 0 6px #22c55e';
+            }
+          }
+        } else {
+          fuelWrap.style.display = 'none';
+          if (fuelVal) fuelVal.style.display = 'none';
+        }
+      }
+
       // Speedometer
       const spdEl = document.getElementById('g3d-speed-val');
       if (spdEl) spdEl.textContent = Math.round(Math.abs(this.player.speed) * 3.6);
@@ -2218,7 +2339,18 @@
           const nearCar = this.getClosestVehicle(3.5);
           const nearPed = this.getClosestPedestrian(3.5);
 
-          if (nearParked) {
+          // Check gas station proximity
+          let nearStation = null;
+          if (this.gasStations) {
+            for (let gs of this.gasStations) {
+              if (Math.hypot(this.player.x - gs.x, this.player.z - gs.z) < 7.5) { nearStation = gs; break; }
+            }
+          }
+
+          if (nearStation) {
+            promptEl.style.display = 'block';
+            promptEl.innerHTML = `⛽ <b style="color:#f59e0b;">[E] REPOSTAR COMBUSTIBLE ($${nearStation.price})</b> - ${nearStation.name}`;
+          } else if (nearParked) {
             promptEl.style.display = 'block';
             promptEl.innerHTML = `🚘 <b style="color:#ffd700;">[F] Subir a tu vehículo</b> (${nearParked.type.toUpperCase()})`;
           } else if (nearCar) {
@@ -2231,7 +2363,18 @@
             promptEl.style.display = 'none';
           }
         } else {
-          promptEl.style.display = 'none';
+          let nearStation = null;
+          if (this.gasStations) {
+            for (let gs of this.gasStations) {
+              if (Math.hypot(this.player.x - gs.x, this.player.z - gs.z) < 7.5) { nearStation = gs; break; }
+            }
+          }
+          if (nearStation) {
+            promptEl.style.display = 'block';
+            promptEl.innerHTML = `⛽ <b style="color:#f59e0b;">[E] REPOSTAR COMBUSTIBLE ($${nearStation.price})</b> - ${nearStation.name}`;
+          } else {
+            promptEl.style.display = 'none';
+          }
         }
       }
 
@@ -2254,6 +2397,7 @@
       this.rafId = requestAnimationFrame(this.animate);
       const delta = Math.min(this.clock.getDelta(), 0.1);
 
+      this.updateDayNightAndWeather(delta);
       this.updatePhysics(delta);
       this.updateNPCs(delta);
       this.fx.update(delta);

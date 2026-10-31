@@ -789,6 +789,10 @@
       <div id="gta-bank-val" class="gta-bank-digits">$ 50,000</div>
       <div id="gta-cash-delta" class="gta-delta-float"></div>
     </div>
+    <div id="gta-clock-weather" style="display: flex; justify-content: flex-end; align-items: center; gap: 6px; font-family: 'Chakra Petch', monospace; font-size: 0.82rem; font-weight: 700; color: #f8fafc; text-shadow: 0 2px 4px rgba(0,0,0,0.9); margin-top: 4px;">
+      <span id="gta-clock-time" style="background: rgba(15,23,42,0.85); padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.18); letter-spacing: 1px;">12:00</span>
+      <span id="gta-weather-badge" style="background: rgba(15,23,42,0.85); padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.18); font-size: 0.74rem;">☀️ DESPEJADO</span>
+    </div>
   </div>
 
   <!-- Top-Center Canonical GTA Online RP & Leveling Bar -->
@@ -812,8 +816,12 @@
       <div class="gta-bar-wrap"><div id="bar-hp-fill" class="gta-bar-fill fill-hp" style="width: 100%;"></div></div>
       <div class="gta-bar-wrap"><div id="bar-armor-fill" class="gta-bar-fill fill-armor" style="width: 100%;"></div></div>
       <div class="gta-bar-wrap"><div id="bar-stamina-fill" class="gta-bar-fill fill-stamina" style="width: 100%;"></div></div>
+      <div id="bar-fuel-wrap" class="gta-bar-wrap" style="display: none; height: 5px;"><div id="bar-fuel-fill" class="gta-bar-fill fill-fuel" style="width: 100%; background: #22c55e;"></div></div>
     </div>
-    <div id="gta-district-tag" class="gta-district-tag">LOS SANTOS - VINEWOOD BOULEVARD</div>
+    <div style="display: flex; justify-content: space-between; align-items: center; width: 144px;">
+      <div id="gta-district-tag" class="gta-district-tag" style="width: auto;">LOS SANTOS - VINEWOOD BOULEVARD</div>
+      <div id="gta-fuel-val" style="font-family: 'Chakra Petch', monospace; font-size: 0.68rem; font-weight: 700; color: #f59e0b; display: none;">⛽ 100%</div>
+    </div>
   </div>
 
   <!-- Cockpit HUD -->
