@@ -1,8 +1,8 @@
 /**
  * ============================================================================
- * PARALLAX GTA V // 3D REALISTIC MODERN CITY OPEN-WORLD SIMULATOR v4.0
- * Architecture: Three.js WebGL2 + Real GLB 3D Models (Vehicles, Buildings, Trees, Humans)
- * GTA V On-Foot & In-Car Mechanics + Watch Dogs Hacking + Smart City AI & Live Heroku Multiplayer
+ * PARALLAX GTA V // 3D REALISTIC MODERN CITY OPEN-WORLD SIMULATOR v4.5
+ * Architecture: Three.js WebGL2 + Real GLB 3D Models (Vehicles, Aircraft, Buildings, Characters)
+ * PBR Automotive Environment Reflections (PMREM) + Flight Physics + On-Foot Weapons & SWAT Pursuit
  * Author: Rodrigo Carrasco (Parallax / equisde) & IMXNOOBX Alliance
  * ============================================================================
  */
@@ -12,8 +12,15 @@
 
   const HEROKU_BACKEND_URL = 'https://parallax-cyber-city-5b72da76b505.herokuapp.com';
 
-  // Model Asset Registry (CC0 Public Domain Models)
+  // Comprehensive GTA V Model Manifest (CC0 & Permissive Open Source Models)
   const MODEL_MANIFEST = {
+    // GTA Style Vehicles & Aircraft
+    'gta-sports-car': 'assets/models/gta-sports-car.glb',
+    'gta-police-car': 'assets/models/gta-police-car.glb',
+    'gta-bus': 'assets/models/gta-bus.glb',
+    'helicopter': 'assets/models/helicopter.glb',
+    'jet-fighter': 'assets/models/jet-fighter.glb',
+    'motorbike': 'assets/models/motorbike.glb',
     'sedan': 'assets/models/sedan.glb',
     'sedan-sports': 'assets/models/sedan-sports.glb',
     'suv': 'assets/models/suv.glb',
@@ -21,12 +28,22 @@
     'taxi': 'assets/models/taxi.glb',
     'truck': 'assets/models/truck.glb',
     'ambulance': 'assets/models/ambulance.glb',
+
+    // Characters (GTA V Archetypes)
+    'char-gangster': 'assets/models/char-gangster.glb',
+    'char-street': 'assets/models/char-street.glb',
+    'char-swat': 'assets/models/char-swat.glb',
+    'char-female-street': 'assets/models/char-female-street.glb',
     'character-male': 'assets/models/character-male.glb',
     'character-female': 'assets/models/character-female.glb',
-    'tree-oak': 'assets/models/tree-oak.glb',
-    'tree-palm': 'assets/models/tree-palm.glb',
-    'tree-pine': 'assets/models/tree-pine.glb',
-    'tree-default': 'assets/models/tree-default.glb',
+
+    // Weapons
+    'weapon-pistol': 'assets/models/weapon-pistol.glb',
+    'weapon-rifle': 'assets/models/weapon-rifle.glb',
+
+    // Architecture & Nature
+    'building-tower-1': 'assets/models/building-tower-1.glb',
+    'building-tower-2': 'assets/models/building-tower-2.glb',
     'building-a': 'assets/models/building-a.glb',
     'building-b': 'assets/models/building-b.glb',
     'building-c': 'assets/models/building-c.glb',
@@ -34,6 +51,14 @@
     'building-skyscraper-a': 'assets/models/building-skyscraper-a.glb',
     'building-skyscraper-b': 'assets/models/building-skyscraper-b.glb',
     'building-skyscraper-c': 'assets/models/building-skyscraper-c.glb',
+    'tree-oak': 'assets/models/tree-oak.glb',
+    'tree-palm': 'assets/models/tree-palm.glb',
+    'tree-pine': 'assets/models/tree-pine.glb',
+    'tree-default': 'assets/models/tree-default.glb',
+
+    // Street Props
+    'prop-stop-sign': 'assets/models/prop-stop-sign.glb',
+    'prop-traffic-light': 'assets/models/prop-traffic-light.glb',
     'lamp-post': 'assets/models/lamp-post.glb',
     'traffic-cone': 'assets/models/traffic-cone.glb',
     'barrier': 'assets/models/barrier.glb'
@@ -65,8 +90,6 @@
       this.greenAreas = [];
       this.roads = [];
       this.trafficLights = [];
-      this.securityCameras = [];
-      this.powerSubstations = [];
       this.npcVehicles = [];
       this.npcPedestrians = [];
       this.remotePlayers = new Map();
@@ -76,49 +99,54 @@
       this.cyberShops = [];
       this.giantTVs = [];
       this.tvNewsFeeds = [
-        "LSPD: ALERTA ROJA EN DOWNTOWN. BUSCAN CONDUCTOR TEMERARIO.",
-        "NOTICIAS 7: CORTES EN LA RED ELÉCTRICA TRAS POSIBLE CIBERATAQUE.",
-        "BOLSA DE VALORES: PARALLAX CORP LIDERA INNOVACIONES TECNOLÓGICAS.",
-        "CLIMA: DÍA DESPEJADO EN LOS SANTOS. MÁXIMA DE 28°C EN LA COSTA.",
-        "TRÁFICO: CONGESTIÓN EN LA GRAN AVENIDA NORTE-SUR. RESPETE LOS SEMÁFOROS."
+        "LSPD: ALERTA ROJA EN DOWNTOWN. PATRULLAS PERSIGUEN CONVOY SOSPECHOSO.",
+        "WEAZEL NEWS: TRÁFICO INTENSO EN LA GRAN AVENIDA NORTE-SUR.",
+        "NOTICIAS 7: ACCIDENTE EN LA COSTA OESTE. LLEGAN AMBULANCIAS AL LUGAR.",
+        "BOLSA DE VALORES: PARALLAX CORP ALCANZA RÉCORD TRAS NUEVO CIBERDECK.",
+        "CLIMA: DÍA SOLEADO Y DESPEJADO EN LOS SANTOS. MÁXIMA DE 29°C."
       ];
       this.currentNewsIndex = 0;
       this.newsTimer = 0;
 
-      // Player State (GTA V Style: Car or On-Foot)
+      // Player State (GTA V Style: Car, Aircraft or On-Foot)
       this.player = {
-        mode: 'car', // 'car' or 'foot'
-        vehicleType: 'sedan-sports',
+        mode: 'car', // 'car', 'aircraft' or 'foot'
+        vehicleType: 'gta-sports-car',
         pos: new THREE.Vector3(0, 0.45, 20),
         vel: new THREE.Vector3(0, 0, 0),
         yaw: 0,
         pitch: 0,
         roll: 0,
         speed: 0,
-        maxSpeed: 48,
-        accel: 28,
-        brake: 36,
-        reverseMaxSpeed: 16,
+        maxSpeed: 52,
+        accel: 30,
+        brake: 38,
+        reverseMaxSpeed: 18,
         turnSpeed: 2.4,
+        altitude: 0.45,
+        targetAltitude: 0.45,
+        rotorMesh: null,
+        rotorAngle: 0,
         nitro: 100,
         isNitro: false,
         fuel: 100,
         battery: 100,
         hp: 100,
         armor: 100,
-        credits: 250,
+        credits: 350,
         wantedLevel: 0,
         wantedHeat: 0,
         mesh: null,
         vehicleGroup: null,
         characterGroup: null,
+        heldWeapon: null,
         parkedCarPos: new THREE.Vector3(0, 0.45, 20),
         parkedCarYaw: 0,
         parkedCarMesh: null,
         wheels: [],
         footSpeed: 0,
         footWalkSpeed: 7.5,
-        footRunSpeed: 14.0,
+        footRunSpeed: 14.5,
         footAnimTime: 0,
         isJumping: false,
         jumpVelY: 0,
@@ -130,6 +158,7 @@
       // Weapons, Projectiles & Police Cruisers
       this.projectiles = [];
       this.policeUnits = [];
+      this.swatUnits = [];
 
       // Audio Synthesis
       this.audioCtx = null;
@@ -150,9 +179,6 @@
       // Multiplayer
       this.socket = null;
       this.localId = 'usr_' + Math.random().toString(36).substring(2, 9);
-
-      // Profiler / Watch Dogs
-      this.targetedEntity = null;
       this.blackoutUntil = 0;
     }
 
@@ -175,7 +201,7 @@
       this.renderer.shadowMap.enabled = true;
       this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      this.renderer.toneMappingExposure = 1.15;
+      this.renderer.toneMappingExposure = 1.2;
       this.renderer.outputEncoding = THREE.sRGBEncoding;
 
       // 2. Scene & Camera Setup
@@ -241,9 +267,9 @@
         const osc = this.audioCtx.createOscillator();
         const gain = this.audioCtx.createGain();
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(380, t);
-        osc.frequency.exponentialRampToValueAtTime(45, t + 0.12);
-        gain.gain.setValueAtTime(0.4, t);
+        osc.frequency.setValueAtTime(420, t);
+        osc.frequency.exponentialRampToValueAtTime(50, t + 0.12);
+        gain.gain.setValueAtTime(0.45, t);
         gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
         osc.connect(gain);
         gain.connect(this.audioCtx.destination);
@@ -260,14 +286,14 @@
         const osc = this.audioCtx.createOscillator();
         const gain = this.audioCtx.createGain();
         osc.type = 'square';
-        osc.frequency.setValueAtTime(110, t);
-        osc.frequency.exponentialRampToValueAtTime(30, t + 0.25);
-        gain.gain.setValueAtTime(0.5, t);
-        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
+        osc.frequency.setValueAtTime(120, t);
+        osc.frequency.exponentialRampToValueAtTime(25, t + 0.28);
+        gain.gain.setValueAtTime(0.55, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.28);
         osc.connect(gain);
         gain.connect(this.audioCtx.destination);
         osc.start(t);
-        osc.stop(t + 0.25);
+        osc.stop(t + 0.28);
       } catch (e) {}
     }
 
@@ -294,7 +320,12 @@
                 child.castShadow = true;
                 child.receiveShadow = true;
                 if (child.material) {
-                  child.material.roughness = Math.max(0.2, child.material.roughness || 0.5);
+                  child.material.envMapIntensity = 1.6;
+                  // Automotive High-Gloss Reflection
+                  if (key.includes('car') || key.includes('sedan') || key.includes('suv') || key.includes('police')) {
+                    child.material.metalness = Math.max(0.75, child.material.metalness || 0.85);
+                    child.material.roughness = Math.min(0.25, child.material.roughness || 0.2);
+                  }
                 }
               }
             });
@@ -318,13 +349,13 @@
     }
 
     onModelReady(name) {
-      if (name === this.player.vehicleType || (name === 'character-male' && this.player.mode === 'foot')) {
+      if (name === this.player.vehicleType || (name === 'char-gangster' && this.player.mode === 'foot')) {
         this.applyVehicleMesh(this.player.vehicleType);
       }
     }
 
     // =========================================================================
-    // ATMOSPHERE & DAYLIGHT LIGHTING (GTA V SUNNY DAY)
+    // ATMOSPHERE, DAYLIGHT & PBR ENVIRONMENT REFLECTIONS (PMREM)
     // =========================================================================
     buildDaytimeSkyAndSun() {
       this.scene.fog = new THREE.FogExp2(0xcde8ff, 0.0022);
@@ -363,7 +394,7 @@
         flatShading: true
       });
 
-      for (let i = 0; i < 22; i++) {
+      for (let i = 0; i < 24; i++) {
         const cloudGroup = new THREE.Group();
         const numPuffs = 4 + Math.floor(Math.random() * 5);
         for (let p = 0; p < numPuffs; p++) {
@@ -384,7 +415,8 @@
     }
 
     setupLighting() {
-      const sunLight = new THREE.DirectionalLight(0xfff8ee, 1.85);
+      // 1. Sun Directional Light with Shadows
+      const sunLight = new THREE.DirectionalLight(0xfff8ee, 1.95);
       sunLight.position.set(160, 260, 110);
       sunLight.castShadow = true;
       sunLight.shadow.mapSize.width = this.isMobile ? 1024 : 2048;
@@ -401,11 +433,52 @@
       this.scene.add(sunLight);
       this.sunLight = sunLight;
 
-      const hemiLight = new THREE.HemisphereLight(0x7ec2f7, 0x516642, 0.88);
+      // 2. Dual Hemisphere Light
+      const hemiLight = new THREE.HemisphereLight(0x7ec2f7, 0x516642, 0.9);
       this.scene.add(hemiLight);
 
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
+      // 3. Ambient Fill Light
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.38);
       this.scene.add(ambientLight);
+
+      // 4. PBR Equirectangular Environment Map (PMREM) for Realistic Car Reflections
+      try {
+        const pmremGen = new THREE.PMREMGenerator(this.renderer);
+        pmremGen.compileEquirectangularShader();
+
+        const envCanvas = document.createElement('canvas');
+        envCanvas.width = 1024; envCanvas.height = 512;
+        const eCtx = envCanvas.getContext('2d');
+
+        const eGrad = eCtx.createLinearGradient(0, 0, 0, 512);
+        eGrad.addColorStop(0.0, '#1d4ed8');
+        eGrad.addColorStop(0.4, '#38bdf8');
+        eGrad.addColorStop(0.5, '#fef08a');
+        eGrad.addColorStop(0.54, '#64748b');
+        eGrad.addColorStop(1.0, '#1e293b');
+        eCtx.fillStyle = eGrad;
+        eCtx.fillRect(0, 0, 1024, 512);
+
+        // Sun disc glare reflection
+        eCtx.fillStyle = '#ffffff';
+        eCtx.beginPath();
+        eCtx.arc(380, 200, 48, 0, Math.PI * 2);
+        eCtx.fill();
+
+        // City skyline silhouettes for reflections
+        eCtx.fillStyle = '#475569';
+        for (let b = 0; b < 1024; b += 28) {
+          const h = 45 + Math.sin(b * 0.05) * 35 + (b % 15) * 4;
+          eCtx.fillRect(b, 260 - h, 24, h);
+        }
+
+        const envTex = new THREE.CanvasTexture(envCanvas);
+        const envMap = pmremGen.fromEquirectangular(envTex).texture;
+        this.scene.environment = envMap;
+        pmremGen.dispose();
+      } catch (err) {
+        console.warn('⚠️ PMREM Environment generator fallback:', err);
+      }
     }
 
     // =========================================================================
@@ -589,7 +662,7 @@
         bGroup.position.set(bPos.x, 0, bPos.z);
 
         const modelNames = isDowntown
-          ? ['building-skyscraper-a', 'building-skyscraper-b', 'building-skyscraper-c']
+          ? ['building-tower-1', 'building-tower-2', 'building-skyscraper-a', 'building-skyscraper-b']
           : ['building-a', 'building-b', 'building-c', 'building-d'];
         const chosen = modelNames[idx % modelNames.length];
         const glbModel = this.getModel(chosen);
@@ -736,20 +809,6 @@
           palm.position.set(0, 0.28, z);
           palm.scale.set(4.8, 4.8, 4.8);
           medianGroup.add(palm);
-        } else {
-          const pTrunk = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.25, 0.4, 6, 8),
-            new THREE.MeshStandardMaterial({ color: 0x6d4c41, roughness: 0.9 })
-          );
-          pTrunk.position.set(0, 3, z);
-          medianGroup.add(pTrunk);
-
-          const pCrown = new THREE.Mesh(
-            new THREE.SphereGeometry(2.4, 8, 8),
-            new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.8 })
-          );
-          pCrown.position.set(0, 6.5, z);
-          medianGroup.add(pCrown);
         }
       }
       this.scene.add(medianGroup);
@@ -938,20 +997,26 @@
         const tlGroup = new THREE.Group();
         tlGroup.position.set(pos.x + 10, 0, pos.z + 10);
 
-        const mast = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.2, 0.25, 6.5, 12),
-          new THREE.MeshStandardMaterial({ color: 0x374151, metalness: 0.8 })
-        );
-        mast.position.y = 3.25;
-        mast.castShadow = true;
-        tlGroup.add(mast);
+        const propTL = this.getModel('prop-traffic-light');
+        if (propTL) {
+          propTL.scale.set(3.2, 3.2, 3.2);
+          tlGroup.add(propTL);
+        } else {
+          const mast = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.2, 0.25, 6.5, 12),
+            new THREE.MeshStandardMaterial({ color: 0x374151, metalness: 0.8 })
+          );
+          mast.position.y = 3.25;
+          mast.castShadow = true;
+          tlGroup.add(mast);
 
-        const box = new THREE.Mesh(
-          new THREE.BoxGeometry(0.8, 2.2, 0.8),
-          new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.9 })
-        );
-        box.position.set(0, 5.2, 0);
-        tlGroup.add(box);
+          const box = new THREE.Mesh(
+            new THREE.BoxGeometry(0.8, 2.2, 0.8),
+            new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.9 })
+          );
+          box.position.set(0, 5.2, 0);
+          tlGroup.add(box);
+        }
 
         const redLens = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 12), new THREE.MeshBasicMaterial({ color: 0xff0033 }));
         redLens.position.set(0, 5.8, 0.42);
@@ -1005,7 +1070,7 @@
     }
 
     // =========================================================================
-    // PLAYER & VEHICLES (GTA V DUAL MODE: ON-FOOT & VEHICLE)
+    // PLAYER & MULTI-VEHICLE (CARS, HELICOPTERS, JETS, MOTORBIKES, ON-FOOT)
     // =========================================================================
     buildPlayerAndVehicles() {
       const root = new THREE.Group();
@@ -1024,85 +1089,58 @@
         this.player.mesh.remove(this.player.mesh.children[0]);
       }
       this.player.wheels = [];
+      this.player.rotorMesh = null;
 
-      if (this.player.mode === 'foot' || type === 'foot') {
+      if (type === 'foot' || type === 'swat' || this.player.mode === 'foot') {
+        // ON-FOOT CHARACTER (Gangster Mobster, Street or SWAT)
         this.player.mode = 'foot';
-        const charModel = this.getModel('character-male');
+        const modelKey = type === 'swat' ? 'char-swat' : 'char-gangster';
+        const charModel = this.getModel(modelKey) || this.getModel('char-street') || this.getModel('character-male');
+
         if (charModel) {
-          charModel.scale.set(4.8, 4.8, 4.8);
+          charModel.scale.set(4.5, 4.5, 4.5);
           charModel.rotation.y = Math.PI;
           this.player.mesh.add(charModel);
           this.player.characterGroup = charModel;
-        } else {
-          const charGroup = new THREE.Group();
-          const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.5 });
-          const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.2, 0.5), bodyMat);
-          torso.position.y = 1.2;
-          charGroup.add(torso);
 
-          const head = new THREE.Mesh(
-            new THREE.SphereGeometry(0.32, 16, 16),
-            new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.6 })
-          );
-          head.position.y = 2.05;
-          charGroup.add(head);
-
-          this.player.mesh.add(charGroup);
-          this.player.characterGroup = charGroup;
+          // Attach 3D Weapon in hand
+          const weaponModel = this.getModel('weapon-pistol') || this.getModel('weapon-rifle');
+          if (weaponModel) {
+            weaponModel.scale.set(1.4, 1.4, 1.4);
+            weaponModel.position.set(0.45, 1.1, 0.4);
+            weaponModel.rotation.set(0, Math.PI, 0);
+            this.player.mesh.add(weaponModel);
+            this.player.heldWeapon = weaponModel;
+          }
         }
 
-        this.spawnParkedVehicle(this.player.parkedCarPos, this.player.parkedCarYaw, 'sedan-sports');
+        this.spawnParkedVehicle(this.player.parkedCarPos, this.player.parkedCarYaw, 'gta-sports-car');
       } else {
-        this.player.mode = 'car';
+        // VEHICLE OR AIRCRAFT MODE
         this.despawnParkedVehicle();
 
-        const glbCar = this.getModel(type) || this.getModel('sedan-sports') || this.getModel('sedan');
-        if (glbCar) {
-          glbCar.scale.set(3.6, 3.6, 3.6);
-          this.player.mesh.add(glbCar);
-          this.player.vehicleGroup = glbCar;
+        if (type === 'helicopter' || type === 'jet-fighter') {
+          this.player.mode = 'aircraft';
+        } else {
+          this.player.mode = 'car';
+        }
 
-          glbCar.traverse((child) => {
+        const model = this.getModel(type) || this.getModel('gta-sports-car') || this.getModel('sedan');
+        if (model) {
+          const sc = type === 'helicopter' ? 1.8 : (type === 'jet-fighter' ? 2.2 : (type === 'motorbike' ? 2.8 : 3.6));
+          model.scale.set(sc, sc, sc);
+          this.player.mesh.add(model);
+          this.player.vehicleGroup = model;
+
+          // Locate wheels or rotors
+          model.traverse((child) => {
             if (child.name && child.name.toLowerCase().includes('wheel')) {
               this.player.wheels.push(child);
             }
+            if (child.name && (child.name.toLowerCase().includes('rotor') || child.name.toLowerCase().includes('propeller'))) {
+              this.player.rotorMesh = child;
+            }
           });
-        } else {
-          const carGroup = new THREE.Group();
-          const carMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.2, metalness: 0.85 });
-
-          const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.8, 4.6), carMat);
-          body.position.y = 0.6;
-          body.castShadow = true;
-          carGroup.add(body);
-
-          const cabin = new THREE.Mesh(
-            new THREE.BoxGeometry(1.8, 0.65, 2.4),
-            new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.1, metalness: 0.9 })
-          );
-          cabin.position.set(0, 1.25, -0.2);
-          carGroup.add(cabin);
-
-          const hlMat = new THREE.MeshBasicMaterial({ color: 0xfffae8 });
-          [-0.8, 0.8].forEach(hx => {
-            const hl = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), hlMat);
-            hl.position.set(hx, 0.6, 2.32);
-            carGroup.add(hl);
-          });
-
-          const wGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.35, 16);
-          const wMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
-          [[-1.15, 0.42, 1.4], [1.15, 0.42, 1.4], [-1.15, 0.42, -1.4], [1.15, 0.42, -1.4]].forEach(wp => {
-            const wheel = new THREE.Mesh(wGeo, wMat);
-            wheel.rotation.z = Math.PI / 2;
-            wheel.position.set(wp[0], wp[1], wp[2]);
-            wheel.castShadow = true;
-            carGroup.add(wheel);
-            this.player.wheels.push(wheel);
-          });
-
-          this.player.mesh.add(carGroup);
-          this.player.vehicleGroup = carGroup;
         }
       }
 
@@ -1112,7 +1150,7 @@
 
     spawnParkedVehicle(pos, yaw, type) {
       this.despawnParkedVehicle();
-      const carModel = this.getModel(type) || this.getModel('sedan');
+      const carModel = this.getModel(type) || this.getModel('gta-sports-car') || this.getModel('sedan');
       if (carModel) {
         carModel.position.copy(pos);
         carModel.rotation.y = yaw;
@@ -1130,7 +1168,7 @@
     }
 
     toggleVehicleOrFoot() {
-      if (this.player.mode === 'car') {
+      if (this.player.mode === 'car' || this.player.mode === 'aircraft') {
         this.player.parkedCarPos.copy(this.player.pos);
         this.player.parkedCarYaw = this.player.yaw;
         this.player.pos.x += Math.cos(this.player.yaw) * 2.5;
@@ -1143,7 +1181,7 @@
         if (dist <= 6.5) {
           this.player.pos.copy(this.player.parkedCarPos);
           this.player.yaw = this.player.parkedCarYaw;
-          this.applyVehicleMesh('sedan-sports');
+          this.applyVehicleMesh('gta-sports-car');
           this.addHackFeedToast('🚗 Te has subido al vehículo.');
         } else {
           this.addHackFeedToast('⚠️ Estás demasiado lejos de tu coche para subir.');
@@ -1168,19 +1206,19 @@
 
       const tagSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(tagCanvas) }));
       tagSprite.scale.set(3.2, 0.8, 1);
-      tagSprite.position.y = 3.6;
+      tagSprite.position.y = 3.8;
       this.player.mesh.add(tagSprite);
     }
 
     // =========================================================================
-    // WEAPONS, PROJECTILES & POLICE PURSUIT
+    // WEAPONS, PROJECTILES & SWAT PURSUIT
     // =========================================================================
     fireWeapon() {
       const p = this.player;
       const fwd = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), p.yaw);
       const spawnPos = p.pos.clone().add(new THREE.Vector3(0, p.mode === 'foot' ? 1.4 : 0.8, 0)).addScaledVector(fwd, 1.8);
 
-      const projGeo = new THREE.SphereGeometry(0.22, 8, 8);
+      const projGeo = new THREE.SphereGeometry(0.24, 8, 8);
       const projMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
       const bullet = new THREE.Mesh(projGeo, projMat);
       bullet.position.copy(spawnPos);
@@ -1188,7 +1226,7 @@
 
       this.projectiles.push({
         mesh: bullet,
-        vel: fwd.clone().multiplyScalar(130),
+        vel: fwd.clone().multiplyScalar(135),
         life: 1.5
       });
 
@@ -1196,9 +1234,9 @@
 
       // Startle pedestrians in vicinity
       this.npcPedestrians.forEach(ped => {
-        if (ped.mesh.position.distanceTo(p.pos) < 45) {
+        if (ped.mesh.position.distanceTo(p.pos) < 50) {
           ped.isPanicking = true;
-          ped.speed = 6.8;
+          ped.speed = 7.2;
         }
       });
 
@@ -1212,6 +1250,9 @@
 
       if (p.wantedLevel >= 1 && this.policeUnits.length === 0) {
         this.spawnPoliceCruiser();
+      }
+      if (p.wantedLevel >= 4 && this.swatUnits.length === 0) {
+        this.spawnSwatSquad();
       }
     }
 
@@ -1230,22 +1271,20 @@
 
     spawnPoliceCruiser() {
       const policeGroup = new THREE.Group();
-      const pModel = this.getModel('police') || this.getModel('sedan');
+      const pModel = this.getModel('gta-police-car') || this.getModel('police');
       if (pModel) {
         pModel.scale.set(3.6, 3.6, 3.6);
         policeGroup.add(pModel);
       }
 
-      // Red/Blue Emergency Roof Strobe
-      const redLight = new THREE.PointLight(0xff0000, 2.5, 28);
+      const redLight = new THREE.PointLight(0xff0000, 2.8, 30);
       redLight.position.set(-0.5, 2.2, 0);
       policeGroup.add(redLight);
 
-      const blueLight = new THREE.PointLight(0x0000ff, 2.5, 28);
+      const blueLight = new THREE.PointLight(0x0000ff, 2.8, 30);
       blueLight.position.set(0.5, 2.2, 0);
       policeGroup.add(blueLight);
 
-      // Spawn behind player
       const behind = new THREE.Vector3(0, 0, -65).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.player.yaw);
       policeGroup.position.copy(this.player.pos).add(behind);
       policeGroup.position.y = 0.45;
@@ -1253,7 +1292,7 @@
 
       this.policeUnits.push({
         mesh: policeGroup,
-        speed: 38,
+        speed: 40,
         redLight,
         blueLight,
         sirenTimer: 0
@@ -1262,17 +1301,34 @@
       this.addHackFeedToast('🚨 LSPD EN CAMINO: Patrullas policiales desplegadas.');
     }
 
+    spawnSwatSquad() {
+      const swatGroup = new THREE.Group();
+      const sModel = this.getModel('char-swat');
+      if (sModel) {
+        sModel.scale.set(4.5, 4.5, 4.5);
+        swatGroup.add(sModel);
+      }
+      swatGroup.position.copy(this.player.pos).add(new THREE.Vector3(-15, 0, -35));
+      swatGroup.position.y = 0.22;
+      this.scene.add(swatGroup);
+
+      this.swatUnits.push({
+        mesh: swatGroup,
+        speed: 8.5
+      });
+
+      this.addHackFeedToast('⚠️ EQUIPO SWAT DESPLEGADO (NIVEL DE BÚSQUEDA 4+).');
+    }
+
     updatePolice(delta) {
       if (this.policeUnits.length === 0) return;
 
       this.policeUnits.forEach(cop => {
         cop.sirenTimer += delta;
-        // Alternating Strobe
         const isRed = (Math.floor(cop.sirenTimer * 10) % 2) === 0;
         cop.redLight.intensity = isRed ? 3.5 : 0.2;
         cop.blueLight.intensity = isRed ? 0.2 : 3.5;
 
-        // Pursue player
         const toPlayer = this.player.pos.clone().sub(cop.mesh.position);
         toPlayer.y = 0;
         const dist = toPlayer.length();
@@ -1282,7 +1338,6 @@
           cop.mesh.position.addScaledVector(toPlayer, cop.speed * delta);
           cop.mesh.lookAt(this.player.pos.x, cop.mesh.position.y, this.player.pos.z);
         } else {
-          // Ram player
           this.player.hp = Math.max(0, this.player.hp - delta * 18);
           this.playCrashSound();
         }
@@ -1293,7 +1348,7 @@
     // SMART TRAFFIC & PEDESTRIANS WITH REAL 3D GLB MODELS
     // =========================================================================
     buildNPCs() {
-      const carTypes = ['sedan', 'taxi', 'suv', 'truck', 'ambulance'];
+      const carTypes = ['gta-sports-car', 'taxi', 'suv', 'gta-bus', 'sedan', 'truck', 'ambulance'];
       const spawnTracks = [
         { roadX: -75, dirZ: 1, speed: 18 },
         { roadX: -75, dirZ: -1, speed: 16 },
@@ -1303,22 +1358,16 @@
         { roadZ: 75,  dirX: -1, speed: 21 }
       ];
 
-      for (let i = 0; i < 14; i++) {
+      for (let i = 0; i < 16; i++) {
         const track = spawnTracks[i % spawnTracks.length];
         const carType = carTypes[i % carTypes.length];
         const carGroup = new THREE.Group();
 
         const model = this.getModel(carType) || this.getModel('sedan');
         if (model) {
-          model.scale.set(3.5, 3.5, 3.5);
+          const sc = carType === 'gta-bus' ? 2.5 : 3.5;
+          model.scale.set(sc, sc, sc);
           carGroup.add(model);
-        } else {
-          const m = new THREE.Mesh(
-            new THREE.BoxGeometry(2.2, 0.8, 4.4),
-            new THREE.MeshStandardMaterial({ color: i % 2 === 0 ? 0xf59e0b : 0x10b981 })
-          );
-          m.position.y = 0.5;
-          carGroup.add(m);
         }
 
         let posX = track.roadX !== undefined ? track.roadX + (track.dirZ > 0 ? 4 : -4) : (Math.random() - 0.5) * 300;
@@ -1341,25 +1390,20 @@
         });
       }
 
-      for (let p = 0; p < 18; p++) {
+      // Diverse Pedestrians (Gangsters, Street Civilians, Women)
+      const pedTypes = ['char-gangster', 'char-street', 'char-female-street'];
+      for (let p = 0; p < 20; p++) {
         const pedGroup = new THREE.Group();
-        const pType = p % 2 === 0 ? 'character-male' : 'character-female';
-        const pModel = this.getModel(pType);
+        const pType = pedTypes[p % pedTypes.length];
+        const pModel = this.getModel(pType) || this.getModel('character-male');
 
         if (pModel) {
           pModel.scale.set(4.5, 4.5, 4.5);
           pedGroup.add(pModel);
-        } else {
-          const body = new THREE.Mesh(
-            new THREE.BoxGeometry(0.6, 1.6, 0.4),
-            new THREE.MeshStandardMaterial({ color: 0x475569 })
-          );
-          body.position.y = 0.8;
-          pedGroup.add(body);
         }
 
         const sx = p % 2 === 0 ? -165 : 88;
-        const sz = (p - 9) * 22;
+        const sz = (p - 10) * 20;
         pedGroup.position.set(sx, 0.22, sz);
 
         this.scene.add(pedGroup);
@@ -1463,13 +1507,13 @@
       };
 
       base.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouchMove(e); }, { passive: false });
-      base.addEventListener('move', (e) => { e.preventDefault(); handleTouchMove(e); }, { passive: false });
+      base.addEventListener('touchmove', (e) => { e.preventDefault(); handleTouchMove(e); }, { passive: false });
       base.addEventListener('touchend', (e) => { e.preventDefault(); handleTouchEnd(); }, { passive: false });
       base.addEventListener('touchcancel', (e) => { e.preventDefault(); handleTouchEnd(); }, { passive: false });
     }
 
     cycleVehicleType() {
-      const list = ['sedan-sports', 'sedan', 'suv', 'police', 'taxi', 'truck', 'ambulance', 'foot'];
+      const list = ['gta-sports-car', 'gta-police-car', 'helicopter', 'jet-fighter', 'motorbike', 'gta-bus', 'sedan', 'suv', 'foot', 'swat'];
       const curIdx = list.indexOf(this.player.vehicleType);
       const nextType = list[(curIdx + 1) % list.length];
       this.applyVehicleMesh(nextType);
@@ -1521,7 +1565,7 @@
 
     createRemotePeerMesh(p) {
       const peerGroup = new THREE.Group();
-      const car = this.getModel(p.vehicleType || 'sedan') || this.getModel('sedan');
+      const car = this.getModel(p.vehicleType || 'gta-sports-car') || this.getModel('sedan');
       if (car) {
         car.scale.set(3.5, 3.5, 3.5);
         peerGroup.add(car);
@@ -1542,7 +1586,7 @@
     }
 
     // =========================================================================
-    // PHYSICS, COLLISIONS & CAMERA UPDATE
+    // PHYSICS, FLIGHT & COLLISIONS
     // =========================================================================
     updatePhysics(delta) {
       const p = this.player;
@@ -1583,7 +1627,44 @@
 
         p.mesh.position.copy(p.pos);
         p.speed = p.footSpeed;
+      } else if (p.mode === 'aircraft') {
+        // --- HELICOPTER & JET FIGHTER FLIGHT PHYSICS ---
+        if (this.keys.left || (this.touchState.active && this.touchState.dx < -0.2)) p.yaw += 2.0 * delta;
+        if (this.keys.right || (this.touchState.active && this.touchState.dx > 0.2)) p.yaw -= 2.0 * delta;
+        p.mesh.rotation.y = p.yaw;
+
+        const isJet = p.vehicleType === 'jet-fighter';
+        const maxFlightSpeed = isJet ? 85 : 36;
+
+        if (this.keys.forward || this.touchState.gas) {
+          p.speed = Math.min(maxFlightSpeed, p.speed + (isJet ? 45 : 22) * delta);
+        } else if (this.keys.backward || this.touchState.brake) {
+          p.speed = Math.max(isJet ? 15 : 0, p.speed - 25 * delta);
+        } else {
+          p.speed *= Math.pow(0.92, delta * 30);
+        }
+
+        // Lift & Altitude Controls
+        if (this.keys.space || this.keys.shift) {
+          p.targetAltitude = Math.min(95, p.targetAltitude + (isJet ? 28 : 16) * delta);
+        } else if (this.keys.backward && p.targetAltitude > 2.0) {
+          p.targetAltitude = Math.max(0.6, p.targetAltitude - 12 * delta);
+        }
+
+        p.pos.y += (p.targetAltitude - p.pos.y) * delta * 3.5;
+        if (p.pos.y < 0.45) p.pos.y = 0.45;
+
+        // Forward flight vector
+        const fwd = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), p.yaw);
+        p.pos.addScaledVector(fwd, p.speed * delta);
+        p.mesh.position.copy(p.pos);
+
+        // Spin Helicopter Rotors
+        if (p.rotorMesh) {
+          p.rotorMesh.rotation.y += delta * 45;
+        }
       } else {
+        // --- DRIVING VEHICLE PHYSICS ---
         if (this.keys.left || (this.touchState.active && this.touchState.dx < -0.2)) {
           p.yaw += p.turnSpeed * delta * (p.speed >= 0 ? 1 : -1);
         }
@@ -1596,7 +1677,7 @@
         if (this.keys.forward || this.touchState.gas || (this.touchState.active && this.touchState.dy < -0.2)) {
           let maxSpd = p.maxSpeed;
           if (this.keys.shift && p.nitro > 0) {
-            maxSpd *= 1.4;
+            maxSpd *= 1.45;
             p.nitro = Math.max(0, p.nitro - delta * 30);
           }
           targetSpeed = maxSpd;
@@ -1641,6 +1722,7 @@
     }
 
     checkBuildingCollisions(pos, radius) {
+      if (pos.y > 45) return false; // Fly over buildings in helicopter/jet
       for (let i = 0; i < this.buildings.length; i++) {
         const b = this.buildings[i];
         if (pos.x + radius >= b.minX && pos.x - radius <= b.maxX &&
@@ -1659,6 +1741,10 @@
         const behind = new THREE.Vector3(0, 2.4, -4.8).applyAxisAngle(new THREE.Vector3(0, 1, 0), p.yaw);
         targetCamPos = p.pos.clone().add(behind);
         lookTarget = p.pos.clone().add(new THREE.Vector3(0, 1.8, 2.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), p.yaw));
+      } else if (p.mode === 'aircraft') {
+        const behind = new THREE.Vector3(0, 6.5, -16.0).applyAxisAngle(new THREE.Vector3(0, 1, 0), p.yaw);
+        targetCamPos = p.pos.clone().add(behind);
+        lookTarget = p.pos.clone().add(new THREE.Vector3(0, 1.0, 8.0).applyAxisAngle(new THREE.Vector3(0, 1, 0), p.yaw));
       } else {
         const camDist = 9.5 + Math.abs(p.speed) * 0.12;
         const camHeight = 3.6 + Math.abs(p.speed) * 0.05;
@@ -1667,7 +1753,7 @@
         lookTarget = p.pos.clone().add(new THREE.Vector3(0, 1.2, 5.0).applyAxisAngle(new THREE.Vector3(0, 1, 0), p.yaw));
       }
 
-      this.camera.position.lerp(targetCamPos, 0.12);
+      this.camera.position.lerp(targetCamPos, 0.14);
       this.camera.lookAt(lookTarget);
     }
 
@@ -1765,12 +1851,16 @@
 
       const gearElem = document.getElementById('gear-value');
       if (gearElem) {
-        if (p.speed < -0.5) gearElem.innerText = 'REV';
-        else if (Math.abs(p.speed) < 0.5) gearElem.innerText = 'PARK';
-        else if (Math.abs(p.speed) < 15) gearElem.innerText = 'GEAR 1';
-        else if (Math.abs(p.speed) < 28) gearElem.innerText = 'GEAR 2';
-        else if (Math.abs(p.speed) < 40) gearElem.innerText = 'GEAR 3';
-        else gearElem.innerText = 'GEAR 4';
+        if (p.mode === 'aircraft') {
+          gearElem.innerText = `ALT ${Math.round(p.pos.y)}M`;
+        } else {
+          if (p.speed < -0.5) gearElem.innerText = 'REV';
+          else if (Math.abs(p.speed) < 0.5) gearElem.innerText = 'PARK';
+          else if (Math.abs(p.speed) < 15) gearElem.innerText = 'GEAR 1';
+          else if (Math.abs(p.speed) < 28) gearElem.innerText = 'GEAR 2';
+          else if (Math.abs(p.speed) < 40) gearElem.innerText = 'GEAR 3';
+          else gearElem.innerText = 'GEAR 4';
+        }
       }
 
       const fuelBar = document.getElementById('hud-fuel-bar');

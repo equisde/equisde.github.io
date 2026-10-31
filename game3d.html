@@ -657,8 +657,8 @@
   <script src="cyber_city_3d.js"></script>
   <script>
     function toggleVehicleModal() {
-      const types = ['sedan-sports', 'sedan', 'suv', 'police', 'taxi', 'truck', 'ambulance', 'foot'];
-      const next = prompt('Selecciona modelo 3D (GTA V):\nsedan-sports, sedan, suv, police, taxi, truck, ambulance, foot:', window.cyberCityEngine?.player?.vehicleType || 'sedan-sports');
+      const types = ['gta-sports-car', 'gta-police-car', 'helicopter', 'jet-fighter', 'motorbike', 'gta-bus', 'sedan', 'suv', 'foot', 'swat'];
+      const next = prompt('Selecciona Vehículo o Personaje GTA V:\n- gta-sports-car (Deportivo GT)\n- gta-police-car (Patrulla LSPD)\n- helicopter (Helicóptero Maverick)\n- jet-fighter (Caza Militar F-15/Lazer)\n- motorbike (Motocicleta)\n- gta-bus (Autobús)\n- sedan (Sedán)\n- suv (SUV)\n- foot (Gángster a pie)\n- swat (Agente SWAT a pie)', window.cyberCityEngine?.player?.vehicleType || 'gta-sports-car');
       if (next && window.cyberCityEngine) {
         window.cyberCityEngine.applyVehicleMesh(next.trim().toLowerCase());
       }
