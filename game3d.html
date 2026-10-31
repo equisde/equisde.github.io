@@ -481,6 +481,7 @@
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
@@ -527,9 +528,10 @@
     <canvas id="ow-radar-canvas" width="140" height="140"></canvas>
   </div>
 
-  <!-- Floating Proximity Prompts (Fuel & Shop) -->
+  <!-- Floating Proximity Prompts (Fuel, Shop & Vehicle) -->
   <div class="g3d-proximity-prompts hud-interactive">
-    <button class="prox-btn btn-prox-fuel" id="hud-refuel-btn" onclick="refuelVehicle()">⛽ REPOSTAR COMBUSTIBLE (50₮)</button>
+    <button class="prox-btn btn-prox-car" id="hud-vehicle-btn" style="background: linear-gradient(135deg, #00f0ff, #0088cc); color: #000; border: 2px solid #00f0ff;" onclick="window.cyberCityEngine?.toggleVehicleOrFoot()">🚗 [F] SUBIR / BAJAR VEHÍCULO</button>
+    <button class="prox-btn btn-prox-fuel" id="hud-refuel-btn" onclick="refuelVehicle()">⛽ REPOSTAR COMBUSTIBLE (30₮)</button>
     <button class="prox-btn btn-prox-shop" id="hud-shop-btn" onclick="openCyberShop()">🏪 ABRIR TIENDA CIBERNÉTICA</button>
   </div>
 
@@ -581,10 +583,11 @@
   </div>
 
   <div class="ow-mobile-actions-cluster">
-    <button class="m-act-btn m-btn-gas" id="mbtn-gas">⚡ GAS</button>
-    <button class="m-act-btn m-btn-brake" id="mbtn-brake">🛑 FRENO</button>
+    <button class="m-act-btn m-btn-gas" id="mbtn-gas">⚡ GAS / CORRER</button>
+    <button class="m-act-btn m-btn-brake" id="mbtn-brake">🛑 FRENO / SALTAR</button>
+    <button class="m-act-btn" id="mbtn-vehicle" style="border-color: #ffd700; color: #ffd700;" onclick="window.cyberCityEngine?.toggleVehicleOrFoot()">🚗 SUBIR/BAJAR</button>
     <button class="m-act-btn m-btn-fire" id="mbtn-fire" onclick="firePlayerWeapon()">🔫 DISPARAR</button>
-    <button class="m-act-btn m-btn-hack" id="mbtn-hack" onclick="window.cyberCityEngine?.executeCurrentWatchDogsHack()">💥 HACK</button>
+    <button class="m-act-btn m-btn-hack" id="mbtn-hack" onclick="window.cyberCityEngine?.executeCurrentWatchDogsHack()">💥 HACK / USAR</button>
     <button class="m-act-btn m-btn-phone" id="mbtn-phone" onclick="openSmartphone()">📱 MÓVIL</button>
   </div>
 
@@ -654,10 +657,63 @@
   <script src="cyber_city_3d.js"></script>
   <script>
     function toggleVehicleModal() {
-      const types = ['supercar', 'bike', 'jet', 'hovercraft', 'foot'];
-      const next = prompt('Selecciona vehículo: supercar, bike, jet, hovercraft, foot:', 'supercar');
+      const types = ['sedan-sports', 'sedan', 'suv', 'police', 'taxi', 'truck', 'ambulance', 'foot'];
+      const next = prompt('Selecciona modelo 3D (GTA V):\nsedan-sports, sedan, suv, police, taxi, truck, ambulance, foot:', window.cyberCityEngine?.player?.vehicleType || 'sedan-sports');
       if (next && window.cyberCityEngine) {
         window.cyberCityEngine.applyVehicleMesh(next.trim().toLowerCase());
+      }
+    }
+
+    function openCyberShop() {
+      const modal = document.getElementById('cyber-shop-modal');
+      if (!modal) return;
+      modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function buyShopItem(item) {
+      if (!window.cyberCityEngine) return;
+      const p = window.cyberCityEngine.player;
+      if (item === 'fuel_can') {
+        if (p.credits < 30) { alert('Fondos insuficientes en CyberCredits (necesitas 30₮).'); return; }
+        p.credits -= 30;
+        p.fuel = Math.min(100, p.fuel + 40);
+        window.cyberCityEngine.addHackFeedToast('⛽ Bidón aplicado: +40% combustible.');
+      } else if (item === 'powerbank') {
+        if (p.credits < 25) { alert('Fondos insuficientes en CyberCredits (necesitas 25₮).'); return; }
+        p.credits -= 25;
+        p.battery = 100;
+        window.cyberCityEngine.addHackFeedToast('🔋 Powerbank cuántico: Batería móvil al 100%.');
+      } else if (item === 'armor') {
+        if (p.credits < 45) { alert('Fondos insuficientes en CyberCredits (necesitas 45₮).'); return; }
+        p.credits -= 45;
+        p.armor = 100;
+        p.hp = 100;
+        window.cyberCityEngine.addHackFeedToast('🛡️ Blindaje restaurado al 100%.');
+      }
+      openCyberShop();
+    }
+
+    function openSmartphone() {
+      const modal = document.getElementById('cyber-phone-modal');
+      if (!modal) return;
+      modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function refuelVehicle() {
+      if (!window.cyberCityEngine) return;
+      const p = window.cyberCityEngine.player;
+      if (p.credits >= 30) {
+        p.credits -= 30;
+        p.fuel = 100;
+        window.cyberCityEngine.addHackFeedToast('⛽ Tanque lleno al 100% (-30₮).');
+      } else {
+        alert('Fondos insuficientes para repostar (se requieren 30₮).');
+      }
+    }
+
+    function firePlayerWeapon() {
+      if (window.cyberCityEngine) {
+        window.cyberCityEngine.fireWeapon();
       }
     }
 
