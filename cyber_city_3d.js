@@ -3055,6 +3055,7 @@
       const ctx = radarCanvas.getContext('2d');
       const w = radarCanvas.width, h = radarCanvas.height;
       const cx = w / 2, cy = h / 2;
+      const scale = 0.55;
 
       ctx.clearRect(0, 0, w, h);
 
@@ -3081,7 +3082,6 @@
 
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
       ctx.lineWidth = 4;
-      const scale = 0.55;
 
       const roads = [-140, -70, 0, 70, 140];
       roads.forEach(rx => {
