@@ -229,21 +229,59 @@
       this.stationIdx = 0;
       this.radioInterval = null;
       this.isInitialized = false;
+      this.audioReady = false;
+      this.installUserGestureUnlock();
+    }
+
+    installUserGestureUnlock() {
+      const unlock = () => {
+        try {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) this.ctx = new AudioCtx();
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().then(() => {
+              this.audioReady = true;
+              if (!this.radioInterval && this.stations[this.stationIdx].style !== 'off') {
+                this.startRadioTrack();
+              }
+            }).catch(() => {});
+          } else if (this.ctx && this.ctx.state === 'running') {
+            this.audioReady = true;
+          }
+        } catch (e) {}
+      };
+
+      if (typeof window !== 'undefined') {
+        ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(evt => {
+          window.addEventListener(evt, unlock, { once: true, passive: true });
+        });
+      }
     }
 
     init() {
-      if (this.isInitialized) return;
+      if (this.isInitialized && this.ctx) return;
       try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
-        this.ctx = new AudioContext();
-        this.isInitialized = true;
-        this.startRadioTrack();
+        if (AudioContext) {
+          this.ctx = new AudioContext();
+          this.isInitialized = true;
+          if (this.ctx.state === 'running') {
+            this.audioReady = true;
+            this.startRadioTrack();
+          }
+        }
       } catch (e) {}
     }
 
     ensureContext() {
       if (!this.ctx) this.init();
-      if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume().then(() => {
+          this.audioReady = true;
+        }).catch(() => {});
+      }
     }
 
     cycleRadioStation() {
@@ -260,12 +298,18 @@
         this.radioInterval = null;
       }
       const st = this.stations[this.stationIdx];
-      if (st.style === 'off' || !this.ctx) return;
+      if (st.style === 'off' || !this.ctx || this.ctx.state !== 'running') return;
 
       const beatMs = (60 / st.bpm) * 1000;
       let step = 0;
       this.radioInterval = setInterval(() => {
-        if (!this.ctx || this.ctx.state === 'suspended') return;
+        if (!this.ctx || this.ctx.state !== 'running') {
+          if (this.ctx && this.ctx.state === 'suspended') {
+            clearInterval(this.radioInterval);
+            this.radioInterval = null;
+          }
+          return;
+        }
         const now = this.ctx.currentTime;
         step = (step + 1) % 16;
 
@@ -312,8 +356,7 @@
     }
 
     playEngineRPM(rpmNormalized, speedKmh) {
-      this.ensureContext();
-      if (!this.ctx) return;
+      if (!this.ctx || this.ctx.state !== 'running') return;
       if (!this.engineOsc) {
         this.engineOsc = this.ctx.createOscillator();
         this.engineGain = this.ctx.createGain();
@@ -336,8 +379,7 @@
     }
 
     playTireSqueal(active) {
-      this.ensureContext();
-      if (!this.ctx) return;
+      if (!this.ctx || this.ctx.state !== 'running') return;
       if (active && !this.squealNoise) {
         const bufferSize = this.ctx.sampleRate * 0.3;
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
@@ -370,8 +412,7 @@
     }
 
     playHeliRotor(active) {
-      this.ensureContext();
-      if (!this.ctx) return;
+      if (!this.ctx || this.ctx.state !== 'running') return;
       if (active && !this.heliOsc) {
         this.heliOsc = this.ctx.createOscillator();
         this.heliGain = this.ctx.createGain();
@@ -477,8 +518,7 @@
     }
 
     playSiren(active) {
-      this.ensureContext();
-      if (!this.ctx) return;
+      if (!this.ctx || this.ctx.state !== 'running') return;
       if (active && !this.sirenOsc) {
         this.sirenOsc = this.ctx.createOscillator();
         this.sirenGain = this.ctx.createGain();
@@ -1574,15 +1614,25 @@
       gangConfigs.forEach(g => {
         const ped = {
           mesh: this.instantiateGLB('char-gangster', 2.0, true),
+          name: `Pandillero (${g.faction.toUpperCase()})`,
+          type: 'gangster',
+          faction: g.faction,
           x: g.x,
           z: g.z,
-          faction: g.faction,
           hp: 120,
+          respect: -25,
+          hostility: 60,
           isDead: false,
           isCrawling: false,
           isDisarmed: false,
+          isAlly: false,
+          isFleeing: false,
+          walkSpeed: 1.2,
           speed: 1.2,
-          dir: Math.random() * Math.PI * 2
+          dir: Math.random() * Math.PI * 2,
+          targetPos: new THREE.Vector3(g.x + (Math.random() - 0.5) * 16, 0, g.z + (Math.random() - 0.5) * 16),
+          cash: 250 + Math.floor(Math.random() * 400),
+          bank: 1500 + Math.floor(Math.random() * 3000)
         };
         ped.mesh.position.set(g.x, 0, g.z);
         this.scene.add(ped.mesh);
@@ -2625,6 +2675,13 @@
       window.addEventListener('keydown', this.onKeyDown);
       window.addEventListener('keyup', this.onKeyUp);
       window.addEventListener('pointerdown', this.onPointerDown);
+
+      const unlockAudio = () => {
+        if (this.audio) this.audio.ensureContext();
+      };
+      ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(evt => {
+        window.addEventListener(evt, unlockAudio, { once: true, passive: true });
+      });
     }
 
     onKeyDown(e) {
@@ -2886,7 +2943,19 @@
       });
 
       this.npcPedestrians.forEach(npc => {
-        if (npc.isDead) return;
+        if (!npc || !npc.mesh || npc.isDead) return;
+
+        // Defensive normalization for pedestrian navigation contracts
+        if (!(npc.targetPos instanceof THREE.Vector3)) {
+          npc.targetPos = new THREE.Vector3(
+            npc.mesh.position.x + (Math.random() - 0.5) * 25,
+            0,
+            npc.mesh.position.z + (Math.random() - 0.5) * 25
+          );
+        }
+        if (!Number.isFinite(npc.walkSpeed)) {
+          npc.walkSpeed = (typeof npc.speed === 'number' && Number.isFinite(npc.speed)) ? npc.speed : 1.4;
+        }
 
         // Vehicle impact ragdoll
         if (this.player.inVehicle && Math.abs(this.player.speed) > 4.5) {
