@@ -28,6 +28,9 @@ app.use(cors({
 
 // In-Memory World State
 const connectedPlayers = new Map();
+// One authoritative lease per account/session identity. Socket IDs are ephemeral;
+// playerKey is stable across tabs/reconnects and is supplied by the client save.
+const activeSessions = new Map();
 const worldObjects = {
   blackoutActive: false,
   trafficPhase: 'AUTO', // AUTO, ALL_GREEN, ALL_RED
@@ -348,15 +351,31 @@ io.on('connection', (socket) => {
   console.log(`[NET] New Operative Connected: ${socket.id}`);
 
   // Send current world state
-  socket.emit('world:init', {
-    players: Array.from(connectedPlayers.values()),
-    worldState: worldObjects
-  });
-
   // Player joins the simulation
   socket.on('player:join', (data) => {
+    data = data && typeof data === 'object' ? data : {};
+    const playerKey = String(data.playerKey || '').trim().slice(0, 128);
+    if (!playerKey) {
+      socket.emit('session:rejected', { code: 'PLAYER_KEY_REQUIRED' });
+      return socket.disconnect(true);
+    }
+
+    const previousSocketId = activeSessions.get(playerKey);
+    if (previousSocketId && previousSocketId !== socket.id) {
+      const previousSocket = io.sockets.sockets.get(previousSocketId);
+      const previousPlayer = connectedPlayers.get(previousSocketId);
+      if (previousSocket) {
+        previousSocket.emit('session:replaced', { reason: 'NEWER_SESSION' });
+        previousSocket.disconnect(true);
+      }
+      connectedPlayers.delete(previousSocketId);
+      socket.broadcast.emit('player:left', previousSocketId);
+      if (previousPlayer) io.emit('chat:system', `Operative [${previousPlayer.username}] reconectado desde otra sesión.`);
+    }
+
     const player = {
       id: socket.id,
+      playerKey,
       username: data.username || `Operative_${socket.id.substring(0, 5)}`,
       avatarUrl: data.avatarUrl || 'https://github.com/identicons/default.png',
       position: data.position || { x: 0, y: 1, z: 0 },
@@ -368,6 +387,13 @@ io.on('connection', (socket) => {
     };
 
     connectedPlayers.set(socket.id, player);
+    activeSessions.set(playerKey, socket.id);
+
+    socket.emit('world:init', {
+      players: Array.from(connectedPlayers.values()).filter(p => p.id !== socket.id),
+      worldState: worldObjects,
+      map: { width: 2400, depth: 2400, chunkSize: 200, biomeCount: 6 }
+    });
 
     // Broadcast to other players
     socket.broadcast.emit('player:spawned', player);
@@ -379,7 +405,11 @@ io.on('connection', (socket) => {
     const player = connectedPlayers.get(socket.id);
     if (!player) return;
 
-    player.position = data.position;
+    const position = data && data.position;
+    if (!position || [position.x, position.y, position.z].some(v => !Number.isFinite(Number(v)))) return;
+    if (Math.abs(Number(position.x)) > 1200 || Math.abs(Number(position.z)) > 1200) return;
+
+    player.position = { x: Number(position.x), y: Number(position.y), z: Number(position.z) };
     player.rotation = data.rotation;
     player.velocity = data.velocity;
     player.vehicle = data.vehicle;
@@ -461,6 +491,9 @@ io.on('connection', (socket) => {
       io.emit('chat:system', `Operative [${player.username}] signal terminated.`);
     }
     connectedPlayers.delete(socket.id);
+    if (player && activeSessions.get(player.playerKey) === socket.id) {
+      activeSessions.delete(player.playerKey);
+    }
     socket.broadcast.emit('player:left', socket.id);
     console.log(`[NET] Operative Disconnected: ${socket.id}`);
   });

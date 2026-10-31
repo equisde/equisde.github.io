@@ -33,6 +33,16 @@
 (function() {
   'use strict';
 
+  // Filter non-fatal GLTFLoader UV transform and texture notices
+  const _origConsoleWarn = console.warn;
+  console.warn = function(...args) {
+    if (typeof args[0] === 'string' && (
+      args[0].includes('KHR_texture_transform') ||
+      args[0].includes('Custom UV sets')
+    )) return;
+    _origConsoleWarn.apply(console, args);
+  };
+
   const HEROKU_BACKEND_URL = 'https://parallax-cyber-city-5b72da76b505.herokuapp.com';
   const STORAGE_KEY = 'parallax_gta_v_save_v2';
 
@@ -114,6 +124,9 @@
         node.castShadow = true;
         node.receiveShadow = true;
         if (node.material) {
+          ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap'].forEach(slot => {
+            if (node.material[slot]) node.material[slot].matrixAutoUpdate = true;
+          });
           node.material.roughness = Math.min(node.material.roughness, 0.4);
           node.material.metalness = Math.max(node.material.metalness, 0.5);
           node.material.envMapIntensity = 1.35;
@@ -357,25 +370,65 @@
 
     playEngineRPM(rpmNormalized, speedKmh) {
       if (!this.ctx || this.ctx.state !== 'running') return;
+      const now = this.ctx.currentTime;
       if (!this.engineOsc) {
         this.engineOsc = this.ctx.createOscillator();
+        this.engineSubOsc = this.ctx.createOscillator();
         this.engineGain = this.ctx.createGain();
+
         this.engineOsc.type = 'sawtooth';
-        this.engineGain.gain.setValueAtTime(0.04, this.ctx.currentTime);
-        this.engineOsc.connect(this.engineGain);
+        this.engineSubOsc.type = 'triangle';
+        this.engineGain.gain.setValueAtTime(0.035, now);
+
+        this.engineFilter = this.ctx.createBiquadFilter();
+        this.engineFilter.type = 'lowpass';
+        this.engineFilter.frequency.setValueAtTime(600, now);
+
+        this.engineOsc.connect(this.engineFilter);
+        this.engineSubOsc.connect(this.engineFilter);
+        this.engineFilter.connect(this.engineGain);
         this.engineGain.connect(this.ctx.destination);
+
         this.engineOsc.start();
+        this.engineSubOsc.start();
       }
-      const baseFreq = 50 + (rpmNormalized * 140) + (Math.abs(speedKmh) * 1.6);
-      this.engineOsc.frequency.setTargetAtTime(baseFreq, this.ctx.currentTime, 0.04);
-      const targetGain = Math.min(0.07, 0.02 + (Math.abs(speedKmh) / 160) * 0.05);
-      this.engineGain.gain.setTargetAtTime(targetGain, this.ctx.currentTime, 0.04);
+
+      const spd = Math.abs(speedKmh);
+      const gear = Math.min(5, Math.floor(spd / 30) + 1);
+      const gearRatio = ((spd % 30) / 30) * 0.7 + (rpmNormalized * 0.3);
+
+      const baseFreq = 42 + (gearRatio * 110) + (gear * 6);
+      this.engineOsc.frequency.setTargetAtTime(baseFreq, now, 0.05);
+      this.engineSubOsc.frequency.setTargetAtTime(baseFreq * 0.5, now, 0.05);
+
+      const filterFreq = 450 + (gearRatio * 1200) + (spd * 4);
+      this.engineFilter.frequency.setTargetAtTime(Math.min(3200, filterFreq), now, 0.05);
+
+      const targetGain = Math.min(0.065, 0.02 + (spd / 160) * 0.045);
+      this.engineGain.gain.setTargetAtTime(targetGain, now, 0.05);
     }
 
     stopEngine() {
       if (this.engineGain && this.ctx) {
         this.engineGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
       }
+    }
+
+    playPoliceRadioChirp() {
+      this.ensureContext();
+      if (!this.ctx || this.ctx.state !== 'running') return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(1240, now + 0.05);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.14);
     }
 
     playTireSqueal(active) {
@@ -450,19 +503,46 @@
 
     playGunshot(isHeavy = false) {
       this.ensureContext();
-      if (!this.ctx) return;
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = isHeavy ? 'triangle' : 'sawtooth';
+      if (!this.ctx || this.ctx.state !== 'running') return;
       const now = this.ctx.currentTime;
-      osc.frequency.setValueAtTime(isHeavy ? 190 : 340, now);
-      osc.frequency.exponentialRampToValueAtTime(30, now + 0.18);
-      gain.gain.setValueAtTime(0.35, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.22);
+
+      // 1. Transient broadband noise burst (crack of supersonic round)
+      const bufferSize = Math.floor(this.ctx.sampleRate * (isHeavy ? 0.32 : 0.22));
+      const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.04));
+      }
+      const noiseSource = this.ctx.createBufferSource();
+      noiseSource.buffer = noiseBuffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(isHeavy ? 900 : 1600, now);
+      filter.Q.setValueAtTime(1.8, now);
+
+      const noiseGain = this.ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.42, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + (isHeavy ? 0.32 : 0.22));
+
+      noiseSource.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(this.ctx.destination);
+      noiseSource.start(now);
+
+      // 2. Heavy sub-bass body thump
+      const subOsc = this.ctx.createOscillator();
+      const subGain = this.ctx.createGain();
+      subOsc.type = 'triangle';
+      subOsc.frequency.setValueAtTime(isHeavy ? 180 : 260, now);
+      subOsc.frequency.exponentialRampToValueAtTime(32, now + 0.14);
+      subGain.gain.setValueAtTime(0.4, now);
+      subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+      subOsc.connect(subGain);
+      subGain.connect(this.ctx.destination);
+      subOsc.start(now);
+      subOsc.stop(now + 0.18);
     }
 
     playPunch() {
@@ -1230,7 +1310,9 @@
         { id: 'ron_downtown', name: 'RON OIL DOWNTOWN', x: -65, z: 0, price: 50 },
         { id: 'ltd_east', name: 'LTD GASOLINE EAST', x: 75, z: -70, price: 50 },
         { id: 'globe_south', name: 'GLOBE OIL SOUTH', x: -65, z: 140, price: 50 },
-        { id: 'xero_west', name: 'XERO GAS MARINA', x: 140, z: 70, price: 50 }
+        { id: 'xero_west', name: 'XERO GAS MARINA', x: 140, z: 70, price: 50 },
+        { id: 'highway_north', name: 'HIGHWAY 1 VINEWOOD STATION', x: 0, z: -920, price: 50 },
+        { id: 'highway_south', name: 'PORT FREEWAY STATION', x: 0, z: 920, price: 50 }
       ];
 
       this.gasStationMeshes = [];
@@ -2171,6 +2253,12 @@
       Object.keys(MODEL_MANIFEST).forEach(key => {
         this.gltfLoader.load(MODEL_MANIFEST[key], (gltf) => {
           this.rawModels[key] = gltf.scene;
+          gltf.scene.traverse(node => {
+            if (!node.isMesh || !node.material) return;
+            ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap'].forEach(slot => {
+              if (node.material[slot]) node.material[slot].matrixAutoUpdate = true;
+            });
+          });
 
           for (let i = this.pendingHolders.length - 1; i >= 0; i--) {
             const req = this.pendingHolders[i];
@@ -2273,48 +2361,91 @@
     }
 
     buildRealisticCity() {
-      const ground = new THREE.Mesh(
-        new THREE.PlaneGeometry(760, 760),
-        new THREE.MeshStandardMaterial({ color: 0x0f141f, roughness: 0.95 })
+      // 1. Endless Surrounding Ocean (3800m x 3800m)
+      const oceanTex = createWaterTexture();
+      oceanTex.repeat.set(38, 38);
+      const ocean = new THREE.Mesh(
+        new THREE.PlaneGeometry(3800, 3800),
+        new THREE.MeshStandardMaterial({ map: oceanTex, roughness: 0.1, metalness: 0.88, color: 0x003366 })
       );
-      ground.rotation.x = -Math.PI / 2;
-      ground.receiveShadow = true;
-      this.scene.add(ground);
+      ocean.rotation.x = -Math.PI / 2;
+      ocean.position.y = -0.15;
+      this.scene.add(ocean);
 
+      // 2. Continental Island Terrain (2400m x 2400m)
+      const island = new THREE.Mesh(
+        new THREE.PlaneGeometry(2400, 2400),
+        new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.95 })
+      );
+      island.rotation.x = -Math.PI / 2;
+      island.receiveShadow = true;
+      this.scene.add(island);
+
+      // 3. Del Perro Beach Golden Shoreline (West: X: -950 to -450, Z: -1100 to 1100)
+      const beach = new THREE.Mesh(
+        new THREE.PlaneGeometry(260, 2200),
+        new THREE.MeshStandardMaterial({ color: 0xd9b372, roughness: 0.98 })
+      );
+      beach.rotation.x = -Math.PI / 2;
+      beach.position.set(-680, 0.02, 0);
+      this.scene.add(beach);
+
+      // 4. Grand Shipping & Pleasure Canal (1800m long x 55m wide)
       const waterTex = createWaterTexture();
-      waterTex.repeat.set(2, 20);
+      waterTex.repeat.set(2, 45);
       const canal = new THREE.Mesh(
-        new THREE.PlaneGeometry(55, 660),
-        new THREE.MeshStandardMaterial({ map: waterTex, roughness: 0.1, metalness: 0.85, color: 0x0099ff })
+        new THREE.PlaneGeometry(55, 1800),
+        new THREE.MeshStandardMaterial({ map: waterTex, roughness: 0.08, metalness: 0.85, color: 0x0088ee })
       );
       canal.rotation.x = -Math.PI / 2;
-      canal.position.set(-270, 0.04, 0);
+      canal.position.set(-420, 0.04, 0);
       this.scene.add(canal);
 
+      // 5. Road Material
       const roadTex = createAsphaltRoadTexture();
       roadTex.repeat.set(1, 14);
       const roadMat = new THREE.MeshStandardMaterial({ map: roadTex, roughness: 0.85, metalness: 0.15 });
       this.roadMaterial = roadMat;
 
+      const swTex = createSidewalkTexture();
+      swTex.repeat.set(4, 4);
+      const swMat = new THREE.MeshStandardMaterial({ map: swTex, roughness: 0.75 });
+
+      // 6. Perimeter Scenic Highway Circuit (High Speed 4-lane Circuit, 22m wide)
+      const hwWidth = 22;
+      // North Highway
+      const hwN = new THREE.Mesh(new THREE.PlaneGeometry(1800, hwWidth), roadMat);
+      hwN.rotation.x = -Math.PI / 2; hwN.position.set(0, 0.03, -950); hwN.receiveShadow = true; this.scene.add(hwN);
+      // South Highway
+      const hwS = new THREE.Mesh(new THREE.PlaneGeometry(1800, hwWidth), roadMat);
+      hwS.rotation.x = -Math.PI / 2; hwS.position.set(0, 0.03, 950); hwS.receiveShadow = true; this.scene.add(hwS);
+      // West Coastal Highway
+      const hwW = new THREE.Mesh(new THREE.PlaneGeometry(hwWidth, 1900), roadMat);
+      hwW.rotation.x = -Math.PI / 2; hwW.position.set(-900, 0.03, 0); hwW.receiveShadow = true; this.scene.add(hwW);
+      // East Highway
+      const hwE = new THREE.Mesh(new THREE.PlaneGeometry(hwWidth, 1900), roadMat);
+      hwE.rotation.x = -Math.PI / 2; hwE.position.set(900, 0.03, 0); hwE.receiveShadow = true; this.scene.add(hwE);
+
+      // 7. Downtown Financial Core Grid (Center: -210 to 210)
       const blockSize = 52;
       const streetWidth = 18;
       const step = blockSize + streetWidth;
 
       for (let x = -210; x <= 210; x += step) {
-        const road = new THREE.Mesh(new THREE.PlaneGeometry(streetWidth, 640), roadMat);
+        const road = new THREE.Mesh(new THREE.PlaneGeometry(streetWidth, 900), roadMat);
         road.rotation.x = -Math.PI / 2;
         road.position.set(x, 0.02, 0);
         road.receiveShadow = true;
         this.scene.add(road);
 
-        for (let z = -260; z <= 260; z += 35) {
+        for (let z = -420; z <= 420; z += 42) {
           const pL = this.instantiateGLB('tree-palm', 7.5, true); pL.position.set(x - 10.5, 0, z); this.scene.add(pL);
           const pR = this.instantiateGLB('tree-palm', 7.5, true); pR.position.set(x + 10.5, 0, z); this.scene.add(pR);
         }
       }
 
-      for (let z = -210; z <= 210; z += step) {
-        const road = new THREE.Mesh(new THREE.PlaneGeometry(540, streetWidth), roadMat);
+      for (let z = -280; z <= 280; z += step) {
+        const road = new THREE.Mesh(new THREE.PlaneGeometry(900, streetWidth), roadMat);
         road.rotation.x = -Math.PI / 2;
         road.rotation.z = Math.PI / 2;
         road.position.set(0, 0.02, z);
@@ -2322,12 +2453,9 @@
         this.scene.add(road);
       }
 
-      const swTex = createSidewalkTexture();
-      swTex.repeat.set(4, 4);
-      const swMat = new THREE.MeshStandardMaterial({ map: swTex, roughness: 0.75 });
-
+      // Downtown Blocks & Skyscraper placement
       for (let x = -175; x <= 175; x += step) {
-        for (let z = -175; z <= 175; z += step) {
+        for (let z = -210; z <= 210; z += step) {
           const sw = new THREE.Mesh(new THREE.BoxGeometry(blockSize, 0.3, blockSize), swMat);
           sw.position.set(x, 0.15, z);
           sw.receiveShadow = true;
@@ -2335,27 +2463,111 @@
 
           const dist = Math.hypot(x, z);
           if (dist < 40) {
-            const grass = new THREE.Mesh(new THREE.PlaneGeometry(blockSize * 0.88, blockSize * 0.88), new THREE.MeshStandardMaterial({ color: 0x1b4328, roughness: 0.9 }));
+            // Legion Square Park
+            const grass = new THREE.Mesh(new THREE.PlaneGeometry(blockSize * 0.88, blockSize * 0.88), new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.9 }));
             grass.rotation.x = -Math.PI / 2; grass.position.set(x, 0.32, z); this.scene.add(grass);
 
             const fountain = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 1, 20), new THREE.MeshStandardMaterial({ color: 0x334155 }));
             fountain.position.set(x, 0.8, z); this.scene.add(fountain);
           } else if (dist < 130) {
-            const towerKey = (Math.random() > 0.5) ? 'building-tower-1' : 'building-tower-2';
-            const tower = this.instantiateGLB(towerKey, 65 + Math.random() * 25, true);
+            // Giant Corporate Towers
+            const towerKey = (x < 0) ? 'building-tower-1' : 'building-tower-2';
+            const towerHeight = (x < 0 && z < 0) ? 95 : 75;
+            const tower = this.instantiateGLB(towerKey, towerHeight, true);
             tower.position.set(x, 0.3, z); this.scene.add(tower);
             this.colliders.push({ x, z, r: blockSize * 0.45 });
-          } else if (x > 80 && z > 80) {
-            const mansion = this.instantiateGLB('mansion-balcony', 16, true);
-            mansion.position.set(x, 0.3, z); this.scene.add(mansion);
-            this.colliders.push({ x, z, r: blockSize * 0.4 });
           } else {
-            const house = this.instantiateGLB('luxury-suite', 14, true);
-            house.position.set(x, 0.3, z); this.scene.add(house);
-            this.colliders.push({ x, z, r: blockSize * 0.38 });
+            const bldKey = (Math.random() > 0.5) ? 'building-skyscraper-a' : 'building-skyscraper-b';
+            const bld = this.instantiateGLB(bldKey, 50 + Math.random() * 20, true);
+            bld.position.set(x, 0.3, z); this.scene.add(bld);
+            this.colliders.push({ x, z, r: blockSize * 0.42 });
           }
         }
       }
+
+      // 8. Vinewood Hills & Mansions District (North: Z: -900 to -350)
+      const hillsGround = new THREE.Mesh(
+        new THREE.PlaneGeometry(1600, 600),
+        new THREE.MeshStandardMaterial({ color: 0x164e28, roughness: 0.92 })
+      );
+      hillsGround.rotation.x = -Math.PI / 2;
+      hillsGround.position.set(0, 0.1, -650);
+      this.scene.add(hillsGround);
+
+      const mansionCoords = [
+        [-320, -450], [-160, -520], [0, -550], [180, -510], [350, -460],
+        [-250, -680], [-80, -720], [120, -710], [280, -670],
+        [-180, -840], [0, -880], [190, -850]
+      ];
+      mansionCoords.forEach(([mx, mz], i) => {
+        const mKey = (i % 3 === 0) ? 'mansion-balcony' : (i % 3 === 1 ? 'mansion-columns' : 'luxury-suite');
+        const mansion = this.instantiateGLB(mKey, 20, true);
+        mansion.position.set(mx, 0.3, mz);
+        this.scene.add(mansion);
+        this.colliders.push({ x: mx, z: mz, r: 16 });
+
+        // Pine trees around mansions
+        for (let p = 0; p < 3; p++) {
+          const pine = this.instantiateGLB('tree-pine', 9.5, true);
+          pine.position.set(mx + (p - 1) * 14, 0, mz + 12);
+          this.scene.add(pine);
+        }
+      });
+
+      // 9. South Docks & Industrial Port (South: Z: 350 to 900)
+      const portGround = new THREE.Mesh(
+        new THREE.PlaneGeometry(1400, 580),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 })
+      );
+      portGround.rotation.x = -Math.PI / 2;
+      portGround.position.set(0, 0.1, 640);
+      this.scene.add(portGround);
+
+      const warehouseCoords = [
+        [-280, 480], [-140, 510], [0, 520], [160, 500], [320, 470],
+        [-220, 680], [-60, 710], [100, 700], [260, 670],
+        [-140, 830], [20, 840], [180, 820]
+      ];
+      warehouseCoords.forEach(([wx, wz], i) => {
+        const whKey = (i % 2 === 0) ? 'business-hq' : 'building-d';
+        const wh = this.instantiateGLB(whKey, 26, true);
+        wh.position.set(wx, 0.3, wz);
+        this.scene.add(wh);
+        this.colliders.push({ x: wx, z: wz, r: 18 });
+
+        const bar = this.instantiateGLB('barrier', 3.5, true);
+        bar.position.set(wx + 14, 0, wz);
+        this.scene.add(bar);
+      });
+
+      // Speedboats moored in canal & docks
+      [[-420, 200], [-420, 550], [-420, -200]].forEach(([bx, bz]) => {
+        const boat = this.instantiateGLB('speedboat', 6.5, true);
+        boat.position.set(bx, 0.1, bz);
+        this.scene.add(boat);
+      });
+
+      // 10. East Los Santos & Gang Turf (East: X: 280 to 800, Z: -240 to 400)
+      const turfGround = new THREE.Mesh(
+        new THREE.PlaneGeometry(540, 680),
+        new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.9 })
+      );
+      turfGround.rotation.x = -Math.PI / 2;
+      turfGround.position.set(540, 0.1, 80);
+      this.scene.add(turfGround);
+
+      const houseCoords = [
+        [360, -180], [480, -180], [600, -180],
+        [360, -40], [480, -40], [600, -40],
+        [360, 120], [480, 120], [600, 120],
+        [360, 260], [480, 260], [600, 260]
+      ];
+      houseCoords.forEach(([hx, hz]) => {
+        const house = this.instantiateGLB('house-suburban', 15, true);
+        house.position.set(hx, 0.3, hz);
+        this.scene.add(house);
+        this.colliders.push({ x: hx, z: hz, r: 12 });
+      });
     }
 
     setupFullFleetNPCTraffic() {
@@ -2386,6 +2598,36 @@
             archetype: (vType.includes('police')) ? 'police' : ((vType === 'gta-sports-car') ? 'gangster' : 'civilian'),
             cash: 150 + Math.floor(Math.random() * 650),
             bank: 800 + Math.floor(Math.random() * 4500),
+            hp: 100
+          }
+        });
+      });
+
+      // Perimeter Highway & Coastal Cruisers
+      const highwayPatrols = [
+        { type: 'gta-sports-car', x: -900, z: -400, speed: 28, dirZ: 1 },
+        { type: 'police', x: -900, z: 350, speed: 25, dirZ: -1 },
+        { type: 'suv', x: 900, z: -300, speed: 22, dirZ: 1 },
+        { type: 'truck', x: 900, z: 400, speed: 18, dirZ: -1 },
+        { type: 'motorbike', x: -140, z: -450, speed: 26, dirZ: 1 }
+      ];
+      highwayPatrols.forEach((hp, idx) => {
+        const car = this.instantiateGLB(hp.type, hp.type === 'truck' ? 7.2 : 4.4, true);
+        car.position.set(hp.x, 0, hp.z);
+        this.scene.add(car);
+        this.npcVehicles.push({
+          mesh: car,
+          type: hp.type,
+          speed: hp.speed,
+          roadX: hp.x,
+          dirZ: hp.dirZ,
+          isCarjacked: false,
+          isStalled: false,
+          driver: {
+            name: `Conductor Autopista #${idx + 1}`,
+            archetype: hp.type.includes('police') ? 'police' : 'civilian',
+            cash: 200 + Math.floor(Math.random() * 700),
+            bank: 1200 + Math.floor(Math.random() * 4000),
             hp: 100
           }
         });
@@ -2426,10 +2668,23 @@
 
     setupPedestrianSystem() {
       const charKeys = ['char-gangster', 'char-street', 'char-swat', 'char-female-street', 'character-male'];
-      for (let i = 0; i < 24; i++) {
+      const zones = [
+        // Downtown Sidewalks
+        () => ({ x: -160 + Math.random() * 320, z: -160 + Math.random() * 320 }),
+        // Del Perro Beach Boardwalk
+        () => ({ x: -660 + (Math.random() - 0.5) * 40, z: -350 + Math.random() * 700 }),
+        // Vinewood Hills Terraces
+        () => ({ x: -250 + Math.random() * 500, z: -750 + Math.random() * 350 }),
+        // East Los Santos Turf
+        () => ({ x: 340 + Math.random() * 260, z: -120 + Math.random() * 320 }),
+        // South Docks
+        () => ({ x: -150 + Math.random() * 300, z: 480 + Math.random() * 320 })
+      ];
+
+      for (let i = 0; i < 36; i++) {
         const cKey = charKeys[i % charKeys.length];
-        const px = -170 + Math.random() * 340;
-        const pz = -170 + Math.random() * 340;
+        const zonePicker = zones[i % zones.length];
+        const { x: px, z: pz } = zonePicker();
 
         const ped = this.instantiateGLB(cKey, 1.82, true);
         ped.position.set(px, 0, pz);
@@ -3102,12 +3357,27 @@
           this.socket.on('connect', () => {
             this.addHackFeedToast('🌐 [Heroku Grid] Conectado a la sesión multijugador.');
             this.socket.emit('player:join', {
+              playerKey: this.session.sessionId,
               username: '@equisde',
               avatarUrl: 'https://avatars.githubusercontent.com/u/34652149?v=4',
               position: { x: this.player.x, y: this.player.y || 1, z: this.player.z },
               rotation: { x: 0, y: this.player.yaw, z: 0 },
               vehicle: this.player.inVehicle ? 'car' : 'foot'
             });
+          });
+
+          this.socket.on('session:replaced', (data) => {
+            this.isActive = false;
+            if (this.rafId) cancelAnimationFrame(this.rafId);
+            this.audio?.playWastedSound();
+            const modal = document.getElementById('gta-session-alert-modal');
+            if (modal) modal.style.display = 'flex';
+            this.addHackFeedToast('⚠️ [GTA ONLINE] Sesión desconectada: Tu cuenta ha iniciado sesión en otro dispositivo.');
+            this.socket.disconnect();
+          });
+
+          this.socket.on('session:rejected', (data) => {
+            this.addHackFeedToast(`⛔ Sesión rechazada: ${data?.code || 'UNKNOWN'}`);
           });
 
           this.socket.on('world:init', (data) => {
@@ -3283,8 +3553,12 @@
     }
 
     addWantedHeat(stars) {
+      const prev = this.player.wanted;
       this.player.wanted = Math.min(5, this.player.wanted + stars);
       this.player.wantedTimer = 25;
+      if (this.player.wanted > prev) {
+        this.audio.playPoliceRadioChirp();
+      }
       this.audio.playSiren(this.player.wanted > 0);
     }
 
@@ -3575,8 +3849,9 @@
       this.npcVehicles.forEach(car => {
         if (!car.isStalled) {
           car.mesh.position.z += car.speed * car.dirZ * delta;
-          if (car.mesh.position.z > 240) car.mesh.position.z = -240;
-          if (car.mesh.position.z < -240) car.mesh.position.z = 240;
+          const limitZ = (Math.abs(car.roadX) > 600) ? 950 : 850;
+          if (car.mesh.position.z > limitZ) car.mesh.position.z = -limitZ;
+          if (car.mesh.position.z < -limitZ) car.mesh.position.z = limitZ;
         }
       });
 
@@ -3588,14 +3863,14 @@
           air.mesh.rotation.y = -air.angle + Math.PI / 2;
         } else if (air.type === 'jet-fighter') {
           air.mesh.position.z += air.speedZ * delta;
-          if (air.mesh.position.z > 360) air.mesh.position.z = -360;
+          if (air.mesh.position.z > 1200) air.mesh.position.z = -1200;
         }
       });
 
       this.npcWaterUnits.forEach(boat => {
         boat.mesh.position.z += boat.speedZ * delta;
-        if (boat.mesh.position.z > 280) boat.mesh.position.z = -280;
-        if (boat.mesh.position.z < -280) boat.mesh.position.z = 280;
+        if (boat.mesh.position.z > 850) boat.mesh.position.z = -850;
+        if (boat.mesh.position.z < -850) boat.mesh.position.z = 850;
       });
 
       this.npcPedestrians.forEach(npc => {
@@ -3711,7 +3986,8 @@
       const ctx = radarCanvas.getContext('2d');
       const w = radarCanvas.width, h = radarCanvas.height;
       const cx = w / 2, cy = h / 2;
-      const scale = 0.55;
+      const spdKmh = Math.abs(this.player.speed) * 3.6;
+      const scale = this.player.inVehicle ? Math.max(0.24, 0.50 - (spdKmh / 160) * 0.22) : 0.52;
 
       ctx.clearRect(0, 0, w, h);
 
@@ -3739,12 +4015,29 @@
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
       ctx.lineWidth = 4;
 
-      const roads = [-140, -70, 0, 70, 140];
+      const roads = [-210, -140, -70, 0, 70, 140, 210];
       roads.forEach(rx => {
         const sx = cx + (rx - this.player.x) * scale;
         if (sx >= 0 && sx <= w) { ctx.beginPath(); ctx.moveTo(sx, 0); ctx.lineTo(sx, h); ctx.stroke(); }
         const sy = cy + (rx - this.player.z) * scale;
         if (sy >= 0 && sy <= h) { ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(w, sy); ctx.stroke(); }
+      });
+
+      // Perimeter Highway Ring on Radar
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+      ctx.lineWidth = 5;
+      const hwRing = [
+        [-900, -950, 900, -950],
+        [900, -950, 900, 950],
+        [900, 950, -900, 950],
+        [-900, 950, -900, -950]
+      ];
+      hwRing.forEach(([x1, z1, x2, z2]) => {
+        const sx1 = cx + (x1 - this.player.x) * scale;
+        const sy1 = cy + (z1 - this.player.z) * scale;
+        const sx2 = cx + (x2 - this.player.x) * scale;
+        const sy2 = cy + (z2 - this.player.z) * scale;
+        ctx.beginPath(); ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2); ctx.stroke();
       });
 
       // Traffic Blips (White)
@@ -3919,15 +4212,18 @@
       const spdEl = document.getElementById('g3d-speed-val');
       if (spdEl) spdEl.textContent = Math.round(Math.abs(this.player.speed) * 3.6);
 
-      // District Tag based on coordinates
+      // District Tag based on coordinates (2400m x 2400m Open World)
       const distEl = document.getElementById('gta-district-tag');
       if (distEl) {
         const px = this.player.x, pz = this.player.z;
-        if (px > 80 && pz > 80) distEl.textContent = 'LOS SANTOS - VINEWOOD HILLS';
-        else if (px < -60 && pz > 80) distEl.textContent = 'LOS SANTOS - RANCHO & EL BURRO';
-        else if (px < -180) distEl.textContent = 'LOS SANTOS - DEL PERRO MARINA';
-        else if (Math.hypot(px, pz) < 60) distEl.textContent = 'LOS SANTOS - LEGION SQUARE & DOWNTOWN';
-        else distEl.textContent = 'LOS SANTOS - VINEWOOD BOULEVARD';
+        const d = Math.hypot(px, pz);
+        if (d > 820) distEl.textContent = 'SAN ANDREAS - PACIFIC HIGHWAY LOOP';
+        else if (pz < -280) distEl.textContent = 'LOS SANTOS - VINEWOOD HILLS & MANSIONS';
+        else if (pz > 280) distEl.textContent = 'LOS SANTOS - SOUTH DOCKS & INDUSTRIAL PORT';
+        else if (px > 280) distEl.textContent = 'LOS SANTOS - EAST LOS SANTOS (TURF WARS)';
+        else if (px < -280) distEl.textContent = 'LOS SANTOS - DEL PERRO BEACH & BOARDWALK';
+        else if (d < 65) distEl.textContent = 'LOS SANTOS - LEGION SQUARE & MAZE BANK';
+        else distEl.textContent = 'LOS SANTOS - DOWNTOWN FINANCIAL DISTRICT';
       }
 
       // Context Banner

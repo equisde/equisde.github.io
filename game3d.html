@@ -1022,7 +1022,30 @@
   <!-- Toast Notification Feed -->
   <div class="ow-hack-feed" id="ow-hack-feed"></div>
 
+  <!-- GTA Online Single-Session Duplicate Alert Modal -->
+  <div id="gta-session-alert-modal" style="display: none; position: fixed; inset: 0; background: rgba(3, 7, 18, 0.94); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+    <div style="background: rgba(15, 23, 42, 0.95); border: 2px solid #ef4444; border-radius: 12px; padding: 32px 28px; max-width: 480px; width: 90%; text-align: center; box-shadow: 0 0 35px rgba(239, 68, 68, 0.45);">
+      <div style="font-family: 'Chakra Petch', sans-serif; font-size: 1.25rem; font-weight: 800; color: #ef4444; letter-spacing: 2px; margin-bottom: 14px;">
+        ⚠️ ALERTA DE SESIÓN MULTIJUGADOR
+      </div>
+      <div id="gta-session-alert-msg" style="font-size: 0.92rem; color: #cbd5e1; line-height: 1.6; margin-bottom: 24px;">
+        Tu cuenta ha iniciado sesión desde otra ventana o dispositivo. Solo se permite 1 sesión simultánea en GTA Online.
+      </div>
+      <button onclick="location.reload()" style="background: #ef4444; color: #fff; font-family: 'Chakra Petch', sans-serif; font-weight: 700; font-size: 0.95rem; border: none; padding: 12px 28px; border-radius: 6px; cursor: pointer; letter-spacing: 1px; box-shadow: 0 0 15px rgba(239,68,68,0.5);">
+        RECONECTAR SESIÓN
+      </button>
+    </div>
+  </div>
+
   <!-- Three.js + GLTFLoader + Socket.IO -->
+  <script>
+    // Suppress non-fatal Three.js GLTFLoader UV transform extension warnings
+    const _g3dOrigWarn = console.warn;
+    console.warn = function(...args) {
+      if (typeof args[0] === 'string' && (args[0].includes('KHR_texture_transform') || args[0].includes('Custom UV sets'))) return;
+      _g3dOrigWarn.apply(console, args);
+    };
+  </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
