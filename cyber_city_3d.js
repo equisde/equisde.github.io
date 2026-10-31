@@ -110,6 +110,7 @@
 
       this.colliders = [];
       this.trees = [];
+      this.greenAreas = [];
       this.gasStations = [];
       this.cyberShops = [];
       this.tvBillboards = [];
@@ -168,6 +169,7 @@
       this.buildCityGroundAndRoads();
       this.buildSkyscrapers();
       this.buildCentralParkAndPlaza();
+      this.buildUrbanGreenery();
       this.buildGasStations();
       this.buildCyberShops();
       this.buildGiantTVBillboards();
@@ -353,6 +355,9 @@
       ];
 
       blockPositions.forEach((bPos, idx) => {
+        // Exclude Central Park & Civic Plaza quadrant completely!
+        if (bPos.x === 75 && bPos.z === -75) return;
+
         for (let ox = -20; ox <= 20; ox += 20) {
           for (let oz = -20; oz <= 20; oz += 20) {
             const h = 35 + Math.random() * 85;
@@ -407,9 +412,18 @@
     }
 
     buildCentralParkAndPlaza() {
-      // Central Park & Civic Plaza
+      // Central Park & Civic Plaza (Dedicated 70x70m Green Zone)
       const parkGroup = new THREE.Group();
       parkGroup.position.set(75, 0.04, -75);
+
+      this.greenAreas.push({
+        name: 'CENTRAL_PARK',
+        x: 75,
+        z: -75,
+        w: 65,
+        d: 65,
+        color: '#15803d'
+      });
 
       // Lush Grass Lawn
       const grassGeo = new THREE.PlaneGeometry(60, 60);
@@ -508,6 +522,166 @@
       this.scene.add(parkGroup);
     }
 
+
+    buildUrbanGreenery() {
+      const greenGroup = new THREE.Group();
+
+      // 1. Grand Avenue Central Green Median Strips (Directly visible from player spawn!)
+      const medianMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.8 });
+      const bushMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.6, flatShading: true });
+      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2314, roughness: 0.9 });
+      const foliageMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.7, flatShading: true });
+
+      // North-South Boulevard Median (from z: -220 to 220)
+      const medianGeo = new THREE.PlaneGeometry(3.2, 440);
+      const median = new THREE.Mesh(medianGeo, medianMat);
+      median.rotation.x = -Math.PI / 2;
+      median.position.set(0, 0.04, 0);
+      greenGroup.add(median);
+
+      this.greenAreas.push({ name: 'NS_MEDIAN', x: 0, z: 0, w: 4, d: 440, color: '#22c55e' });
+      this.greenAreas.push({ name: 'EW_MEDIAN', x: 0, z: 0, w: 440, d: 4, color: '#22c55e' });
+
+      // Avenue Trees along Median every 22 meters
+      for (let z = -200; z <= 200; z += 22) {
+        if (Math.abs(z) < 20) continue; // Leave central intersection open
+
+        const tree = new THREE.Group();
+        tree.position.set(0, 0, z);
+
+        // Concrete Planter Rim
+        const rim = new THREE.Mesh(
+          new THREE.BoxGeometry(2.4, 0.35, 2.4),
+          new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 })
+        );
+        rim.position.y = 0.18;
+        tree.add(rim);
+
+        // Trunk
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 3.8, 8), trunkMat);
+        trunk.position.y = 1.9;
+        tree.add(trunk);
+
+        // Foliage Crown
+        const f1 = new THREE.Mesh(new THREE.DodecahedronGeometry(1.6), foliageMat);
+        f1.position.y = 4.2;
+        tree.add(f1);
+        const f2 = new THREE.Mesh(new THREE.DodecahedronGeometry(1.2), bushMat);
+        f2.position.set(0.3, 5.0, 0.2);
+        tree.add(f2);
+
+        greenGroup.add(tree);
+
+        this.colliders.push({
+          type: 'cylinder',
+          x: 0,
+          z: z,
+          radius: 0.6,
+          name: `median_tree_${z}`
+        });
+      }
+
+      // 2. Sidewalk Trees along Grand North-South Avenue (x: -16 and x: 16)
+      [-16, 16].forEach(sideX => {
+        for (let z = -210; z <= 210; z += 24) {
+          if (Math.abs(z) < 24) continue;
+
+          const sTree = new THREE.Group();
+          sTree.position.set(sideX, 0, z);
+
+          const sTrunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.28, 3.4, 8), trunkMat);
+          sTrunk.position.y = 1.7;
+          sTree.add(sTrunk);
+
+          const sCrown = new THREE.Mesh(new THREE.SphereGeometry(1.5, 8, 8), foliageMat);
+          sCrown.position.y = 3.8;
+          sTree.add(sCrown);
+
+          // Flowerbeds under trees
+          const flower = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.1, 1.1, 0.1, 8),
+            new THREE.MeshBasicMaterial({ color: (z % 48 === 0 ? 0xff007f : 0xffd700) })
+          );
+          flower.position.y = 0.06;
+          sTree.add(flower);
+
+          greenGroup.add(sTree);
+
+          this.colliders.push({
+            type: 'cylinder',
+            x: sideX,
+            z: z,
+            radius: 0.55,
+            name: `sidewalk_tree_${sideX}_${z}`
+          });
+        }
+      });
+
+      // 3. Sidewalk Trees along East-West Avenue (z: -16 and z: 16)
+      [-16, 16].forEach(sideZ => {
+        for (let x = -210; x <= 210; x += 24) {
+          if (Math.abs(x) < 24) continue;
+
+          const sTree = new THREE.Group();
+          sTree.position.set(x, 0, sideZ);
+
+          const sTrunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.28, 3.4, 8), trunkMat);
+          sTrunk.position.y = 1.7;
+          sTree.add(sTrunk);
+
+          const sCrown = new THREE.Mesh(new THREE.ConeGeometry(1.6, 2.8, 8), foliageMat);
+          sCrown.position.y = 3.6;
+          sTree.add(sCrown);
+
+          greenGroup.add(sTree);
+
+          this.colliders.push({
+            type: 'cylinder',
+            x: x,
+            z: sideZ,
+            radius: 0.55,
+            name: `ew_tree_${sideZ}_${x}`
+          });
+        }
+      });
+
+      // 4. Waterfront Green Promenade (West Shore x: -180 to -195)
+      const promMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 });
+      const promGeo = new THREE.PlaneGeometry(16, 420);
+      const promenade = new THREE.Mesh(promGeo, promMat);
+      promenade.rotation.x = -Math.PI / 2;
+      promenade.position.set(-188, 0.04, 0);
+      greenGroup.add(promenade);
+
+      this.greenAreas.push({ name: 'WATERFRONT_PROMENADE', x: -188, z: 0, w: 18, d: 420, color: '#16a34a' });
+
+      // Coastal Palm Trees
+      for (let z = -190; z <= 190; z += 20) {
+        const palm = new THREE.Group();
+        palm.position.set(-188, 0, z);
+
+        const pTrunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.35, 5.2, 8), trunkMat);
+        pTrunk.position.y = 2.6;
+        pTrunk.rotation.z = (Math.random() - 0.5) * 0.15;
+        palm.add(pTrunk);
+
+        const pCrown = new THREE.Mesh(new THREE.SphereGeometry(2.1, 7, 7), bushMat);
+        pCrown.position.set(0, 5.4, 0);
+        palm.add(pCrown);
+
+        greenGroup.add(palm);
+
+        this.colliders.push({
+          type: 'cylinder',
+          x: -188,
+          z: z,
+          radius: 0.6,
+          name: `palm_${z}`
+        });
+      }
+
+      this.scene.add(greenGroup);
+    }
     buildGasStations() {
       const stationLocations = [
         { x: -110, z: 45, angle: 0, name: 'CYBER-PETROL NORTH' },
@@ -2514,6 +2688,23 @@
       const scale = 0.35;
 
       ctx.clearRect(0, 0, w, h);
+
+      // Render Green Areas & Parks on Radar!
+      if (this.greenAreas) {
+        this.greenAreas.forEach(area => {
+          const rx = cx + (area.x - this.player.pos.x) * scale;
+          const ry = cy + (area.z - this.player.pos.z) * scale;
+          const rw = Math.max(3, area.w * scale);
+          const rd = Math.max(3, area.d * scale);
+
+          if (Math.hypot(rx - cx, ry - cy) < 65) {
+            ctx.fillStyle = area.color || '#16a34a';
+            ctx.globalAlpha = 0.5;
+            ctx.fillRect(rx - rw / 2, ry - rd / 2, rw, rd);
+            ctx.globalAlpha = 1.0;
+          }
+        });
+      }
 
       ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
       ctx.lineWidth = 1.5;
