@@ -935,6 +935,300 @@
       this.setupDynamicAtmosphere();
     }
 
+    setupDynamicAtmosphere() {
+      // 1. Procedural Rain Particle System (2,500 particles)
+      const rainCount = 2500;
+      this.rainGeo = new THREE.BufferGeometry();
+      this.rainPositions = new Float32Array(rainCount * 3);
+      for (let i = 0; i < rainCount; i++) {
+        this.rainPositions[i * 3] = (Math.random() - 0.5) * 120;
+        this.rainPositions[i * 3 + 1] = Math.random() * 45;
+        this.rainPositions[i * 3 + 2] = (Math.random() - 0.5) * 120;
+      }
+      this.rainGeo.setAttribute('position', new THREE.BufferAttribute(this.rainPositions, 3));
+      this.rainMat = new THREE.PointsMaterial({
+        color: 0x93c5fd,
+        size: 0.42,
+        transparent: true,
+        opacity: 0.0,
+        depthWrite: false
+      });
+      this.rainParticles = new THREE.Points(this.rainGeo, this.rainMat);
+      this.scene.add(this.rainParticles);
+
+      // 2. Exponential Atmosphere Fog
+      this.scene.fog = new THREE.FogExp2(0x7090b8, 0.0018);
+    }
+
+    updateDayNightAndWeather(delta) {
+      // 1. Advance World Clock (24H Continuous Simulation)
+      this.worldTime = (this.worldTime + delta * this.timeSpeed) % 24;
+
+      // 2. Weather State Progression
+      this.weatherTimer -= delta;
+      if (this.weatherTimer <= 0) {
+        const states = ['CLEAR', 'CLEAR', 'RAIN', 'STORM', 'FOG'];
+        this.weatherState = states[Math.floor(Math.random() * states.length)];
+        this.weatherTimer = 160 + Math.random() * 80;
+        this.addHackFeedToast(`⛅ Clima meteorológico: ${this.weatherState}`);
+      }
+
+      // 3. Sun Orbital Trajectory & Atmosphere Lighting
+      const sunAngle = (this.worldTime / 24) * Math.PI * 2 - Math.PI / 2;
+      const sunHeight = Math.sin(sunAngle);
+      const sunDistance = 220;
+
+      if (this.sunLight) {
+        this.sunLight.position.set(
+          Math.cos(sunAngle) * sunDistance,
+          Math.max(-20, sunHeight * sunDistance),
+          Math.sin(sunAngle * 0.4) * 110
+        );
+      }
+
+      const isNight = (this.worldTime < 5.5 || this.worldTime > 19.5);
+      const isDuskDawn = (!isNight && (this.worldTime < 7.5 || this.worldTime > 18.0));
+
+      if (isNight) {
+        // Nighttime Moonlight & Deep Contrast
+        if (this.sunLight) {
+          this.sunLight.color.setHex(0x334466);
+          this.sunLight.intensity = 0.38;
+        }
+        if (this.ambientLight) {
+          this.ambientLight.color.setHex(0x152238);
+          this.ambientLight.intensity = 0.8;
+        }
+        this.renderer.setClearColor(0x050a14);
+        if (this.scene.fog) {
+          this.scene.fog.color.setHex(0x050a14);
+          this.scene.fog.density = 0.0028;
+        }
+        if (this.headlightL && this.player.inVehicle) {
+          this.headlightL.intensity = 3.2;
+          this.headlightR.intensity = 3.2;
+        }
+      } else if (isDuskDawn) {
+        // Golden/Purple Sunset & Sunrise
+        if (this.sunLight) {
+          this.sunLight.color.setHex(0xff7733);
+          this.sunLight.intensity = 1.6;
+        }
+        if (this.ambientLight) {
+          this.ambientLight.color.setHex(0x5a3d52);
+          this.ambientLight.intensity = 1.1;
+        }
+        this.renderer.setClearColor(0x3d2030);
+        if (this.scene.fog) {
+          this.scene.fog.color.setHex(0x3d2030);
+          this.scene.fog.density = 0.0024;
+        }
+        if (this.headlightL && this.player.inVehicle) {
+          this.headlightL.intensity = 1.8;
+          this.headlightR.intensity = 1.8;
+        }
+      } else {
+        // High Noon / Bright Daylight
+        if (this.sunLight) {
+          this.sunLight.color.setHex(0xfff8ee);
+          this.sunLight.intensity = 2.4;
+        }
+        if (this.ambientLight) {
+          this.ambientLight.color.setHex(0x405578);
+          this.ambientLight.intensity = 1.4;
+        }
+        this.renderer.setClearColor(0x7090b8);
+        if (this.scene.fog) {
+          this.scene.fog.color.setHex(0x7090b8);
+          this.scene.fog.density = (this.weatherState === 'FOG') ? 0.006 : 0.0018;
+        }
+        if (this.headlightL) {
+          this.headlightL.intensity = 0.0;
+          this.headlightR.intensity = 0.0;
+        }
+      }
+
+      // 4. Rain & Storm Particles Simulation
+      const isRaining = (this.weatherState === 'RAIN' || this.weatherState === 'STORM');
+      if (this.rainParticles && this.rainMat) {
+        if (isRaining) {
+          this.rainMat.opacity = this.weatherState === 'STORM' ? 0.8 : 0.45;
+          const pos = this.rainPositions;
+          const px = this.player.x, pz = this.player.z;
+          for (let i = 0; i < 2500; i++) {
+            pos[i * 3 + 1] -= delta * 45;
+            if (pos[i * 3 + 1] < 0) {
+              pos[i * 3 + 1] = 42 + Math.random() * 4;
+              pos[i * 3] = px + (Math.random() - 0.5) * 110;
+              pos[i * 3 + 2] = pz + (Math.random() - 0.5) * 110;
+            }
+          }
+          this.rainGeo.attributes.position.needsUpdate = true;
+
+          // Wet asphalt reflections
+          if (this.roadMaterial) {
+            this.roadMaterial.roughness = 0.16;
+            this.roadMaterial.metalness = 0.78;
+          }
+        } else {
+          this.rainMat.opacity = 0.0;
+          if (this.roadMaterial) {
+            this.roadMaterial.roughness = 0.85;
+            this.roadMaterial.metalness = 0.15;
+          }
+        }
+      }
+    }
+
+    setupGasStations() {
+      this.gasStations = [
+        { id: 'ron_downtown', name: 'RON OIL DOWNTOWN', x: -65, z: 0, price: 50 },
+        { id: 'ltd_east', name: 'LTD GASOLINE EAST', x: 75, z: -70, price: 50 },
+        { id: 'globe_south', name: 'GLOBE OIL SOUTH', x: -65, z: 140, price: 50 },
+        { id: 'xero_west', name: 'XERO GAS MARINA', x: 140, z: 70, price: 50 }
+      ];
+
+      this.gasStationMeshes = [];
+
+      this.gasStations.forEach(gs => {
+        const stationGroup = new THREE.Group();
+        stationGroup.position.set(gs.x, 0, gs.z);
+
+        // Canopy roof
+        const canopyGeo = new THREE.BoxGeometry(22, 1.2, 14);
+        const canopyMat = new THREE.MeshStandardMaterial({
+          color: 0xd92626,
+          roughness: 0.35,
+          metalness: 0.5
+        });
+        const canopy = new THREE.Mesh(canopyGeo, canopyMat);
+        canopy.position.set(0, 5.8, 0);
+        canopy.castShadow = true;
+        canopy.receiveShadow = true;
+        stationGroup.add(canopy);
+
+        // Canopy Pillars (Support columns)
+        const pillarGeo = new THREE.CylinderGeometry(0.4, 0.4, 5.8, 16);
+        const pillarMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.5, metalness: 0.4 });
+        [[-8, -4], [-8, 4], [8, -4], [8, 4]].forEach(([px, pz]) => {
+          const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+          pillar.position.set(px, 2.9, pz);
+          pillar.castShadow = true;
+          stationGroup.add(pillar);
+        });
+
+        // Fuel Island Curb
+        const islandGeo = new THREE.BoxGeometry(16, 0.35, 4.5);
+        const islandMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.8 });
+        const island = new THREE.Mesh(islandGeo, islandMat);
+        island.position.set(0, 0.175, 0);
+        island.receiveShadow = true;
+        stationGroup.add(island);
+
+        // 2 Fuel Dispenser Pumps
+        [-4.5, 4.5].forEach(pumpX => {
+          const pumpGroup = new THREE.Group();
+          pumpGroup.position.set(pumpX, 0.35, 0);
+
+          const baseGeo = new THREE.BoxGeometry(1.6, 2.4, 1.1);
+          const baseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.7 });
+          const pumpBase = new THREE.Mesh(baseGeo, baseMat);
+          pumpBase.position.y = 1.2;
+          pumpBase.castShadow = true;
+          pumpGroup.add(pumpBase);
+
+          // Digital meter screen
+          const screenGeo = new THREE.PlaneGeometry(0.8, 0.5);
+          const screenMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
+          const screen = new THREE.Mesh(screenGeo, screenMat);
+          screen.position.set(0, 1.5, 0.56);
+          pumpGroup.add(screen);
+
+          // Hose detail
+          const nozzleGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 8);
+          const nozzleMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3 });
+          const nozzle = new THREE.Mesh(nozzleGeo, nozzleMat);
+          nozzle.position.set(0.7, 1.1, 0);
+          nozzle.rotation.z = Math.PI / 6;
+          pumpGroup.add(nozzle);
+
+          stationGroup.add(pumpGroup);
+        });
+
+        // Illuminated RON OIL Signboard
+        const signCanvas = document.createElement('canvas');
+        signCanvas.width = 512; signCanvas.height = 128;
+        const sctx = signCanvas.getContext('2d');
+        sctx.fillStyle = '#b91c1c';
+        sctx.fillRect(0, 0, 512, 128);
+        sctx.fillStyle = '#ffffff';
+        sctx.font = 'bold 50px sans-serif';
+        sctx.textAlign = 'center';
+        sctx.textBaseline = 'middle';
+        sctx.fillText('RON OIL 24H', 256, 64);
+        const signTex = new THREE.CanvasTexture(signCanvas);
+        const signMat = new THREE.MeshBasicMaterial({ map: signTex });
+        const signGeo = new THREE.PlaneGeometry(10, 2.2);
+        const signF = new THREE.Mesh(signGeo, signMat);
+        signF.position.set(0, 5.8, 7.02);
+        stationGroup.add(signF);
+        const signB = new THREE.Mesh(signGeo, signMat);
+        signB.position.set(0, 5.8, -7.02);
+        signB.rotation.y = Math.PI;
+        stationGroup.add(signB);
+
+        // Ground Refueling Trigger Zone (Glowing Circle)
+        const ringGeo = new THREE.RingGeometry(3.5, 4.0, 32);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide, transparent: true, opacity: 0.65 });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(0, 0.05, 0);
+        stationGroup.add(ring);
+
+        // Store building
+        const store = this.instantiateGLB('business-store', 18, true);
+        store.position.set(0, 0, -16);
+        stationGroup.add(store);
+
+        this.scene.add(stationGroup);
+        this.gasStationMeshes.push(stationGroup);
+      });
+    }
+
+    checkAndExecuteRefuel() {
+      if (!this.gasStations) return false;
+      const px = this.player.x, pz = this.player.z;
+      for (let gs of this.gasStations) {
+        const dist = Math.hypot(px - gs.x, pz - gs.z);
+        if (dist < 7.5) {
+          if (this.player.fuel >= 99.5) {
+            this.addHackFeedToast(`⛽ ${gs.name}: Depósito ya está lleno (100%)`);
+            return true;
+          }
+          const cost = gs.price || 50;
+          if (this.player.cash >= cost) {
+            this.addCash(-cost);
+            this.player.fuel = 100.0;
+            this.player.isStalled = false;
+            this.audio.playCashChime();
+            this.addHackFeedToast(`⛽ ${gs.name}: Repostaje completado (-$${cost}) Tanque lleno 100%`);
+            return true;
+          } else if (this.player.bank >= cost) {
+            this.deductBank(cost);
+            this.player.fuel = 100.0;
+            this.player.isStalled = false;
+            this.audio.playCashChime();
+            this.addHackFeedToast(`⛽ ${gs.name}: Repostado con Maze Bank (-$${cost}) Tanque lleno 100%`);
+            return true;
+          } else {
+            this.addHackFeedToast(`⚠️ FONDOS INSUFICIENTES: Necesitas $${cost} para repostar.`);
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
     setupCCTVNetwork() {
       this.cctvMeshes = [];
       const camBodyGeo = new THREE.BoxGeometry(0.6, 0.45, 0.85);
