@@ -237,8 +237,11 @@ app.get('/', (req, res) => {
     </div>
 
     <div class="actions-row">
-      <a href="${CLIENT_ORIGIN}#arcade-module" class="c2-btn btn-primary">
-        🎮 JUGAR EN IT’SPARALLAX.ME &rarr;
+      <a href="${CLIENT_ORIGIN}/game3d.html" target="_blank" class="c2-btn btn-primary" style="background: linear-gradient(135deg, #ffd700, #ff8800); color: #000; border-color: #ffd700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);">
+        🚀 JUGAR STANDALONE (PANTALLA COMPLETA) &rarr;
+      </a>
+      <a href="${CLIENT_ORIGIN}#arcade-module" class="c2-btn btn-secondary">
+        🎮 JUGAR EN IT’SPARALLAX.ME
       </a>
       <a href="/auth/github" class="c2-btn btn-secondary">
         ⚡ CONECTAR CON GITHUB

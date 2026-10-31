@@ -79,7 +79,7 @@
         avatarUrl: `https://github.com/${localStorage.getItem('ow_github_user') || 'equisde'}.png`,
         mesh: null,
         nameTagMesh: null,
-        vehicleType: 'supercar', // 'foot', 'supercar', 'bike', 'bicycle', 'jet', 'hovercraft', 'parachute', 'submarine'
+        vehicleType: 'supercar',
         pos: new THREE.Vector3(0, 0.4, 20),
         vel: new THREE.Vector3(0, 0, 0),
         speed: 0,
@@ -92,8 +92,33 @@
         yaw: 0,
         pitch: 0,
         roll: 0,
-        cyberCredits: 2500,
-        hacksExecuted: 0
+        health: 100,
+        armor: 100,
+        fuel: 100,
+        phoneBattery: 100,
+        cyberCredits: parseInt(localStorage.getItem('ow_cyber_credits') || '1500', 10),
+        hacksExecuted: 0,
+        equippedWeapon: 'CYBER-PISTOL',
+        ammo: 999
+      };
+
+      this.wanted = {
+        level: 0,
+        heat: 0,
+        cooldownTimer: 0
+      };
+
+      this.colliders = [];
+      this.trees = [];
+      this.gasStations = [];
+      this.cyberShops = [];
+      this.tvBillboards = [];
+      this.policeCruisers = [];
+      this.projectiles = [];
+      this.trafficCycle = {
+        timer: 0,
+        phase: 'NS_GREEN',
+        hackTimer: 0
       };
 
       this.vehicleMeshes = {};
@@ -142,6 +167,10 @@
       // 3. City Geometry & Details
       this.buildCityGroundAndRoads();
       this.buildSkyscrapers();
+      this.buildCentralParkAndPlaza();
+      this.buildGasStations();
+      this.buildCyberShops();
+      this.buildGiantTVBillboards();
       this.buildWaterBay();
       this.buildAirportRunway();
       this.buildTrafficLights();
@@ -346,6 +375,16 @@
             this.scene.add(building);
             this.buildings.push(building);
 
+            // Register Building AABB Collider
+            this.colliders.push({
+              type: 'box',
+              minX: (bPos.x + ox) - w / 2,
+              maxX: (bPos.x + ox) + w / 2,
+              minZ: (bPos.z + oz) - d / 2,
+              maxZ: (bPos.z + oz) + d / 2,
+              name: `BUILDING_${idx}_${ox}_${oz}`
+            });
+
             // Rooftop Neon Accent
             const roofColor = idx % 2 === 0 ? 0x00f0ff : 0xff007f;
             const roofBorder = new THREE.Mesh(
@@ -365,6 +404,368 @@
           }
         }
       });
+    }
+
+    buildCentralParkAndPlaza() {
+      // Central Park & Civic Plaza
+      const parkGroup = new THREE.Group();
+      parkGroup.position.set(75, 0.04, -75);
+
+      // Lush Grass Lawn
+      const grassGeo = new THREE.PlaneGeometry(60, 60);
+      const grassMat = new THREE.MeshStandardMaterial({
+        color: 0x143b22,
+        roughness: 0.88,
+        metalness: 0.1
+      });
+      const grass = new THREE.Mesh(grassGeo, grassMat);
+      grass.rotation.x = -Math.PI / 2;
+      grass.receiveShadow = true;
+      parkGroup.add(grass);
+
+      // Cobblestone Pathways
+      const pathMat = new THREE.MeshStandardMaterial({ color: 0x2a3040, roughness: 0.7 });
+      const pathH = new THREE.Mesh(new THREE.PlaneGeometry(60, 6), pathMat);
+      pathH.rotation.x = -Math.PI / 2; pathH.position.y = 0.02;
+      parkGroup.add(pathH);
+      const pathV = new THREE.Mesh(new THREE.PlaneGeometry(6, 60), pathMat);
+      pathV.rotation.x = -Math.PI / 2; pathV.position.y = 0.03;
+      parkGroup.add(pathV);
+
+      // Central Decorative Fountain Basin
+      const basinGeo = new THREE.CylinderGeometry(4.5, 4.8, 1.2, 16);
+      const basinMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4 });
+      const basin = new THREE.Mesh(basinGeo, basinMat);
+      basin.position.set(0, 0.6, 0);
+      parkGroup.add(basin);
+
+      const waterPoolGeo = new THREE.CylinderGeometry(4.2, 4.2, 0.2, 16);
+      const waterPoolMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.85 });
+      const waterPool = new THREE.Mesh(waterPoolGeo, waterPoolMat);
+      waterPool.position.set(0, 1.1, 0);
+      parkGroup.add(waterPool);
+
+      const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 2.5, 8), basinMat);
+      spout.position.set(0, 1.5, 0);
+      parkGroup.add(spout);
+
+      this.colliders.push({
+        type: 'cylinder',
+        x: 75,
+        z: -75,
+        radius: 5.0,
+        name: 'park_fountain'
+      });
+
+      // Procedural Realistic Trees
+      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2314, roughness: 0.9 });
+      const foliageColors = [0x195c2b, 0x1d6a32, 0x247a3a, 0x2f8c44];
+      const treeOffsets = [
+        { x: -22, z: -22 }, { x: -14, z: -22 }, { x: -6, z: -22 }, { x: 14, z: -22 }, { x: 22, z: -22 },
+        { x: -22, z: -14 }, { x: 22, z: -14 },
+        { x: -22, z: 14 }, { x: 22, z: 14 },
+        { x: -22, z: 22 }, { x: -14, z: 22 }, { x: 6, z: 22 }, { x: 14, z: 22 }, { x: 22, z: 22 },
+        { x: -12, z: -10 }, { x: 12, z: -10 }, { x: -10, z: 12 }, { x: 12, z: 10 }
+      ];
+
+      treeOffsets.forEach((tPos, tIdx) => {
+        const treeGroup = new THREE.Group();
+        treeGroup.position.set(tPos.x, 0, tPos.z);
+
+        const trunkGeo = new THREE.CylinderGeometry(0.32, 0.42, 3.2, 8);
+        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+        trunk.position.y = 1.6;
+        trunk.castShadow = !this.isMobile;
+        treeGroup.add(trunk);
+
+        const folColor = foliageColors[tIdx % foliageColors.length];
+        const folMat = new THREE.MeshStandardMaterial({
+          color: folColor,
+          roughness: 0.7,
+          flatShading: true
+        });
+
+        const f1 = new THREE.Mesh(new THREE.ConeGeometry(2.4, 2.6, 7), folMat);
+        f1.position.y = 3.6; f1.castShadow = !this.isMobile; treeGroup.add(f1);
+
+        const f2 = new THREE.Mesh(new THREE.ConeGeometry(1.9, 2.2, 7), folMat);
+        f2.position.y = 4.8; treeGroup.add(f2);
+
+        const f3 = new THREE.Mesh(new THREE.ConeGeometry(1.3, 1.8, 7), folMat);
+        f3.position.y = 5.8; treeGroup.add(f3);
+
+        parkGroup.add(treeGroup);
+
+        this.colliders.push({
+          type: 'cylinder',
+          x: 75 + tPos.x,
+          z: -75 + tPos.z,
+          radius: 0.75,
+          name: `tree_${tIdx}`
+        });
+      });
+
+      this.scene.add(parkGroup);
+    }
+
+    buildGasStations() {
+      const stationLocations = [
+        { x: -110, z: 45, angle: 0, name: 'CYBER-PETROL NORTH' },
+        { x: 110, z: -45, angle: Math.PI, name: 'HYDROGEN CELL SOUTH' }
+      ];
+
+      stationLocations.forEach((st, idx) => {
+        const stationGroup = new THREE.Group();
+        stationGroup.position.set(st.x, 0, st.z);
+        stationGroup.rotation.y = st.angle;
+
+        const pad = new THREE.Mesh(
+          new THREE.PlaneGeometry(36, 26),
+          new THREE.MeshStandardMaterial({ color: 0x1e2430, roughness: 0.6 })
+        );
+        pad.rotation.x = -Math.PI / 2; pad.position.y = 0.04;
+        stationGroup.add(pad);
+
+        const canopy = new THREE.Mesh(
+          new THREE.BoxGeometry(26, 1.2, 18),
+          new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.7, roughness: 0.3 })
+        );
+        canopy.position.set(0, 6.5, 0);
+        stationGroup.add(canopy);
+
+        const trim = new THREE.Mesh(
+          new THREE.BoxGeometry(26.4, 0.4, 18.4),
+          new THREE.MeshBasicMaterial({ color: 0xffa500 })
+        );
+        trim.position.set(0, 6.5, 0);
+        stationGroup.add(trim);
+
+        const pillarMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8 });
+        const pillarCoords = [
+          { x: -10, z: -6 }, { x: 10, z: -6 },
+          { x: -10, z: 6 }, { x: 10, z: 6 }
+        ];
+        pillarCoords.forEach(pc => {
+          const col = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 6.5, 8), pillarMat);
+          col.position.set(pc.x, 3.25, pc.z);
+          stationGroup.add(col);
+
+          this.colliders.push({
+            type: 'cylinder',
+            x: st.x + pc.x,
+            z: st.z + pc.z,
+            radius: 0.6,
+            name: `gas_pillar_${idx}`
+          });
+        });
+
+        const pumpMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.6 });
+        const pumpScreenMat = new THREE.MeshBasicMaterial({ color: 0x00ff66 });
+        [-5, 5].forEach(px => {
+          const pump = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.4, 1.2), pumpMat);
+          pump.position.set(px, 1.2, 0);
+          stationGroup.add(pump);
+
+          const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.6), pumpScreenMat);
+          screen.position.set(px, 1.6, 0.61);
+          stationGroup.add(screen);
+
+          this.colliders.push({
+            type: 'box',
+            minX: (st.x + px) - 1.0,
+            maxX: (st.x + px) + 1.0,
+            minZ: st.z - 0.8,
+            maxZ: st.z + 0.8,
+            name: `fuel_pump_${idx}`
+          });
+        });
+
+        const signCanvas = document.createElement('canvas');
+        signCanvas.width = 256; signCanvas.height = 64;
+        const sCtx = signCanvas.getContext('2d');
+        sCtx.fillStyle = '#0f172a'; sCtx.fillRect(0, 0, 256, 64);
+        sCtx.fillStyle = '#ffaa00'; sCtx.font = 'bold 26px Orbitron, monospace'; sCtx.textAlign = 'center';
+        sCtx.fillText('⛽ CYBER-GAS', 128, 42);
+        const signMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(signCanvas) });
+        const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(8, 2), signMat);
+        signMesh.position.set(0, 7.8, 9.2);
+        stationGroup.add(signMesh);
+
+        this.scene.add(stationGroup);
+
+        this.gasStations.push({
+          id: `GAS_STATION_${idx + 1}`,
+          name: st.name,
+          pos: new THREE.Vector3(st.x, 0, st.z),
+          radius: 12
+        });
+      });
+    }
+
+    buildCyberShops() {
+      const shopLocations = [
+        { x: 38, z: 28, angle: -Math.PI / 4, name: 'DOWNTOWN DARKNET OUTPOST' },
+        { x: -95, z: -85, angle: Math.PI / 3, name: 'HARBOR BLACK MARKET' }
+      ];
+
+      shopLocations.forEach((sh, idx) => {
+        const shopGroup = new THREE.Group();
+        shopGroup.position.set(sh.x, 0, sh.z);
+        shopGroup.rotation.y = sh.angle;
+
+        const kioskGeo = new THREE.BoxGeometry(8, 4.5, 6);
+        const kioskMat = new THREE.MeshStandardMaterial({
+          color: 0x090d16,
+          roughness: 0.4,
+          metalness: 0.8
+        });
+        const kiosk = new THREE.Mesh(kioskGeo, kioskMat);
+        kiosk.position.y = 2.25;
+        shopGroup.add(kiosk);
+
+        const sCanvas = document.createElement('canvas');
+        sCanvas.width = 256; sCanvas.height = 64;
+        const sCtx = sCanvas.getContext('2d');
+        sCtx.fillStyle = '#090d16'; sCtx.fillRect(0, 0, 256, 64);
+        sCtx.fillStyle = '#ff00ff'; sCtx.font = 'bold 22px Orbitron, monospace'; sCtx.textAlign = 'center';
+        sCtx.fillText('🏪 CYBER-SHOP', 128, 40);
+        const sign = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.5), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sCanvas) }));
+        sign.position.set(0, 4.8, 3.05);
+        shopGroup.add(sign);
+
+        const shopLight = new THREE.PointLight(0xff00ff, 1.2, 16);
+        shopLight.position.set(0, 3, 3.5);
+        shopGroup.add(shopLight);
+
+        this.scene.add(shopGroup);
+
+        this.colliders.push({
+          type: 'box',
+          minX: sh.x - 4.5,
+          maxX: sh.x + 4.5,
+          minZ: sh.z - 3.5,
+          maxZ: sh.z + 3.5,
+          name: `cyber_shop_${idx}`
+        });
+
+        this.cyberShops.push({
+          id: `SHOP_${idx + 1}`,
+          name: sh.name,
+          pos: new THREE.Vector3(sh.x, 0, sh.z),
+          radius: 9
+        });
+      });
+    }
+
+    buildGiantTVBillboards() {
+      const tvConfigs = [
+        { id: 'TV_DOWNTOWN', pos: new THREE.Vector3(0, 30, -38), rotY: 0, w: 26, h: 14 },
+        { id: 'TV_WATERFRONT', pos: new THREE.Vector3(-60, 26, 45), rotY: Math.PI / 2, w: 22, h: 12 }
+      ];
+
+      tvConfigs.forEach((cfg) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const geo = new THREE.PlaneGeometry(cfg.w, cfg.h);
+        const mat = new THREE.MeshBasicMaterial({ map: texture });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.copy(cfg.pos);
+        mesh.rotation.y = cfg.rotY;
+
+        const frame = new THREE.Mesh(
+          new THREE.BoxGeometry(cfg.w + 0.8, cfg.h + 0.8, 0.5),
+          new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9 })
+        );
+        frame.position.copy(cfg.pos);
+        frame.rotation.y = cfg.rotY;
+        this.scene.add(frame);
+        this.scene.add(mesh);
+
+        const tvObj = {
+          id: cfg.id,
+          type: 'GIANT_TV_BILLBOARD',
+          mesh,
+          canvas,
+          ctx,
+          texture,
+          pos: cfg.pos,
+          isHacked: false,
+          hackedUntil: 0,
+          tickerIndex: 0,
+          lastTickerUpdate: 0,
+          exploit: 'HLS_INJECTION // PIRATE_FEED_HIJACK'
+        };
+
+        this.tvBillboards.push(tvObj);
+      });
+    }
+
+    checkCollisions(pos, radius = 1.6) {
+      for (const col of this.colliders) {
+        if (col.type === 'box') {
+          const closestX = Math.max(col.minX, Math.min(pos.x, col.maxX));
+          const closestZ = Math.max(col.minZ, Math.min(pos.z, col.maxZ));
+          const dx = pos.x - closestX;
+          const dz = pos.z - closestZ;
+          const distSq = dx * dx + dz * dz;
+          if (distSq < radius * radius) {
+            const dist = Math.sqrt(distSq) || 0.001;
+            const overlap = radius - dist;
+            return {
+              collided: true,
+              normal: new THREE.Vector3(dx / dist, 0, dz / dist),
+              overlap,
+              name: col.name
+            };
+          }
+        } else if (col.type === 'cylinder') {
+          const dx = pos.x - col.x;
+          const dz = pos.z - col.z;
+          const minDist = radius + col.radius;
+          const distSq = dx * dx + dz * dz;
+          if (distSq < minDist * minDist) {
+            const dist = Math.sqrt(distSq) || 0.001;
+            const overlap = minDist - dist;
+            return {
+              collided: true,
+              normal: new THREE.Vector3(dx / dist, 0, dz / dist),
+              overlap,
+              name: col.name
+            };
+          }
+        }
+      }
+      return { collided: false };
+    }
+
+    spawnImpactSparks(pos) {
+      const pCount = 12;
+      const sparkGeo = new THREE.BufferGeometry();
+      const posArr = new Float32Array(pCount * 3);
+      for (let i = 0; i < pCount; i++) {
+        posArr[i * 3] = pos.x + (Math.random() - 0.5) * 0.8;
+        posArr[i * 3 + 1] = pos.y + Math.random() * 0.8;
+        posArr[i * 3 + 2] = pos.z + (Math.random() - 0.5) * 0.8;
+      }
+      sparkGeo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+      const sparkMat = new THREE.PointsMaterial({
+        color: 0xffaa00,
+        size: 1.2,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending
+      });
+      const sparkPoints = new THREE.Points(sparkGeo, sparkMat);
+      this.scene.add(sparkPoints);
+      setTimeout(() => {
+        this.scene.remove(sparkPoints);
+        sparkGeo.dispose();
+        sparkMat.dispose();
+      }, 200);
     }
 
     buildWaterBay() {
@@ -928,6 +1329,10 @@
           case 'ShiftLeft': case 'ShiftRight': this.keys.shift = true; break;
           case 'Space': this.keys.space = true; break;
           case 'KeyE': this.executeCurrentWatchDogsHack(); break;
+          case 'KeyF': this.fireWeapon(); break;
+          case 'KeyB': this.openCyberShop(); break;
+          case 'KeyM': this.openSmartphone(); break;
+          case 'KeyR': this.refuelVehicle(); break;
           case 'KeyC': this.toggleCameraMode(); break;
           case 'Backquote': case 'Tab': e.preventDefault(); this.toggleCyberdeckIDE(); break;
         }
@@ -1037,6 +1442,13 @@
         joyBase.addEventListener('pointerup', onPointerUp);
         joyBase.addEventListener('pointercancel', onPointerUp);
       }
+
+      // Fire weapon on primary click if not dragging joystick
+      this.canvas.addEventListener('mousedown', (e) => {
+        if (e.button === 0 && !this.touchState.active) {
+          this.fireWeapon();
+        }
+      });
 
       // 2. Mobile Action Buttons
       const btnGas = document.getElementById('mbtn-gas');
@@ -1264,6 +1676,15 @@
         p.isNitro = false;
       }
 
+      // Fuel restriction on motorized vehicles
+      if (p.vehicleType !== 'foot' && p.vehicleType !== 'bicycle' && p.fuel <= 0) {
+        targetSpeed = 0;
+        p.isNitro = false;
+        if (this.keys.forward && Math.random() < 0.02) {
+          this.showHackFeedToast('⛽ FUEL EXHAUSTED! Reposte en Gasolinera o Tienda');
+        }
+      }
+
       p.speed = THREE.MathUtils.lerp(p.speed, targetSpeed, delta * 3.5);
       const forwardDir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), p.yaw);
 
@@ -1282,7 +1703,28 @@
         p.pos.y = p.vehicleType === 'foot' ? 0 : 0.4;
       }
 
-      p.pos.addScaledVector(forwardDir, p.speed * delta);
+      // Real Collision Physics (Building & Prop Bounds)
+      const candidatePos = p.pos.clone().addScaledVector(forwardDir, p.speed * delta);
+      const colRadius = (p.vehicleType === 'foot') ? 0.7 : 1.6;
+      const colHit = this.checkCollisions(candidatePos, colRadius);
+
+      if (colHit.collided && p.vehicleType !== 'jet' && p.pos.y < 4) {
+        p.pos.add(colHit.normal.multiplyScalar(colHit.overlap + 0.05));
+        const impactSpd = Math.abs(p.speed);
+        p.speed = -p.speed * 0.38; // Physical bounce restitution
+        this.spawnImpactSparks(p.pos);
+        this.playCollisionSFX();
+
+        if (impactSpd > 12) {
+          p.health = Math.max(0, p.health - Math.floor(impactSpd * 0.35));
+          if (impactSpd > 22) {
+            this.addWantedHeat(8);
+            this.showHackFeedToast('💥 IMPACTO VEHICULAR // Alerta Policial');
+          }
+        }
+      } else {
+        p.pos.copy(candidatePos);
+      }
       p.mesh.position.copy(p.pos);
 
       // Rotate wheels
@@ -1291,6 +1733,37 @@
           w.children[0].rotation.x += p.speed * delta * 2;
         });
       }
+
+      // Fuel Consumption & Phone Battery Recharge in vehicle
+      if (p.vehicleType !== 'foot' && p.vehicleType !== 'bicycle') {
+        if (Math.abs(p.speed) > 0.5) {
+          const burnRate = (p.isNitro ? 0.038 : 0.012) * Math.abs(p.speed) * delta;
+          p.fuel = Math.max(0, p.fuel - burnRate);
+        }
+        if (p.phoneBattery < 100) {
+          p.phoneBattery = Math.min(100, p.phoneBattery + delta * 1.5);
+        }
+      }
+
+      // Wanted Level Cooldown
+      if (this.wanted.level > 0) {
+        this.wanted.cooldownTimer -= delta;
+        if (this.wanted.cooldownTimer <= 0) {
+          this.wanted.heat = Math.max(0, this.wanted.heat - delta * 4);
+          this.wanted.level = Math.floor(this.wanted.heat / 20);
+          if (this.wanted.level === 0) {
+            this.showHackFeedToast('🟢 EVADIDO! Nivel de búsqueda policial limpiado');
+            this.removePoliceCruisers();
+          }
+        }
+      }
+
+      // Subsystems Update
+      this.updateTVBillboards(delta);
+      this.updateProjectiles(delta);
+      this.updatePolice(delta);
+      this.checkStationAndShopProximity();
+      this.updateTrafficLights(delta);
 
       // Sync with Heroku (throttled to ~20 Hz to prevent network flooding)
       const now = performance.now();
@@ -1307,6 +1780,411 @@
       this.updateHUD(p.speed, p.nitro);
     }
 
+
+    updateTVBillboards(delta) {
+      const now = Date.now();
+      const newsFeed = [
+        'CTOS 2.0 AI GRID // TRAFFIC FLOW STABLE · SECTOR 4 RESTRICTED',
+        'CORPOSEC BULLETIN // BOUNTY ISSUED FOR ROGUE HACKER @equisde',
+        'SAARGO CLOUD // TRANSACTIONAL VOLUME SURPASSES 2.4 BILLION OPS',
+        'YAKUZA ALLIANCE // ZERO-DAY THREAT LEVEL ELEVATED TO CODE ORANGE'
+      ];
+
+      this.tvBillboards.forEach(tv => {
+        if (now - tv.lastTickerUpdate < 2500) return;
+        tv.lastTickerUpdate = now;
+
+        const ctx = tv.ctx;
+        ctx.fillStyle = '#060a14';
+        ctx.fillRect(0, 0, 512, 256);
+
+        if (tv.isHacked && now < tv.hackedUntil) {
+          ctx.fillStyle = '#ff0055';
+          ctx.fillRect(0, 0, 512, 45);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 24px Orbitron, monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('⚠️ BROADCAST HIJACKED // ZERO-TRUST', 256, 32);
+
+          ctx.fillStyle = '#00f0ff';
+          ctx.font = 'bold 20px monospace';
+          ctx.fillText('OPERATIVE: @equisde & IMXNOOBX ALLIANCE', 256, 110);
+          ctx.fillStyle = '#38ef7d';
+          ctx.font = '16px monospace';
+          ctx.fillText('CORPOSEC DATABASE DECENTRALIZED · FREEDOM ACTIVE', 256, 160);
+
+          ctx.fillStyle = 'rgba(255, 0, 127, 0.2)';
+          ctx.fillRect(0, (now * 0.1) % 256, 512, 12);
+        } else {
+          tv.isHacked = false;
+          ctx.fillStyle = '#004466';
+          ctx.fillRect(0, 0, 512, 45);
+          ctx.fillStyle = '#00f0ff';
+          ctx.font = 'bold 22px Orbitron, monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('📺 METROPOLIS LIVE TV NEWS C2', 256, 32);
+
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '18px monospace';
+          const msg = newsFeed[tv.tickerIndex % newsFeed.length];
+          ctx.fillText(msg, 256, 120);
+
+          ctx.fillStyle = '#ffd700';
+          ctx.font = 'bold 15px monospace';
+          ctx.fillText('NASDAQ CORPO: +4.8% ▲ · BTC 94,200₮ · ETH 4,100₮', 256, 180);
+
+          tv.tickerIndex++;
+        }
+
+        tv.texture.needsUpdate = true;
+      });
+    }
+
+    fireWeapon() {
+      if (this.player.health <= 0) return;
+      this.playGunshotSFX();
+
+      const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.player.yaw);
+      const spawnPos = this.player.pos.clone().add(new THREE.Vector3(0, 1.1, 0)).add(forward.clone().multiplyScalar(2.0));
+
+      const bulletGeo = new THREE.SphereGeometry(0.22, 8, 8);
+      const bulletMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+      const bullet = new THREE.Mesh(bulletGeo, bulletMat);
+      bullet.position.copy(spawnPos);
+      this.scene.add(bullet);
+
+      this.projectiles.push({
+        mesh: bullet,
+        pos: spawnPos,
+        vel: forward.multiplyScalar(130),
+        life: 1.2
+      });
+
+      this.addWantedHeat(15);
+      this.triggerPedestrianPanic(this.player.pos, 45);
+      this.showHackFeedToast('💥 WEAPON DISCHARGED // Alerta Policial');
+    }
+
+    updateProjectiles(delta) {
+      for (let i = this.projectiles.length - 1; i >= 0; i--) {
+        const proj = this.projectiles[i];
+        proj.life -= delta;
+        proj.pos.addScaledVector(proj.vel, delta);
+        proj.mesh.position.copy(proj.pos);
+
+        const hit = this.checkCollisions(proj.pos, 0.4);
+        let impact = hit.collided;
+
+        if (!impact) {
+          for (const v of this.npcVehicles) {
+            if (proj.pos.distanceTo(v.mesh.position) < 2.5) {
+              impact = true;
+              v.speed = Math.max(0, v.speed - 8);
+              this.addWantedHeat(10);
+              break;
+            }
+          }
+        }
+
+        if (!impact) {
+          for (const p of this.npcPedestrians) {
+            if (proj.pos.distanceTo(p.mesh.position) < 1.5) {
+              impact = true;
+              p.isDown = true;
+              p.mesh.rotation.x = Math.PI / 2;
+              this.addWantedHeat(25);
+              this.showHackFeedToast('🚨 CASUALTY REPORTED! CorpoSec dispatched!');
+              break;
+            }
+          }
+        }
+
+        if (impact || proj.life <= 0) {
+          this.spawnImpactSparks(proj.pos);
+          this.scene.remove(proj.mesh);
+          proj.mesh.geometry.dispose();
+          proj.mesh.material.dispose();
+          this.projectiles.splice(i, 1);
+        }
+      }
+    }
+
+    addWantedHeat(amount) {
+      this.wanted.heat = Math.min(100, this.wanted.heat + amount);
+      const oldLevel = this.wanted.level;
+      this.wanted.level = Math.min(5, Math.floor(this.wanted.heat / 20));
+      this.wanted.cooldownTimer = 14;
+
+      if (this.wanted.level > oldLevel) {
+        this.showHackFeedToast(`🚨 WANTED LEVEL ${this.wanted.level} STARS! CorpoSec Inbound`);
+        this.playPoliceSirenSFX();
+        this.spawnPoliceCruiser();
+      }
+    }
+
+    spawnPoliceCruiser() {
+      if (this.policeCruisers.length >= 3) return;
+
+      const cruiserGroup = new THREE.Group();
+      const body = new THREE.Mesh(
+        new THREE.BoxGeometry(2.2, 0.8, 4.6),
+        new THREE.MeshStandardMaterial({ color: 0x050811, metalness: 0.8, roughness: 0.2 })
+      );
+      body.position.y = 0.55;
+      cruiserGroup.add(body);
+
+      const doorL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 2.2), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      doorL.position.set(1.12, 0.55, 0); cruiserGroup.add(doorL);
+      const doorR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 2.2), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      doorR.position.set(-1.12, 0.55, 0); cruiserGroup.add(doorR);
+
+      const redLight = new THREE.PointLight(0xff0033, 2.5, 25);
+      redLight.position.set(-0.6, 1.4, 0); cruiserGroup.add(redLight);
+      const blueLight = new THREE.PointLight(0x0066ff, 2.5, 25);
+      blueLight.position.set(0.6, 1.4, 0); cruiserGroup.add(blueLight);
+
+      const angle = this.player.yaw + (Math.random() - 0.5);
+      const spawnDist = 45 + Math.random() * 20;
+      cruiserGroup.position.set(
+        this.player.pos.x + Math.sin(angle) * spawnDist,
+        0.5,
+        this.player.pos.z + Math.cos(angle) * spawnDist
+      );
+
+      this.scene.add(cruiserGroup);
+      this.policeCruisers.push({
+        mesh: cruiserGroup,
+        redLight,
+        blueLight,
+        speed: 28,
+        yaw: 0
+      });
+    }
+
+    updatePolice(delta) {
+      const now = Date.now();
+      const sirenBlink = (Math.sin(now * 0.015) > 0);
+
+      this.policeCruisers.forEach(cop => {
+        cop.redLight.intensity = sirenBlink ? 3.0 : 0.1;
+        cop.blueLight.intensity = sirenBlink ? 0.1 : 3.0;
+
+        const dx = this.player.pos.x - cop.mesh.position.x;
+        const dz = this.player.pos.z - cop.mesh.position.z;
+        const dist = Math.hypot(dx, dz);
+        const targetYaw = Math.atan2(dx, dz) + Math.PI;
+
+        cop.yaw = THREE.MathUtils.lerp(cop.yaw, targetYaw, delta * 3.0);
+        cop.mesh.rotation.y = cop.yaw;
+
+        if (dist > 8) {
+          const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), cop.yaw);
+          cop.mesh.position.addScaledVector(forward, cop.speed * delta);
+        } else {
+          this.player.speed *= 0.85;
+          this.player.health = Math.max(0, this.player.health - delta * 12);
+        }
+      });
+    }
+
+    removePoliceCruisers() {
+      this.policeCruisers.forEach(cop => {
+        this.scene.remove(cop.mesh);
+        this.disposeHierarchy(cop.mesh);
+      });
+      this.policeCruisers = [];
+    }
+
+    triggerPedestrianPanic(center, radius) {
+      this.npcPedestrians.forEach(ped => {
+        const dist = ped.mesh.position.distanceTo(center);
+        if (dist < radius) {
+          ped.isPanicked = true;
+          ped.panicTimer = 10;
+          const away = ped.mesh.position.clone().sub(center).normalize();
+          ped.targetPos = ped.mesh.position.clone().add(away.multiplyScalar(40));
+          ped.speed = 9;
+        }
+      });
+    }
+
+    checkStationAndShopProximity() {
+      let nearStation = false;
+      for (const st of this.gasStations) {
+        if (this.player.pos.distanceTo(st.pos) < st.radius) {
+          nearStation = true;
+          const refuelBtn = document.getElementById('hud-refuel-btn');
+          if (refuelBtn) refuelBtn.style.display = 'flex';
+          break;
+        }
+      }
+      if (!nearStation) {
+        const refuelBtn = document.getElementById('hud-refuel-btn');
+        if (refuelBtn) refuelBtn.style.display = 'none';
+      }
+
+      let nearShop = false;
+      for (const sh of this.cyberShops) {
+        if (this.player.pos.distanceTo(sh.pos) < sh.radius) {
+          nearShop = true;
+          const shopBtn = document.getElementById('hud-shop-btn');
+          if (shopBtn) shopBtn.style.display = 'flex';
+          break;
+        }
+      }
+      if (!nearShop) {
+        const shopBtn = document.getElementById('hud-shop-btn');
+        if (shopBtn) shopBtn.style.display = 'none';
+      }
+    }
+
+    refuelVehicle() {
+      if (this.player.cyberCredits < 50) {
+        this.showHackFeedToast('❌ CRÉDITOS INSUFICIENTES (50₮ REQUERIDOS)');
+        this.playErrorSFX();
+        return;
+      }
+      this.player.cyberCredits -= 50;
+      this.player.fuel = 100;
+      this.playRefuelSFX();
+      this.showHackFeedToast('⛽ TANQUE LLENO AL 100% (-50₮)');
+      localStorage.setItem('ow_cyber_credits', this.player.cyberCredits);
+    }
+
+    openCyberShop() {
+      const modal = document.getElementById('cyber-shop-modal');
+      if (modal) modal.style.display = (modal.style.display === 'flex' ? 'none' : 'flex');
+    }
+
+    openSmartphone() {
+      const modal = document.getElementById('cyber-phone-modal');
+      if (modal) modal.style.display = (modal.style.display === 'flex' ? 'none' : 'flex');
+    }
+
+    buyShopItem(itemType) {
+      const p = this.player;
+      if (itemType === 'fuel_can') {
+        if (p.cyberCredits < 30) return this.playErrorSFX();
+        p.cyberCredits -= 30;
+        p.fuel = Math.min(100, p.fuel + 40);
+        this.showHackFeedToast('⛽ BIDÓN DE COMBUSTIBLE COMPRADO (+40%)');
+      } else if (itemType === 'powerbank') {
+        if (p.cyberCredits < 25) return this.playErrorSFX();
+        p.cyberCredits -= 25;
+        p.phoneBattery = 100;
+        this.showHackFeedToast('🔋 POWERBANK CUÁNTICO APLICADO (100% BATERÍA)');
+      } else if (itemType === 'armor') {
+        if (p.cyberCredits < 75) return this.playErrorSFX();
+        p.cyberCredits -= 75;
+        p.armor = 100;
+        this.showHackFeedToast('🛡️ BLINDAJE NANOTECNOLÓGICO REPARADO (100%)');
+      }
+      this.playRefuelSFX();
+      localStorage.setItem('ow_cyber_credits', p.cyberCredits);
+    }
+
+    updateTrafficLights(delta) {
+      if (!this.trafficCycle) return;
+      this.trafficCycle.timer += delta;
+      if (this.trafficCycle.hackTimer > 0) {
+        this.trafficCycle.hackTimer -= delta;
+        return;
+      }
+
+      if (this.trafficCycle.timer > 14) {
+        this.trafficCycle.timer = 0;
+        this.trafficCycle.phase = this.trafficCycle.phase === 'NS_GREEN' ? 'EW_GREEN' : 'NS_GREEN';
+
+        this.trafficLights.forEach((tl, idx) => {
+          const isNS = idx % 2 === 0;
+          const isGreen = (this.trafficCycle.phase === 'NS_GREEN' && isNS) || (this.trafficCycle.phase === 'EW_GREEN' && !isNS);
+          if (tl.redBulb && tl.greenBulb) {
+            tl.redBulb.material.color.setHex(isGreen ? 0x220005 : 0xff0033);
+            tl.greenBulb.material.color.setHex(isGreen ? 0x00ff66 : 0x00220a);
+          }
+        });
+      }
+    }
+
+    playGunshotSFX() {
+      try {
+        if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.audioCtx;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(450, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.12);
+      } catch (e) {}
+    }
+
+    playCollisionSFX() {
+      try {
+        if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.audioCtx;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(120, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(25, ctx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.4, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.25);
+      } catch (e) {}
+    }
+
+    playPoliceSirenSFX() {
+      try {
+        if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.audioCtx;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(950, ctx.currentTime + 0.3);
+        osc.frequency.linearRampToValueAtTime(600, ctx.currentTime + 0.6);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.65);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.65);
+      } catch (e) {}
+    }
+
+    playRefuelSFX() {
+      try {
+        if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.audioCtx;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(740, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.22);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.22);
+      } catch (e) {}
+    }
+
+    playErrorSFX() {
+      try {
+        if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.audioCtx;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, ctx.currentTime);
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.15);
+      } catch (e) {}
+    }
     updateCamera() {
       if (this.activeCameraMode === 'cctv_hack' && this.hackedCameraIndex >= 0) {
         const camNode = this.securityCameras[this.hackedCameraIndex];
@@ -1378,6 +2256,7 @@
         ...this.trafficLights,
         ...this.securityCameras,
         ...this.powerSubstations,
+        ...this.tvBillboards,
         ...this.npcVehicles.map(v => ({ id: v.id, type: 'NPC_VEHICLE', pos: v.mesh.position, exploit: v.exploit })),
         ...this.npcPedestrians.map(p => ({ id: p.id, type: 'CITIZEN', pos: p.mesh.position, exploit: p.exploit }))
       ];
@@ -1407,6 +2286,13 @@
     executeCurrentWatchDogsHack() {
       if (!this.currentTarget) return;
       const t = this.currentTarget;
+
+      if (this.player.phoneBattery < 12) {
+        this.showHackFeedToast('❌ SMARTPHONE BATTERY LOW // RECHARGE TO HACK');
+        this.playErrorSFX();
+        return;
+      }
+      this.player.phoneBattery = Math.max(0, this.player.phoneBattery - 18);
 
       this.player.hacksExecuted++;
       this.player.cyberCredits += 250;
@@ -1452,6 +2338,15 @@
         if (ped) {
           this.player.cyberCredits += ped.walletCrypto;
           this.showHackFeedToast(`💰 SIPHONED +${ped.walletCrypto} CYBER-CREDITS FROM ${ped.id}`);
+        }
+      } else if (t.type === 'GIANT_TV_BILLBOARD') {
+        const tv = this.tvBillboards.find(b => b.id === t.id);
+        if (tv) {
+          tv.isHacked = true;
+          tv.hackedUntil = Date.now() + 16000;
+          this.triggerPedestrianPanic(tv.pos, 50);
+          this.addWantedHeat(15);
+          this.showHackFeedToast('📺 GIANT TV HIJACKED! Pirate broadcast transmission live');
         }
       }
 
@@ -1562,6 +2457,39 @@
       if (nitroBar) {
         nitroBar.style.width = `${Math.round(nitro)}%`;
       }
+
+      // Fuel Gauge
+      const fuelBar = document.getElementById('hud-fuel-bar');
+      const fuelVal = document.getElementById('hud-fuel-val');
+      if (fuelBar) fuelBar.style.width = `${Math.max(0, Math.round(this.player.fuel))}%`;
+      if (fuelVal) fuelVal.innerText = `${Math.max(0, Math.round(this.player.fuel))}%`;
+
+      // Phone Battery
+      const batBar = document.getElementById('hud-battery-bar');
+      const batVal = document.getElementById('hud-battery-val');
+      if (batBar) batBar.style.width = `${Math.max(0, Math.round(this.player.phoneBattery))}%`;
+      if (batVal) batVal.innerText = `${Math.max(0, Math.round(this.player.phoneBattery))}%`;
+
+      // Health & Armor
+      const hpBar = document.getElementById('hud-hp-bar');
+      const hpVal = document.getElementById('hud-hp-val');
+      const armBar = document.getElementById('hud-armor-bar');
+      const armVal = document.getElementById('hud-armor-val');
+      if (hpBar) hpBar.style.width = `${Math.max(0, Math.round(this.player.health))}%`;
+      if (hpVal) hpVal.innerText = `${Math.max(0, Math.round(this.player.health))}%`;
+      if (armBar) armBar.style.width = `${Math.max(0, Math.round(this.player.armor))}%`;
+      if (armVal) armVal.innerText = `${Math.max(0, Math.round(this.player.armor))}%`;
+
+      // CyberCredits
+      const credEl = document.getElementById('hud-credits-val');
+      if (credEl) credEl.innerText = `₮ ${this.player.cyberCredits}`;
+
+      // Police Wanted Level Stars
+      const starsEl = document.getElementById('hud-wanted-stars');
+      if (starsEl) {
+        starsEl.innerText = '⭐️'.repeat(this.wanted.level) + '☆'.repeat(5 - this.wanted.level);
+        starsEl.style.color = this.wanted.level > 0 ? '#ff0033' : '#64748b';
+      }
     }
 
     updateVehicleChipsUI(activeType) {
@@ -1607,6 +2535,39 @@
         const rx = cx + (v.mesh.position.x - this.player.pos.x) * scale;
         const ry = cy + (v.mesh.position.z - this.player.pos.z) * scale;
         if (Math.hypot(rx - cx, ry - cy) < 55) ctx.fillRect(rx - 2, ry - 2, 4, 4);
+      });
+
+      // Gas Stations (Orange ⛽)
+      ctx.fillStyle = '#ffaa00';
+      this.gasStations.forEach(st => {
+        const rx = cx + (st.pos.x - this.player.pos.x) * scale;
+        const ry = cy + (st.pos.z - this.player.pos.z) * scale;
+        if (Math.hypot(rx - cx, ry - cy) < 55) {
+          ctx.fillRect(rx - 3, ry - 3, 6, 6);
+        }
+      });
+
+      // Cyber Shops (Magenta 🏪)
+      ctx.fillStyle = '#ff00ff';
+      this.cyberShops.forEach(sh => {
+        const rx = cx + (sh.pos.x - this.player.pos.x) * scale;
+        const ry = cy + (sh.pos.z - this.player.pos.z) * scale;
+        if (Math.hypot(rx - cx, ry - cy) < 55) {
+          ctx.fillRect(rx - 3, ry - 3, 6, 6);
+        }
+      });
+
+      // Police Cruisers (Flashing Red/Blue 🚨)
+      const copBlink = (Date.now() % 400 > 200);
+      ctx.fillStyle = copBlink ? '#ff0033' : '#0066ff';
+      this.policeCruisers.forEach(cop => {
+        const rx = cx + (cop.mesh.position.x - this.player.pos.x) * scale;
+        const ry = cy + (cop.mesh.position.z - this.player.pos.z) * scale;
+        if (Math.hypot(rx - cx, ry - cy) < 55) {
+          ctx.beginPath();
+          ctx.arc(rx, ry, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
       });
 
       ctx.save();
@@ -1750,6 +2711,26 @@
 
   window.setPlayerVehicle = function(type) {
     if (window.cyberCityEngine) window.cyberCityEngine.applyVehicleMesh(type);
+  };
+
+  window.firePlayerWeapon = function() {
+    if (window.cyberCityEngine) window.cyberCityEngine.fireWeapon();
+  };
+
+  window.refuelVehicle = function() {
+    if (window.cyberCityEngine) window.cyberCityEngine.refuelVehicle();
+  };
+
+  window.openCyberShop = function() {
+    if (window.cyberCityEngine) window.cyberCityEngine.openCyberShop();
+  };
+
+  window.buyShopItem = function(item) {
+    if (window.cyberCityEngine) window.cyberCityEngine.buyShopItem(item);
+  };
+
+  window.openSmartphone = function() {
+    if (window.cyberCityEngine) window.cyberCityEngine.openSmartphone();
   };
 
   window.toggleCyberdeckIDE = function() {

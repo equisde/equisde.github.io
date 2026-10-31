@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PARALLAX // CYBER-CITY ULTRA 3D (GTA V &amp; Watch Dogs Simulator)</title>
+  <meta name="description" content="Simulador 3D Open World cyberpunk estilo GTA V y Watch Dogs por Rodrigo Carrasco (Parallax / equisde). Físicas reales, gasolineras, tiendas, armas y hackeo en vivo.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #03050a;
+      --card-bg: rgba(6, 11, 22, 0.88);
+      --neon-cyan: #00f0ff;
+      --neon-pink: #ff007f;
+      --neon-green: #00ff66;
+      --neon-gold: #ffd700;
+      --neon-orange: #ffaa00;
+      --border: rgba(0, 240, 255, 0.28);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg);
+      color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    #ow-viewport {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+    }
+    #openworld-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+
+    /* Top HUD */
+    .g3d-top-hud {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      z-index: 20;
+      pointer-events: none;
+    }
+    .hud-interactive { pointer-events: auto; }
+    .g3d-user-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px 14px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+    }
+    .g3d-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid var(--neon-cyan);
+    }
+    .g3d-u-name { font-family: 'Orbitron', monospace; font-size: 0.88rem; font-weight: 700; color: #fff; }
+    .g3d-u-role { font-size: 0.65rem; color: var(--neon-cyan); letter-spacing: 1px; }
+
+    .g3d-center-stats {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 18px;
+      backdrop-filter: blur(10px);
+    }
+    .g3d-wanted-stars {
+      font-size: 1.25rem;
+      letter-spacing: 3px;
+      color: #64748b;
+      transition: color 0.2s;
+    }
+    .g3d-credits-pill {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--neon-gold);
+      background: rgba(255, 215, 0, 0.12);
+      border: 1px solid var(--neon-gold);
+      border-radius: 6px;
+      padding: 4px 10px;
+    }
+
+    .g3d-top-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .g3d-btn {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: rgba(8, 15, 28, 0.85);
+      color: var(--neon-cyan);
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      backdrop-filter: blur(8px);
+    }
+    .g3d-btn:hover {
+      background: rgba(0, 240, 255, 0.18);
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+      transform: translateY(-1px);
+    }
+    .g3d-btn-exit {
+      border-color: rgba(255, 0, 127, 0.5);
+      color: var(--neon-pink);
+    }
+    .g3d-btn-exit:hover {
+      background: rgba(255, 0, 127, 0.2);
+      border-color: var(--neon-pink);
+      box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
+    }
+
+    /* Radar / Minimap */
+    .g3d-radar-box {
+      position: absolute;
+      bottom: 24px;
+      left: 20px;
+      width: 140px;
+      height: 140px;
+      background: rgba(4, 7, 14, 0.88);
+      border: 2px solid var(--neon-cyan);
+      border-radius: 50%;
+      overflow: hidden;
+      z-index: 20;
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.35);
+      backdrop-filter: blur(6px);
+    }
+    #ow-radar-canvas { width: 100%; height: 100%; }
+
+    /* Floating Station / Shop Action Trigger */
+    .g3d-proximity-prompts {
+      position: absolute;
+      bottom: 175px;
+      left: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 25;
+    }
+    .prox-btn {
+      display: none;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.78rem;
+      font-weight: 900;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 0 25px rgba(0,0,0,0.8);
+      animation: pulseBtn 1.5s infinite;
+    }
+    @keyframes pulseBtn {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+    .btn-prox-fuel {
+      background: linear-gradient(135deg, #ffaa00, #b35900);
+      color: #000;
+      border: 2px solid #ffaa00;
+    }
+    .btn-prox-shop {
+      background: linear-gradient(135deg, #ff00ff, #880088);
+      color: #fff;
+      border: 2px solid #ff00ff;
+    }
+
+    /* Bottom-Right Cockpit Dashboard */
+    .g3d-cockpit {
+      position: absolute;
+      bottom: 24px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
+      z-index: 20;
+      min-width: 240px;
+    }
+    .cockpit-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .speedo-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+    .speed-num { font-family: 'Orbitron', monospace; font-size: 2.2rem; font-weight: 900; color: #fff; text-shadow: 0 0 15px var(--neon-cyan); }
+    .speed-unit { font-size: 0.7rem; color: var(--neon-cyan); }
+    .gear-box { font-size: 0.8rem; font-weight: 700; color: var(--neon-gold); }
+
+    /* Gauges */
+    .gauge-track {
+      width: 100%;
+      height: 7px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 3px;
+    }
+    .gauge-fill { height: 100%; border-radius: 4px; transition: width 0.2s ease; }
+    .fill-nitro { background: linear-gradient(90deg, #00f0ff, #0077ff); }
+    .fill-fuel { background: linear-gradient(90deg, #ffaa00, #ff5500); }
+    .fill-bat { background: linear-gradient(90deg, #38ef7d, #00ff66); }
+    .fill-hp { background: linear-gradient(90deg, #ff0055, #ff0000); }
+    .fill-armor { background: linear-gradient(90deg, #00f0ff, #0088cc); }
+
+    .gauge-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: #94a3b8;
+    }
+
+    /* Weapon HUD */
+    .weapon-hud-card {
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: var(--neon-cyan);
+    }
+
+    /* Reticle */
+    .ow-profiler-reticle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 15;
+    }
+    .reticle-crosshair {
+      width: 28px;
+      height: 28px;
+      border: 2px dashed rgba(0, 240, 255, 0.7);
+      border-radius: 50%;
+    }
+    .reticle-info {
+      position: absolute;
+      left: 38px;
+      top: -10px;
+      background: rgba(6, 12, 24, 0.9);
+      border: 1px solid var(--neon-cyan);
+      border-radius: 6px;
+      padding: 6px 10px;
+      width: 220px;
+      font-size: 0.7rem;
+      backdrop-filter: blur(8px);
+    }
+    .r-head { color: var(--neon-cyan); font-weight: 700; margin-bottom: 2px; }
+    .r-exploit { color: var(--neon-pink); font-size: 0.65rem; }
+
+    /* Mobile Controls */
+    .ow-touch-joystick-wrap {
+      display: none;
+      position: absolute;
+      bottom: 30px;
+      left: 24px;
+      width: 120px;
+      height: 120px;
+      z-index: 50;
+      touch-action: none;
+    }
+    .ow-touch-joystick-base {
+      width: 100%;
+      height: 100%;
+      background: rgba(6, 12, 24, 0.75);
+      border: 2px solid var(--neon-cyan);
+      border-radius: 50%;
+      position: relative;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
+    }
+    .ow-touch-joystick-knob {
+      width: 50px;
+      height: 50px;
+      background: radial-gradient(circle, var(--neon-cyan), #007799);
+      border-radius: 50%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.85);
+    }
+    .ow-mobile-actions-cluster {
+      display: none;
+      position: absolute;
+      bottom: 30px;
+      right: 20px;
+      gap: 10px;
+      z-index: 50;
+      touch-action: none;
+    }
+    .m-act-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.65rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      transition: transform 0.1s;
+    }
+    .m-act-btn:active { transform: scale(0.92); }
+    .m-btn-gas { background: rgba(0, 255, 102, 0.25); border: 2px solid var(--neon-green); color: var(--neon-green); }
+    .m-btn-brake { background: rgba(255, 0, 51, 0.25); border: 2px solid #ff0033; color: #ff0033; }
+    .m-btn-fire { background: rgba(255, 170, 0, 0.25); border: 2px solid var(--neon-orange); color: var(--neon-orange); }
+    .m-btn-hack { background: rgba(0, 240, 255, 0.25); border: 2px solid var(--neon-cyan); color: var(--neon-cyan); }
+    .m-btn-phone { background: rgba(157, 78, 221, 0.25); border: 2px solid #9d4edd; color: #9d4edd; }
+
+    /* Modals: Store & Phone */
+    .g3d-modal {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 480px;
+      background: rgba(7, 12, 24, 0.96);
+      border: 2px solid var(--neon-cyan);
+      border-radius: 14px;
+      padding: 24px;
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 0 50px rgba(0, 240, 255, 0.35);
+      flex-direction: column;
+      gap: 16px;
+    }
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+    .modal-title { font-family: 'Orbitron', monospace; font-size: 1.1rem; color: #fff; font-weight: 700; }
+    .modal-close {
+      background: none; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;
+    }
+    .modal-close:hover { color: var(--neon-pink); }
+    .shop-items-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .shop-item-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .item-info h5 { font-family: 'Orbitron', monospace; color: #fff; font-size: 0.85rem; margin-bottom: 2px; }
+    .item-info p { font-size: 0.72rem; color: #94a3b8; }
+    .buy-btn {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--neon-cyan), #007799);
+      border: none;
+      color: #030814;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .buy-btn:hover { box-shadow: 0 0 15px var(--neon-cyan); }
+
+    /* Phone Cyberdeck UI */
+    .phone-apps-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .phone-app-btn {
+      background: rgba(0, 240, 255, 0.06);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #cbd5e1;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .phone-app-btn:hover {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: var(--neon-cyan);
+    }
+    .phone-app-icon { font-size: 1.5rem; }
+
+    /* Feed Toasts */
+    .ow-hack-feed {
+      position: absolute;
+      bottom: 28px;
+      left: 175px;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 6px;
+      max-width: 380px;
+      pointer-events: none;
+      z-index: 25;
+    }
+    .hack-toast-item {
+      background: rgba(4, 8, 16, 0.92);
+      border-left: 3px solid var(--neon-cyan);
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 0.72rem;
+      color: #e2e8f0;
+      box-shadow: 0 0 15px rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Responsive Queries */
+    @media (max-width: 900px) {
+      .ow-touch-joystick-wrap { display: block; }
+      .ow-mobile-actions-cluster { display: grid; grid-template-columns: 1fr 1fr; }
+      .g3d-center-stats { display: none; }
+      .g3d-radar-box { width: 95px; height: 95px; bottom: 155px; left: 16px; }
+      .g3d-cockpit { bottom: 155px; right: 16px; min-width: 170px; padding: 10px 12px; }
+      .speed-num { font-size: 1.5rem; }
+      .ow-hack-feed { left: 16px; bottom: 255px; max-width: 280px; }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+
+  <!-- Fullscreen 3D Viewport -->
+  <div id="ow-viewport">
+    <canvas id="openworld-canvas"></canvas>
+
+    <!-- Watch Dogs Profiler Reticle -->
+    <div class="ow-profiler-reticle" id="ow-reticle">
+      <div class="reticle-crosshair"></div>
+      <div class="reticle-info" id="reticle-info" style="display: none;">
+        <div class="r-head" id="r-target-name">TARGET</div>
+        <div class="r-exploit" id="r-target-exploit">EXPLOIT READY</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top HUD Bar -->
+  <div class="g3d-top-hud">
+    <div class="g3d-user-badge hud-interactive">
+      <img id="ow-user-avatar" src="https://github.com/equisde.png" alt="Avatar" class="g3d-avatar" />
+      <div>
+        <div class="g3d-u-name" id="ow-display-username">@equisde</div>
+        <div class="g3d-u-role">⚡ PARALLAX C2 OPERATIVE</div>
+      </div>
+    </div>
+
+    <div class="g3d-center-stats">
+      <div class="g3d-wanted-stars" id="hud-wanted-stars">☆☆☆☆☆</div>
+      <div class="g3d-credits-pill" id="hud-credits-val">₮ 1,500</div>
+    </div>
+
+    <div class="g3d-top-actions hud-interactive">
+      <button class="g3d-btn" onclick="openSmartphone()">📱 MÓVIL</button>
+      <button class="g3d-btn" onclick="openCyberShop()">🏪 TIENDA</button>
+      <button class="g3d-btn" onclick="toggleVehicleModal()">🚗 VEHÍCULOS</button>
+      <a href="https://itsparallax.me" class="g3d-btn g3d-btn-exit">⬅ SALIR AL PORTAFOLIO</a>
+    </div>
+  </div>
+
+  <!-- Minimap Radar -->
+  <div class="g3d-radar-box">
+    <canvas id="ow-radar-canvas" width="140" height="140"></canvas>
+  </div>
+
+  <!-- Floating Proximity Prompts (Fuel & Shop) -->
+  <div class="g3d-proximity-prompts hud-interactive">
+    <button class="prox-btn btn-prox-fuel" id="hud-refuel-btn" onclick="refuelVehicle()">⛽ REPOSTAR COMBUSTIBLE (50₮)</button>
+    <button class="prox-btn btn-prox-shop" id="hud-shop-btn" onclick="openCyberShop()">🏪 ABRIR TIENDA CIBERNÉTICA</button>
+  </div>
+
+  <!-- Cockpit HUD Dashboard -->
+  <div class="g3d-cockpit">
+    <div class="cockpit-row">
+      <div class="speedo-wrap">
+        <span class="speed-num" id="speed-value">0</span>
+        <span class="speed-unit">KM/H</span>
+      </div>
+      <span class="gear-box" id="gear-value">GEAR 1</span>
+    </div>
+
+    <!-- Nitro Bar -->
+    <div>
+      <div class="gauge-label"><span>NITRO</span></div>
+      <div class="gauge-track"><div class="gauge-fill fill-nitro" id="nitro-bar" style="width: 100%;"></div></div>
+    </div>
+
+    <!-- Fuel Bar -->
+    <div>
+      <div class="gauge-label"><span>COMBUSTIBLE</span><span id="hud-fuel-val">100%</span></div>
+      <div class="gauge-track"><div class="gauge-fill fill-fuel" id="hud-fuel-bar" style="width: 100%;"></div></div>
+    </div>
+
+    <!-- Phone Battery Bar -->
+    <div>
+      <div class="gauge-label"><span>BATERÍA MÓVIL</span><span id="hud-battery-val">100%</span></div>
+      <div class="gauge-track"><div class="gauge-fill fill-bat" id="hud-battery-bar" style="width: 100%;"></div></div>
+    </div>
+
+    <!-- Health & Armor -->
+    <div>
+      <div class="gauge-label"><span>INTEGRIDAD CORE</span><span id="hud-hp-val">100%</span></div>
+      <div class="gauge-track"><div class="gauge-fill fill-hp" id="hud-hp-bar" style="width: 100%;"></div></div>
+    </div>
+
+    <div class="weapon-hud-card">
+      <span>🔫 CYBER-PISTOL</span>
+      <span style="color: var(--neon-green);">∞ BALAS</span>
+    </div>
+  </div>
+
+  <!-- Mobile Touch Controls -->
+  <div class="ow-touch-joystick-wrap" id="ow-joystick-wrap">
+    <div class="ow-touch-joystick-base" id="ow-joystick-base">
+      <div class="ow-touch-joystick-knob" id="ow-joystick-knob"></div>
+    </div>
+  </div>
+
+  <div class="ow-mobile-actions-cluster">
+    <button class="m-act-btn m-btn-gas" id="mbtn-gas">⚡ GAS</button>
+    <button class="m-act-btn m-btn-brake" id="mbtn-brake">🛑 FRENO</button>
+    <button class="m-act-btn m-btn-fire" id="mbtn-fire" onclick="firePlayerWeapon()">🔫 DISPARAR</button>
+    <button class="m-act-btn m-btn-hack" id="mbtn-hack" onclick="window.cyberCityEngine?.executeCurrentWatchDogsHack()">💥 HACK</button>
+    <button class="m-act-btn m-btn-phone" id="mbtn-phone" onclick="openSmartphone()">📱 MÓVIL</button>
+  </div>
+
+  <!-- Cyber-Shop Modal -->
+  <div class="g3d-modal" id="cyber-shop-modal">
+    <div class="modal-head">
+      <h3 class="modal-title">🏪 MERCADO NEGRO CIBERNÉTICO</h3>
+      <button class="modal-close" onclick="openCyberShop()">✕</button>
+    </div>
+    <div class="shop-items-grid">
+      <div class="shop-item-card">
+        <div class="item-info">
+          <h5>⛽ Bidón de Combustible (+40%)</h5>
+          <p>Combustible sintético de alta densidad para repostaje de emergencia.</p>
+        </div>
+        <button class="buy-btn" onclick="buyShopItem('fuel_can')">30₮</button>
+      </div>
+      <div class="shop-item-card">
+        <div class="item-info">
+          <h5>🔋 Powerbank Cuántico (+100%)</h5>
+          <p>Carga instantánea de batería para tu smartphone / cyberdeck.</p>
+        </div>
+        <button class="buy-btn" onclick="buyShopItem('powerbank')">25₮</button>
+      </div>
+      <div class="shop-item-card">
+        <div class="item-info">
+          <h5>🛡️ Blindaje Nanotecnológico (+100%)</h5>
+          <p>Reparación de carrocería y blindaje balístico antibalas.</p>
+        </div>
+        <button class="buy-btn" onclick="buyShopItem('armor')">75₮</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Smartphone Cyberdeck Modal -->
+  <div class="g3d-modal" id="cyber-phone-modal">
+    <div class="modal-head">
+      <h3 class="modal-title">📱 CYBERDECK OS v4.2</h3>
+      <button class="modal-close" onclick="openSmartphone()">✕</button>
+    </div>
+    <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px;">
+      Operador: <b style="color: #fff;">@equisde</b> &middot; Alianza: <b style="color: var(--neon-gold);">IMXNOOBX</b>
+    </div>
+    <div class="phone-apps-grid">
+      <div class="phone-app-btn" onclick="window.cyberCityEngine?.triggerCityBlackout(6000); openSmartphone();">
+        <span class="phone-app-icon">⚡</span>
+        <b>Blackout de Ciudad</b>
+      </div>
+      <div class="phone-app-btn" onclick="window.cyberCityEngine?.hackAllTrafficLights('ALL_GREEN'); openSmartphone();">
+        <span class="phone-app-icon">🚦</span>
+        <b>Semáforos en Verde</b>
+      </div>
+      <div class="phone-app-btn" onclick="refuelVehicle(); openSmartphone();">
+        <span class="phone-app-icon">⛽</span>
+        <b>Llamar Cisterna (50₮)</b>
+      </div>
+      <div class="phone-app-btn" onclick="alert('⚡ CONTACTO VIP IMXNOOBX: Soporte activo en noob.pm & CS2 Tools');">
+        <span class="phone-app-icon">🤖</span>
+        <b>Contactar IMXNOOBX</b>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hack Feed Toasts -->
+  <div class="ow-hack-feed" id="ow-hack-feed"></div>
+
+  <script src="cyber_city_3d.js"></script>
+  <script>
+    function toggleVehicleModal() {
+      const types = ['supercar', 'bike', 'jet', 'hovercraft', 'foot'];
+      const next = prompt('Selecciona vehículo: supercar, bike, jet, hovercraft, foot:', 'supercar');
+      if (next && window.cyberCityEngine) {
+        window.cyberCityEngine.applyVehicleMesh(next.trim().toLowerCase());
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.cyberCityEngine) {
+        window.cyberCityEngine.init('ow-viewport', 'openworld-canvas');
+      }
+    });
+  </script>
+</body>
+</html>
