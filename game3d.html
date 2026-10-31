@@ -876,6 +876,13 @@
     </div>
   </div>
 
+  <!-- ctOS District Blackout Dark Overlay -->
+  <div id="blackout-overlay" style="display: none; position: absolute; inset: 0; pointer-events: none; z-index: 24; background: radial-gradient(circle, rgba(0,0,0,0.55) 25%, rgba(0,0,0,0.92) 100%); mix-blend-mode: multiply;">
+    <div style="position: absolute; top: 55px; left: 50%; transform: translateX(-50%); font-family: 'Chakra Petch', monospace; font-size: 0.85rem; font-weight: 700; color: #f59e0b; background: rgba(15, 23, 42, 0.88); padding: 6px 16px; border: 1px solid #f59e0b; border-radius: 4px; letter-spacing: 2px;">
+      ⚡ ctOS APAGÓN DE DISTRITO EN CURSO // RED ELÉCTRICA CAÍDA
+    </div>
+  </div>
+
   <!-- 24/7 Store Robbery HUD -->
   <div id="store-robbery-hud" style="display: none; position: absolute; top: 85px; left: 50%; transform: translateX(-50%); width: 280px; background: rgba(3, 7, 18, 0.92); border: 2px solid #ef4444; border-radius: 8px; padding: 10px 14px; z-index: 22; box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); text-align: center;">
     <div style="font-family: 'Chakra Petch', sans-serif; font-size: 0.82rem; font-weight: 800; color: #ef4444; letter-spacing: 1px; text-transform: uppercase;">
@@ -1015,9 +1022,10 @@
   <!-- Toast Notification Feed -->
   <div class="ow-hack-feed" id="ow-hack-feed"></div>
 
-  <!-- Three.js + GLTFLoader -->
+  <!-- Three.js + GLTFLoader + Socket.IO -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="cyber_city_3d.js"></script>
 
   <script>
@@ -1029,6 +1037,10 @@
       { id: 'req_veh', title: '🚗 Solicitar Vehículo Personal', action: () => window.cyberCityEngine?.requestPersonalVehicle() },
       { id: 'ret_veh', title: '🚗 Devolver Vehículo al Garaje', action: () => window.cyberCityEngine?.returnPersonalVehicle() },
       { id: 'doors_veh', title: '🚪 Control Remoto de Puertas', action: () => window.cyberCityEngine?.toggleVehicleDoors() },
+      { id: 'repair_veh', title: '🔧 Reparar Neumáticos y Motor ($100)', action: () => window.cyberCityEngine?.repairVehicle() },
+      { id: 'ammu_gear', title: '🔫 Ammu-Nation: Munición y Blindaje ($250)', action: () => window.cyberCityEngine?.buyAmmuNationGear() },
+      { id: 'ctos_traffic', title: '🚦 ctOS: Hackear Semáforos [Z]', action: () => window.cyberCityEngine?.hackTrafficLights() },
+      { id: 'ctos_blackout', title: '⚡ ctOS: Apagón de Distrito (Blackout) [B]', action: () => window.cyberCityEngine?.triggerDistrictBlackout() },
       { id: 'securo_ceo', title: '💼 SecuroServ: Registrarse/Retirarse CEO', action: () => window.cyberCityEngine?.toggleSecuroServCEO() },
       { id: 'snack_ego', title: '🍫 Inventario: Comer Snack (+25 HP)', action: () => window.cyberCityEngine?.consumeSnack('egochaser') },
       { id: 'armor_heavy', title: '🛡️ Inventario: Chaleco Superpesado (+50 Blindaje)', action: () => window.cyberCityEngine?.equipBodyArmor('super_heavy') },

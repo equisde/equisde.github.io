@@ -563,6 +563,38 @@
       this.smokeMat = new THREE.PointsMaterial({ color: 0xcccccc, size: 0.65, transparent: true, opacity: 0.6 });
       this.smokePoints = new THREE.Points(this.smokeGeo, this.smokeMat);
       this.scene.add(this.smokePoints);
+
+      // Tire Sparks Pool (Flat tires / Grinding metal)
+      const sCount = 40;
+      this.sparksGeo = new THREE.BufferGeometry();
+      this.sparksPositions = new Float32Array(sCount * 3);
+      this.sparksLifetimes = new Float32Array(sCount);
+      for (let i = 0; i < sCount; i++) {
+        this.sparksPositions[i * 3] = 0;
+        this.sparksPositions[i * 3 + 1] = -100;
+        this.sparksPositions[i * 3 + 2] = 0;
+        this.sparksLifetimes[i] = 0;
+      }
+      this.sparksGeo.setAttribute('position', new THREE.BufferAttribute(this.sparksPositions, 3));
+      this.sparksMat = new THREE.PointsMaterial({ color: 0xffaa00, size: 0.35, transparent: true, opacity: 0.9 });
+      this.sparksPoints = new THREE.Points(this.sparksGeo, this.sparksMat);
+      this.scene.add(this.sparksPoints);
+
+      // Radiator Dark Smoke Pool (Engine damage HP < 35)
+      const dCount = 40;
+      this.damageGeo = new THREE.BufferGeometry();
+      this.damagePositions = new Float32Array(dCount * 3);
+      this.damageLifetimes = new Float32Array(dCount);
+      for (let i = 0; i < dCount; i++) {
+        this.damagePositions[i * 3] = 0;
+        this.damagePositions[i * 3 + 1] = -100;
+        this.damagePositions[i * 3 + 2] = 0;
+        this.damageLifetimes[i] = 0;
+      }
+      this.damageGeo.setAttribute('position', new THREE.BufferAttribute(this.damagePositions, 3));
+      this.damageMat = new THREE.PointsMaterial({ color: 0x1f242d, size: 0.95, transparent: true, opacity: 0.8 });
+      this.damagePoints = new THREE.Points(this.damageGeo, this.damageMat);
+      this.scene.add(this.damagePoints);
     }
 
     emitSmoke(pos) {
@@ -576,6 +608,32 @@
         }
       }
       this.smokeGeo.attributes.position.needsUpdate = true;
+    }
+
+    emitSparks(pos) {
+      for (let i = 0; i < 40; i++) {
+        if (this.sparksLifetimes[i] <= 0) {
+          this.sparksPositions[i * 3] = pos.x + (Math.random() - 0.5) * 0.4;
+          this.sparksPositions[i * 3 + 1] = 0.12;
+          this.sparksPositions[i * 3 + 2] = pos.z + (Math.random() - 0.5) * 0.4;
+          this.sparksLifetimes[i] = 0.4;
+          break;
+        }
+      }
+      this.sparksGeo.attributes.position.needsUpdate = true;
+    }
+
+    emitDamageSmoke(pos) {
+      for (let i = 0; i < 40; i++) {
+        if (this.damageLifetimes[i] <= 0) {
+          this.damagePositions[i * 3] = pos.x + (Math.random() - 0.5) * 0.5;
+          this.damagePositions[i * 3 + 1] = (pos.y !== undefined) ? pos.y : 0.8;
+          this.damagePositions[i * 3 + 2] = pos.z + (Math.random() - 0.5) * 0.5;
+          this.damageLifetimes[i] = 1.2;
+          break;
+        }
+      }
+      this.damageGeo.attributes.position.needsUpdate = true;
     }
 
     addSkidmark(x, z, yaw) {
@@ -596,6 +654,9 @@
 
     update(delta) {
       let updateSmoke = false;
+      let updateSparks = false;
+      let updateDamage = false;
+
       for (let i = 0; i < 40; i++) {
         if (this.smokeLifetimes[i] > 0) {
           this.smokeLifetimes[i] -= delta;
@@ -606,8 +667,32 @@
           this.smokePositions[i * 3 + 1] = -100;
           updateSmoke = true;
         }
+
+        if (this.sparksLifetimes[i] > 0) {
+          this.sparksLifetimes[i] -= delta;
+          this.sparksPositions[i * 3 + 1] += (Math.random() - 0.2) * 1.5 * delta;
+          this.sparksPositions[i * 3] += (Math.random() - 0.5) * 2.0 * delta;
+          this.sparksPositions[i * 3 + 2] += (Math.random() - 0.5) * 2.0 * delta;
+          updateSparks = true;
+        } else if (this.sparksPositions[i * 3 + 1] > -50) {
+          this.sparksPositions[i * 3 + 1] = -100;
+          updateSparks = true;
+        }
+
+        if (this.damageLifetimes[i] > 0) {
+          this.damageLifetimes[i] -= delta;
+          this.damagePositions[i * 3 + 1] += 1.4 * delta;
+          this.damagePositions[i * 3] += (Math.random() - 0.5) * 0.4 * delta;
+          updateDamage = true;
+        } else if (this.damagePositions[i * 3 + 1] > -50) {
+          this.damagePositions[i * 3 + 1] = -100;
+          updateDamage = true;
+        }
       }
+
       if (updateSmoke) this.smokeGeo.attributes.position.needsUpdate = true;
+      if (updateSparks) this.sparksGeo.attributes.position.needsUpdate = true;
+      if (updateDamage) this.damageGeo.attributes.position.needsUpdate = true;
     }
   }
 
@@ -769,6 +854,19 @@
       this.isDeadEye = false;
       this.deadEyeMarked = [];
 
+      // Watch Dogs: Traffic Lights & Blackout
+      this.intersections = [];
+      this.streetlights = [];
+      this.isBlackout = false;
+      this.blackoutTimer = 0;
+
+      // Ammu-Nation Downtown Store
+      this.ammuNation = null;
+
+      // Escalation: 4-Star Roadblocks with Spike Strips
+      this.policeRoadblock = null;
+      this.roadblockCooldown = 0;
+
       this.cameraMode = 0;
       this.isWasted = false;
       this.isPassiveMode = false;
@@ -819,6 +917,7 @@
         bank: this.session.bank !== undefined ? this.session.bank : 50000,
         fuel: this.session.fuel !== undefined ? this.session.fuel : 100,
         isStalled: false,
+        isFlatTire: false,
         battery: 100,
         wanted: 0,
         wantedTimer: 0,
@@ -838,6 +937,8 @@
       this.keys = { forward: false, backward: false, left: false, right: false, brake: false };
       this.ufoMesh = null;
       this.socket = null;
+      this.remotePlayers = new Map();
+      this.netSyncTimer = 0;
 
       this.animate = this.animate.bind(this);
       this.onWindowResize = this.onWindowResize.bind(this);
@@ -924,8 +1025,12 @@
       this.setupModelRegistry();
       this.buildRealisticCity();
       this.setupGasStations();
+      this.setupStreetlightsAndBlackout();
+      this.setupTrafficLights();
       this.setupCCTVNetwork();
       this.setupStores();
+      this.setupAmmuNation();
+      this.setupPoliceRoadblocks();
       this.setupDestructibleHydrants();
       this.setupGangTurfs();
       this.setupFullFleetNPCTraffic();
@@ -1675,6 +1780,387 @@
           this.audio.playGunshot(true);
         }
         this.addHackFeedToast('🎯 DEAD EYE DESACTIVADO // DISPAROS EJECUTADOS');
+      }
+    }
+
+    setupStreetlightsAndBlackout() {
+      this.streetlights = [];
+      this.isBlackout = false;
+      this.blackoutTimer = 0;
+
+      const lightPoints = [
+        [-70, -70], [70, -70], [-70, 70], [70, 70],
+        [-140, 0], [140, 0], [0, -140], [0, 140],
+        [-70, 0], [70, 0], [0, -70], [0, 70]
+      ];
+
+      lightPoints.forEach(([lx, lz]) => {
+        const post = this.instantiateGLB('prop-streetlight-double', 8.5, true);
+        post.position.set(lx + 8.5, 0, lz + 8.5);
+        this.scene.add(post);
+
+        const pl = new THREE.PointLight(0xffddaa, 1.8, 30);
+        pl.position.set(lx + 8.5, 7.8, lz + 8.5);
+        this.scene.add(pl);
+
+        this.streetlights.push({ mesh: post, light: pl, baseIntensity: 1.8 });
+      });
+    }
+
+    triggerDistrictBlackout(isRemote = false) {
+      if (this.isBlackout) {
+        if (!isRemote) this.addHackFeedToast('⚡ [ctOS] El apagón de distrito ya está en curso.');
+        return;
+      }
+      if (!isRemote) {
+        if (this.player.battery < 20) {
+          this.addHackFeedToast('🔋 [ctOS] Batería insuficiente para sobrecarga de red (mínimo 20%).');
+          return;
+        }
+        this.player.battery -= 20;
+      }
+
+      this.isBlackout = true;
+      this.blackoutTimer = 22.0;
+
+      this.audio.playHackChirp();
+      this.addHackFeedToast('⚡ [ctOS] ¡BLACKOUT DE DISTRITO ACTIVADO! 22s de oscuridad táctica.');
+
+      if (this.ambientLight) this.ambientLight.intensity = 0.25;
+      if (this.fillLight) this.fillLight.intensity = 0.1;
+      this.streetlights.forEach(sl => {
+        sl.light.intensity = 0;
+      });
+
+      const overlay = document.getElementById('blackout-overlay');
+      if (overlay) overlay.style.display = 'block';
+
+      if (!isRemote && this.socket && this.socket.connected) {
+        this.socket.emit('hack:execute', {
+          targetType: 'GRID_SUBSTATION',
+          targetId: 'DISTRICT_DOWNTOWN',
+          exploit: 'OVERLOAD_BLACKOUT'
+        });
+      }
+    }
+
+    updateBlackout(delta) {
+      if (!this.isBlackout) return;
+      this.blackoutTimer -= delta;
+
+      if (this.player.wanted > 0) {
+        this.player.wantedTime = Math.max(0, this.player.wantedTime - delta * 2.0);
+      }
+
+      if (this.blackoutTimer <= 0) {
+        this.isBlackout = false;
+        if (this.ambientLight) this.ambientLight.intensity = 1.4;
+        if (this.fillLight) this.fillLight.intensity = 0.7;
+        this.streetlights.forEach(sl => {
+          sl.light.intensity = sl.baseIntensity;
+        });
+        const overlay = document.getElementById('blackout-overlay');
+        if (overlay) overlay.style.display = 'none';
+        this.addHackFeedToast('⚡ [ctOS] Subestación eléctrica restablecida // Alumbrado encendido.');
+      }
+    }
+
+    setupTrafficLights() {
+      this.intersections = [
+        { id: 'inter_center', x: 0, z: 0, timer: 0, greenAxis: 'X', isHacked: false, hackTimer: 0, lights: [] },
+        { id: 'inter_north', x: 0, z: -70, timer: 3.5, greenAxis: 'Z', isHacked: false, hackTimer: 0, lights: [] },
+        { id: 'inter_south', x: 0, z: 70, timer: 3.5, greenAxis: 'Z', isHacked: false, hackTimer: 0, lights: [] },
+        { id: 'inter_east', x: 70, z: 0, timer: 2.0, greenAxis: 'X', isHacked: false, hackTimer: 0, lights: [] },
+        { id: 'inter_west', x: -70, z: 0, timer: 2.0, greenAxis: 'X', isHacked: false, hackTimer: 0, lights: [] }
+      ];
+
+      this.intersections.forEach(inter => {
+        const offsets = [
+          [-8.5, -8.5, 0], [8.5, -8.5, Math.PI / 2],
+          [8.5, 8.5, Math.PI], [-8.5, 8.5, -Math.PI / 2]
+        ];
+        offsets.forEach(([ox, oz, rotY]) => {
+          const tl = this.instantiateGLB('prop-traffic-light', 5.5, true);
+          tl.position.set(inter.x + ox, 0, inter.z + oz);
+          tl.rotation.y = rotY;
+          this.scene.add(tl);
+
+          const glow = new THREE.PointLight(0x22c55e, 1.4, 14);
+          glow.position.set(inter.x + ox, 4.8, inter.z + oz);
+          this.scene.add(glow);
+
+          inter.lights.push({ mesh: tl, glow });
+        });
+      });
+    }
+
+    hackTrafficLights(isRemote = false) {
+      let closest = null, minD = 85;
+      this.intersections.forEach(inter => {
+        const d = Math.hypot(this.player.x - inter.x, this.player.z - inter.z);
+        if (d < minD) { minD = d; closest = inter; }
+      });
+
+      if (!closest && !isRemote) {
+        this.addHackFeedToast('🚦 [ctOS] No hay cruce de semáforos en rango (acércate a una intersección).');
+        return;
+      }
+      if (!closest) closest = this.intersections[0];
+
+      if (closest.isHacked) {
+        if (!isRemote) this.addHackFeedToast('🚦 [ctOS] Este cruce ya está en colisión provocada.');
+        return;
+      }
+      if (!isRemote) {
+        if (this.player.battery < 15) {
+          this.addHackFeedToast('🔋 [ctOS] Batería insuficiente para hack de tráfico (mínimo 15%).');
+          return;
+        }
+        this.player.battery -= 15;
+      }
+
+      closest.isHacked = true;
+      closest.hackTimer = 12.0;
+
+      this.audio.playHackChirp();
+      this.addHackFeedToast(`🚦 [ctOS] ¡SEMÁFOROS INTERVENIDOS! Colisión múltiple provocada en el cruce.`);
+
+      this.npcVehicles.forEach(car => {
+        const d = Math.hypot(car.mesh.position.x - closest.x, car.mesh.position.z - closest.z);
+        if (d < 55) {
+          car.speed = 36;
+          car.isRushing = true;
+        }
+      });
+
+      if (!isRemote && this.socket && this.socket.connected) {
+        this.socket.emit('hack:execute', {
+          targetType: 'TRAFFIC_LIGHT',
+          targetId: closest.id,
+          exploit: 'CROSSROAD_PILEUP'
+        });
+      }
+    }
+
+    updateTrafficLights(delta) {
+      this.intersections.forEach(inter => {
+        if (inter.isHacked) {
+          inter.hackTimer -= delta;
+          const color = (Math.sin(Date.now() / 90) > 0) ? 0x22c55e : 0xf59e0b;
+          inter.lights.forEach(l => l.glow.color.setHex(color));
+
+          const nearbyCars = this.npcVehicles.filter(car =>
+            Math.hypot(car.mesh.position.x - inter.x, car.mesh.position.z - inter.z) < 5.0
+          );
+          if (nearbyCars.length >= 2) {
+            nearbyCars.forEach(car => {
+              car.isStalled = true;
+              car.speed = 0;
+              car.mesh.rotation.z = (Math.random() - 0.5) * 0.8;
+              car.mesh.position.y = 0.5;
+            });
+            this.bloodPool.spawnBurst(new THREE.Vector3(inter.x, 1.2, inter.z), null, 30);
+            this.fx.addSkidmark(inter.x, inter.z, 0);
+            this.audio.playGunshot(true);
+            this.addHackFeedToast('💥 ¡COLISIÓN MÚLTIPLE EN CADENA PROVOCADA POR ctOS!');
+            this.addWantedHeat(1);
+            inter.isHacked = false;
+          }
+
+          if (inter.hackTimer <= 0) inter.isHacked = false;
+        } else {
+          inter.timer += delta;
+          if (inter.timer > 7.0) {
+            inter.timer = 0;
+            inter.greenAxis = (inter.greenAxis === 'X') ? 'Z' : 'X';
+            const col = (inter.greenAxis === 'X') ? 0x22c55e : 0xef4444;
+            inter.lights.forEach(l => l.glow.color.setHex(col));
+          }
+        }
+      });
+    }
+
+    setupAmmuNation() {
+      const x = 55, z = -32;
+      this.ammuNation = {
+        x,
+        z,
+        name: 'AMMU-NATION DOWNTOWN',
+        clerk: {
+          mesh: null,
+          hp: 150,
+          isDead: false,
+          isHostile: false,
+          shotCooldown: 0
+        }
+      };
+
+      const bldg = this.instantiateGLB('business-store', 22, true);
+      bldg.position.set(x, 0, z);
+      this.scene.add(bldg);
+
+      const signGeo = new THREE.BoxGeometry(9, 1.2, 0.4);
+      const signMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.8 });
+      const sign = new THREE.Mesh(signGeo, signMat);
+      sign.position.set(x, 6.2, z + 8);
+      this.scene.add(sign);
+
+      const clerkMesh = this.instantiateGLB('char-swat', 1.95, true);
+      clerkMesh.position.set(x, 0, z + 3);
+      this.scene.add(clerkMesh);
+      this.ammuNation.clerk.mesh = clerkMesh;
+
+      const rifle = this.instantiateGLB('weapon-rifle', 1.2, true);
+      rifle.position.set(x + 1.8, 1.6, z + 3);
+      rifle.rotation.y = Math.PI / 2;
+      this.scene.add(rifle);
+
+      const pistol = this.instantiateGLB('weapon-pistol', 0.9, true);
+      pistol.position.set(x - 1.8, 1.6, z + 3);
+      pistol.rotation.y = Math.PI / 2;
+      this.scene.add(pistol);
+    }
+
+    updateAmmuNation(delta) {
+      if (!this.ammuNation || this.ammuNation.clerk.isDead) return;
+
+      const p = this.player;
+      const c = this.ammuNation.clerk;
+      const dist = Math.hypot(p.x - this.ammuNation.x, p.z - (this.ammuNation.z + 3));
+
+      if (dist < 8.0) {
+        if (p.weaponSlot > 1 && !c.isHostile) {
+          c.isHostile = true;
+          this.audio.playGunshot(true);
+          this.addHackFeedToast('🚨 AMMU-NATION: ¡El dependiente te apunta con su escopeta táctica!');
+          this.addWantedHeat(2);
+        }
+
+        if (c.isHostile) {
+          c.shotCooldown -= delta;
+          if (c.shotCooldown <= 0) {
+            c.shotCooldown = 1.8;
+            this.audio.playGunshot(true);
+            p.hp = Math.max(0, p.hp - 20);
+            this.bloodPool.spawnBurst(new THREE.Vector3(p.x, 1.2, p.z), null, 14);
+            this.addHackFeedToast('💥 ¡DISPARO DE ESCOPETA DEL ARMERO! (-20 HP)');
+            if (p.hp <= 0) this.killPlayer();
+          }
+        }
+      }
+    }
+
+    buyAmmuNationGear() {
+      const p = this.player;
+      if (p.cash < 250) {
+        this.addHackFeedToast('💵 Fondos insuficientes en efectivo ($250 requeridos).');
+        return;
+      }
+      p.cash -= 250;
+      p.ammoPistol = 120;
+      p.ammoRifle = 360;
+      p.armor = 100;
+      this.audio.playCashChime();
+      this.triggerCashDelta('-$250', false);
+      this.addHackFeedToast('🛡️ AMMU-NATION: Munición al máximo y Blindaje 100% equipado.');
+    }
+
+    checkAmmuNationPurchase() {
+      if (!this.ammuNation || this.ammuNation.clerk.isHostile || this.ammuNation.clerk.isDead) return false;
+      const d = Math.hypot(this.player.x - this.ammuNation.x, this.player.z - (this.ammuNation.z + 3));
+      if (d < 6.0) {
+        this.buyAmmuNationGear();
+        return true;
+      }
+      return false;
+    }
+
+    repairVehicle() {
+      const p = this.player;
+      if (!p.inVehicle) {
+        this.addHackFeedToast('Debes estar en un vehículo para repararlo.');
+        return;
+      }
+      if (p.cash >= 100) {
+        p.cash -= 100;
+        p.isFlatTire = false;
+        p.hp = 100;
+        p.maxSpeed = 52;
+        this.audio.playCashChime();
+        this.addHackFeedToast('🔧 Los Santos Customs: Neumáticos nuevos y motor reparado al 100% (-$100).');
+      } else {
+        this.addHackFeedToast('Fondos insuficientes en efectivo ($100).');
+      }
+    }
+
+    setupPoliceRoadblocks() {
+      this.policeRoadblock = null;
+      this.roadblockCooldown = 0;
+    }
+
+    updatePoliceRoadblocks(delta) {
+      const p = this.player;
+      if (this.roadblockCooldown > 0) this.roadblockCooldown -= delta;
+
+      if (p.wanted >= 4 && p.inVehicle && !this.policeRoadblock && this.roadblockCooldown <= 0) {
+        const fwdX = -Math.sin(p.yaw);
+        const fwdZ = -Math.cos(p.yaw);
+        const rbX = Math.round((p.x + fwdX * 65) / 35) * 35;
+        const rbZ = Math.round((p.z + fwdZ * 65) / 35) * 35;
+
+        const group = new THREE.Group();
+        group.position.set(rbX, 0, rbZ);
+
+        const car1 = this.instantiateGLB('gta-police-car', 4.6, true);
+        car1.position.set(-4.5, 0, 0);
+        car1.rotation.y = 0.5;
+        group.add(car1);
+
+        const car2 = this.instantiateGLB('gta-police-car', 4.6, true);
+        car2.position.set(4.5, 0, 0);
+        car2.rotation.y = -0.5;
+        group.add(car2);
+
+        const spikeGeo = new THREE.BoxGeometry(4.8, 0.12, 1.2);
+        const spikeMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9, roughness: 0.3 });
+        const spikeMesh = new THREE.Mesh(spikeGeo, spikeMat);
+        spikeMesh.position.set(0, 0.06, 0);
+        group.add(spikeMesh);
+
+        const swat1 = this.instantiateGLB('char-swat', 1.9, true);
+        swat1.position.set(-2, 0, 1.5);
+        group.add(swat1);
+
+        const swat2 = this.instantiateGLB('char-swat', 1.9, true);
+        swat2.position.set(2, 0, 1.5);
+        group.add(swat2);
+
+        this.scene.add(group);
+        this.policeRoadblock = { x: rbX, z: rbZ, mesh: group, tripped: false, timer: 45 };
+        this.addHackFeedToast('🚨 [LSPD] ¡BLOQUEO TÁCTICO POLICIAL CON CLAVOS DESPLEGADO EN TU RUTA!');
+      }
+
+      if (this.policeRoadblock) {
+        this.policeRoadblock.timer -= delta;
+        const rb = this.policeRoadblock;
+
+        if (!rb.tripped && p.inVehicle) {
+          const d = Math.hypot(p.x - rb.x, p.z - rb.z);
+          if (d < 3.8) {
+            rb.tripped = true;
+            p.isFlatTire = true;
+            p.maxSpeed = Math.min(p.maxSpeed, 18);
+            this.audio.playGunshot(false);
+            this.addHackFeedToast('💥 ¡NEUMÁTICOS REVENTADOS POR BANDA DE CLAVOS! Control comprometido.');
+          }
+        }
+
+        const distFromPlayer = Math.hypot(p.x - rb.x, p.z - rb.z);
+        if (rb.timer <= 0 || (distFromPlayer > 180 && rb.tripped) || p.wanted < 4) {
+          this.scene.remove(rb.mesh);
+          this.policeRoadblock = null;
+          this.roadblockCooldown = 25.0;
+        }
       }
     }
 
@@ -2607,14 +3093,155 @@
     setupMultiplayerSocket() {
       if (typeof io !== 'undefined') {
         try {
-          this.socket = io(HEROKU_BACKEND_URL, { reconnectionAttempts: 3, timeout: 3000 });
+          this.socket = io(HEROKU_BACKEND_URL, {
+            reconnectionAttempts: 5,
+            timeout: 5000,
+            transports: ['websocket', 'polling']
+          });
+
           this.socket.on('connect', () => {
-            this.addHackFeedToast('🌐 Conectado a la Sesión Multijugador de GTA Online.');
+            this.addHackFeedToast('🌐 [Heroku Grid] Conectado a la sesión multijugador.');
+            this.socket.emit('player:join', {
+              username: '@equisde',
+              avatarUrl: 'https://avatars.githubusercontent.com/u/34652149?v=4',
+              position: { x: this.player.x, y: this.player.y || 1, z: this.player.z },
+              rotation: { x: 0, y: this.player.yaw, z: 0 },
+              vehicle: this.player.inVehicle ? 'car' : 'foot'
+            });
           });
+
+          this.socket.on('world:init', (data) => {
+            if (data && data.players) {
+              data.players.forEach(p => {
+                if (p.id !== this.socket.id) this.spawnRemotePlayer(p);
+              });
+            }
+            if (data && data.worldState) {
+              if (data.worldState.blackoutActive && !this.isBlackout) {
+                this.triggerDistrictBlackout(true);
+              }
+            }
+          });
+
+          this.socket.on('player:spawned', (p) => {
+            if (p.id !== this.socket.id) {
+              this.spawnRemotePlayer(p);
+              this.addHackFeedToast(`🌐 Operativo [${p.username}] ingresó a la sesión.`);
+            }
+          });
+
+          this.socket.on('player:moved', (data) => {
+            this.updateRemotePlayerPos(data);
+          });
+
+          this.socket.on('player:left', (id) => {
+            this.removeRemotePlayer(id);
+          });
+
+          this.socket.on('hack:effect', (data) => {
+            if (data.hackerId !== this.socket.id) {
+              if (data.targetType === 'TRAFFIC_LIGHT') {
+                this.hackTrafficLights(true);
+              } else if (data.targetType === 'GRID_SUBSTATION') {
+                this.triggerDistrictBlackout(true);
+              }
+              this.addHackFeedToast(`⚡ [ctOS Remoto] ${data.hackerName} ejecutó ${data.exploit} en ${data.targetType}.`);
+            }
+          });
+
+          this.socket.on('chat:broadcast', (data) => {
+            this.addChatMessage(data.username, 'NET', data.text);
+          });
+
+          this.socket.on('chat:system', (text) => {
+            this.addChatMessage('SYSTEM', 'GRID', text);
+          });
+
           this.socket.on('chat:message', (data) => {
-            this.addChatMessage(data.sender, data.crewTag, data.text);
+            if (typeof data === 'string') {
+              this.addChatMessage('REMOTE', 'NET', data);
+            } else if (data && data.text) {
+              this.addChatMessage(data.sender || 'REMOTE', data.crewTag || 'IMX', data.text);
+            }
           });
-        } catch (e) {}
+        } catch (e) {
+          console.warn('[Heroku Net] Error de inicialización Socket.IO:', e);
+        }
+      }
+    }
+
+    spawnRemotePlayer(p) {
+      if (!p || !p.id || this.remotePlayers.has(p.id)) return;
+      const group = new THREE.Group();
+      const mesh = this.instantiateGLB('char-hacker', 1.9, true);
+      group.add(mesh);
+
+      // Name marker
+      const markerGeo = new THREE.ConeGeometry(0.2, 0.4, 4);
+      const markerMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+      const marker = new THREE.Mesh(markerGeo, markerMat);
+      marker.rotation.x = Math.PI;
+      marker.position.y = 2.4;
+      group.add(marker);
+
+      const posX = p.position?.x || 0;
+      const posY = p.position?.y || 0;
+      const posZ = p.position?.z || 0;
+      group.position.set(posX, posY, posZ);
+      this.scene.add(group);
+
+      this.remotePlayers.set(p.id, {
+        data: p,
+        group,
+        targetPos: new THREE.Vector3(posX, posY, posZ),
+        targetYaw: p.rotation?.y || 0
+      });
+    }
+
+    updateRemotePlayerPos(data) {
+      if (!data || !data.id) return;
+      const remote = this.remotePlayers.get(data.id);
+      if (!remote) {
+        this.spawnRemotePlayer(data);
+        return;
+      }
+      if (data.position) {
+        remote.targetPos.set(data.position.x, data.position.y, data.position.z);
+      }
+      if (data.rotation) {
+        remote.targetYaw = data.rotation.y || 0;
+      }
+    }
+
+    removeRemotePlayer(id) {
+      const remote = this.remotePlayers.get(id);
+      if (!remote) return;
+      this.scene.remove(remote.group);
+      this.remotePlayers.delete(id);
+    }
+
+    updateMultiplayerSync(delta) {
+      // 1. Interpolate remote players smoothly
+      this.remotePlayers.forEach(remote => {
+        remote.group.position.lerp(remote.targetPos, Math.min(1.0, delta * 12.0));
+        let diff = remote.targetYaw - remote.group.rotation.y;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        remote.group.rotation.y += diff * Math.min(1.0, delta * 10.0);
+      });
+
+      // 2. Throttled send local player position to Heroku (10 Hz = 100ms)
+      if (!this.socket || !this.socket.connected) return;
+      this.netSyncTimer = (this.netSyncTimer || 0) + delta;
+      if (this.netSyncTimer >= 0.1) {
+        this.netSyncTimer = 0;
+        this.socket.emit('player:move', {
+          position: { x: this.player.x, y: this.player.y || 0, z: this.player.z },
+          rotation: { x: 0, y: this.player.yaw, z: 0 },
+          velocity: this.player.speed || 0,
+          vehicle: this.player.inVehicle ? 'car' : 'foot',
+          animState: this.player.inVehicle ? 'driving' : (Math.abs(this.player.speed) > 1.0 ? 'run' : 'idle')
+        });
       }
     }
 
@@ -2622,6 +3249,7 @@
       if (!text || text.trim() === '') return;
       this.addChatMessage('@equisde', 'IMX', text);
       if (this.socket && this.socket.connected) {
+        this.socket.emit('chat:message', text);
         this.socket.emit('chat:send', { text, crewTag: 'IMX' });
       }
     }
@@ -2737,8 +3365,19 @@
         if (input) { input.focus(); e.preventDefault(); }
       }
 
+      // Watch Dogs Traffic Light Hack [Z]
+      if (k === 'z') {
+        this.hackTrafficLights();
+      }
+
+      // Watch Dogs ctOS District Blackout [B]
+      if (k === 'b') {
+        this.triggerDistrictBlackout();
+      }
+
       if (k === 'e') {
         if (this.checkAndExecuteRefuel()) return;
+        if (this.checkAmmuNationPurchase()) return;
         this.executeCurrentWatchDogsHack();
       }
       if (k === 'g') this.socialGreet();
@@ -2796,8 +3435,9 @@
       let isBraking = false;
       let isAccelerating = false;
 
-      // Aquaplaning reduction when raining
-      const tireGrip = (this.weatherState === 'RAIN' || this.weatherState === 'STORM') ? 0.68 : 1.0;
+      // Aquaplaning reduction when raining and flat tire handling
+      const baseGrip = (this.weatherState === 'RAIN' || this.weatherState === 'STORM') ? 0.68 : 1.0;
+      const tireGrip = p.isFlatTire ? baseGrip * 0.42 : baseGrip;
 
       if (!p.isStalled) {
         if (this.keys.forward) {
@@ -2813,6 +3453,22 @@
         // Engine stalled - deceleration to complete stop
         p.speed *= (1 - 3.2 * delta);
         if (Math.abs(p.speed) < 0.1) p.speed = 0;
+      }
+
+      if (p.isFlatTire && p.inVehicle) {
+        // Flat tire speed cap & steering wobble
+        if (p.speed > 18) p.speed = 18;
+        if (Math.abs(p.speed) > 2.0) {
+          this.fx.emitSparks(new THREE.Vector3(p.x, 0.1, p.z));
+          p.yaw += Math.sin(Date.now() / 90) * 0.006;
+        }
+      }
+
+      // Radiator smoke on critical vehicle damage (HP < 35)
+      if (p.inVehicle && p.hp < 35) {
+        const hoodX = p.x + Math.sin(p.yaw) * 1.8;
+        const hoodZ = p.z + Math.cos(p.yaw) * 1.8;
+        this.fx.emitDamageSmoke(new THREE.Vector3(hoodX, 0.75, hoodZ));
       }
 
       if (this.keys.brake) {
@@ -3124,6 +3780,36 @@
         });
       }
 
+      // Ammu-Nation Blip (Red Gun 🔫)
+      if (this.ammuNation) {
+        const bx = cx + (this.ammuNation.x - this.player.x) * scale;
+        const by = cy + (this.ammuNation.z - this.player.z) * scale;
+        if (Math.hypot(bx - cx, by - cy) < cx - 6) {
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(bx, by, 5.0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 7px sans-serif';
+          ctx.fillText('🔫', bx - 3.5, by + 2.5);
+        }
+      }
+
+      // Police Roadblock Blip (Flashing Red/Blue 🚨)
+      if (this.policeRoadblock) {
+        const bx = cx + (this.policeRoadblock.x - this.player.x) * scale;
+        const by = cy + (this.policeRoadblock.z - this.player.z) * scale;
+        if (Math.hypot(bx - cx, by - cy) < cx - 6) {
+          ctx.fillStyle = (Math.sin(Date.now() / 100) > 0) ? '#ef4444' : '#3b82f6';
+          ctx.beginPath();
+          ctx.arc(bx, by, 5.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 8px sans-serif';
+          ctx.fillText('🚨', bx - 4, by + 3);
+        }
+      }
+
       // Player Arrow
       ctx.save();
       ctx.translate(cx, cy);
@@ -3265,7 +3951,12 @@
             }
           }
 
-          if (nearStation) {
+          let nearAmmu = (this.ammuNation && Math.hypot(this.player.x - this.ammuNation.x, this.player.z - (this.ammuNation.z + 3)) < 6.5);
+
+          if (nearAmmu && !this.ammuNation.clerk.isDead) {
+            promptEl.style.display = 'block';
+            promptEl.innerHTML = `🔫 <b style="color:#ef4444;">[E] COMPRAR MUNICIÓN Y BLINDAJE ($250)</b> - AMMU-NATION | ⚠️ ENCAÑONAR CLERK`;
+          } else if (nearStation) {
             promptEl.style.display = 'block';
             promptEl.innerHTML = `⛽ <b style="color:#f59e0b;">[E] REPOSTAR COMBUSTIBLE ($${nearStation.price})</b> - ${nearStation.name}`;
           } else if (nearParked) {
@@ -3287,7 +3978,10 @@
               if (Math.hypot(this.player.x - gs.x, this.player.z - gs.z) < 7.5) { nearStation = gs; break; }
             }
           }
-          if (nearStation) {
+          if (this.player.isFlatTire) {
+            promptEl.style.display = 'block';
+            promptEl.innerHTML = `🔧 <b style="color:#ef4444;">¡NEUMÁTICOS REVENTADOS!</b> Usa Menú [M] para Reparar en Los Santos Customs`;
+          } else if (nearStation) {
             promptEl.style.display = 'block';
             promptEl.innerHTML = `⛽ <b style="color:#f59e0b;">[E] REPOSTAR COMBUSTIBLE ($${nearStation.price})</b> - ${nearStation.name}`;
           } else {
@@ -3319,6 +4013,11 @@
       this.updateDayNightAndWeather(effectiveDelta);
       this.updateStoreRobberies(effectiveDelta);
       this.updateWaterGeysers(effectiveDelta);
+      this.updateTrafficLights(effectiveDelta);
+      this.updateBlackout(effectiveDelta);
+      this.updateAmmuNation(effectiveDelta);
+      this.updatePoliceRoadblocks(effectiveDelta);
+      this.updateMultiplayerSync(delta);
       this.updatePhysics(delta);
       this.updateNPCs(delta);
       this.fx.update(delta);
