@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>PARALLAX // CYBER-CITY ULTRA 3D (GTA V + Watch Dogs + RDR Simulator)</title>
-  <meta name="description" content="Simulador 3D Open World estilo GTA V, Watch Dogs y Red Dead Redemption por Rodrigo Carrasco (Parallax / equisde). Físicas reales, carjacking, combate sangriento, hacking CTOS y alianzas de vecindario.">
+  <title>PARALLAX // GTA ONLINE ULTRA 3D (Full Open World & Multiplayer)</title>
+  <meta name="description" content="Simulador 3D Open World estilo GTA Online por Rodrigo Carrasco (Parallax / equisde). Flota 100% NPC en tierra, mar y aire, Los Santos Customs, soporte aéreo de helicóptero policial, carjacking y chat de crews.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -137,22 +137,12 @@
       border-color: rgba(255, 215, 0, 0.5);
       color: var(--neon-gold);
     }
-    .g3d-btn-gold:hover {
-      background: rgba(255, 215, 0, 0.2);
-      border-color: var(--neon-gold);
-      box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
-    }
     .g3d-btn-exit {
       border-color: rgba(255, 0, 127, 0.5);
       color: var(--neon-pink);
     }
-    .g3d-btn-exit:hover {
-      background: rgba(255, 0, 127, 0.2);
-      border-color: var(--neon-pink);
-      box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
-    }
 
-    /* Floating Context Prompt (Carjacking / Social) */
+    /* Contextual Action Prompt */
     .g3d-context-banner {
       position: absolute;
       top: 76px;
@@ -169,11 +159,6 @@
       z-index: 25;
       box-shadow: 0 0 25px rgba(0, 240, 255, 0.4);
       text-align: center;
-      animation: pulseBanner 1.8s infinite;
-    }
-    @keyframes pulseBanner {
-      0%, 100% { transform: translateX(-50%) scale(1); }
-      50% { transform: translateX(-50%) scale(1.02); }
     }
 
     /* Watch Dogs Profiler Reticle */
@@ -209,7 +194,24 @@
     .r-bank { color: var(--neon-gold); font-size: 0.68rem; margin-bottom: 4px; font-weight: 700; }
     .r-exploit { color: var(--neon-pink); font-size: 0.65rem; font-weight: 700; }
 
-    /* Bottom-Right Cockpit Dashboard */
+    /* Radar Minimap */
+    .g3d-radar-box {
+      position: absolute;
+      bottom: 24px;
+      left: 20px;
+      width: 140px;
+      height: 140px;
+      background: rgba(4, 7, 14, 0.88);
+      border: 2px solid var(--neon-cyan);
+      border-radius: 50%;
+      overflow: hidden;
+      z-index: 20;
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.35);
+      backdrop-filter: blur(6px);
+    }
+    #ow-radar-canvas { width: 100%; height: 100%; }
+
+    /* Cockpit Dashboard */
     .g3d-cockpit {
       position: absolute;
       bottom: 24px;
@@ -226,17 +228,7 @@
       z-index: 20;
       min-width: 240px;
     }
-    .cockpit-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-    }
-    .speedo-wrap {
-      display: flex;
-      align-items: baseline;
-      gap: 4px;
-    }
+    .speedo-wrap { display: flex; align-items: baseline; gap: 4px; }
     .speed-num { font-family: 'Orbitron', monospace; font-size: 2.2rem; font-weight: 900; color: #fff; text-shadow: 0 0 15px var(--neon-cyan); }
     .speed-unit { font-size: 0.7rem; color: var(--neon-cyan); }
     .weapon-hud-card {
@@ -251,82 +243,69 @@
       color: var(--neon-cyan);
     }
 
-    /* Mobile Touch Controls */
-    .ow-touch-joystick-wrap {
-      display: none;
+    /* Multiplayer Chat */
+    .g3d-chat-container {
       position: absolute;
-      bottom: 30px;
-      left: 24px;
-      width: 120px;
-      height: 120px;
-      z-index: 50;
-      touch-action: none;
+      bottom: 180px;
+      left: 20px;
+      width: 320px;
+      background: rgba(4, 8, 16, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      z-index: 25;
+      backdrop-filter: blur(8px);
     }
-    .ow-touch-joystick-base {
-      width: 100%;
-      height: 100%;
-      background: rgba(6, 12, 24, 0.75);
-      border: 2px solid var(--neon-cyan);
-      border-radius: 50%;
-      position: relative;
-      box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
-    }
-    .ow-touch-joystick-knob {
-      width: 50px;
-      height: 50px;
-      background: radial-gradient(circle, var(--neon-cyan), #007799);
-      border-radius: 50%;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
-      box-shadow: 0 0 16px rgba(0, 240, 255, 0.85);
-    }
-    .ow-mobile-actions-cluster {
-      display: none;
-      position: absolute;
-      bottom: 24px;
-      right: 20px;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      z-index: 50;
-      touch-action: none;
-    }
-    .m-act-btn {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      font-family: 'Orbitron', monospace;
-      font-size: 0.58rem;
-      font-weight: 900;
-      cursor: pointer;
+    .chat-feed {
+      height: 90px;
+      overflow-y: auto;
+      font-size: 0.72rem;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      box-shadow: 0 0 15px rgba(0,0,0,0.5);
-      transition: transform 0.1s;
+      flex-direction: column;
+      gap: 4px;
     }
-    .m-act-btn:active { transform: scale(0.92); }
-    .m-btn-gas { background: rgba(0, 255, 102, 0.25); border: 2px solid var(--neon-green); color: var(--neon-green); }
-    .m-btn-brake { background: rgba(255, 0, 51, 0.25); border: 2px solid #ff0033; color: #ff0033; }
-    .m-btn-fire { background: rgba(255, 170, 0, 0.25); border: 2px solid var(--neon-orange); color: var(--neon-orange); }
-    .m-btn-hack { background: rgba(0, 240, 255, 0.25); border: 2px solid var(--neon-cyan); color: var(--neon-cyan); }
-    .m-btn-carjack { background: rgba(255, 0, 85, 0.25); border: 2px solid #ff0055; color: #ff0055; }
-    .m-btn-greet { background: rgba(0, 240, 255, 0.25); border: 2px solid var(--neon-cyan); color: #fff; }
-    .m-btn-provoke { background: rgba(255, 170, 0, 0.25); border: 2px solid var(--neon-orange); color: #fff; }
+    .chat-input {
+      width: 100%;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 4px 8px;
+      font-size: 0.72rem;
+      border-radius: 4px;
+      margin-top: 6px;
+      outline: none;
+    }
+
+    /* WASTED Fullscreen Banner */
+    .g3d-wasted-banner {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: radial-gradient(circle, rgba(180, 0, 0, 0.4), rgba(10, 0, 0, 0.95));
+      z-index: 999;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      backdrop-filter: grayscale(0.85) sepia(0.3);
+    }
+    .wasted-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 5rem;
+      font-weight: 900;
+      color: #e11d48;
+      text-shadow: 0 0 40px #ff0033;
+      letter-spacing: 6px;
+      animation: pulseWasted 1.5s infinite;
+    }
+    @keyframes pulseWasted { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
     /* Modals */
     .g3d-modal {
       display: none;
       position: fixed;
-      top: 50%;
-      left: 50%;
+      top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      width: 90%;
-      max-width: 520px;
+      width: 90%; max-width: 520px;
       background: rgba(7, 12, 24, 0.96);
       border: 2px solid var(--neon-cyan);
       border-radius: 14px;
@@ -339,42 +318,10 @@
       max-height: 85vh;
       overflow-y: auto;
     }
-    .modal-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 10px;
-    }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
     .modal-title { font-family: 'Orbitron', monospace; font-size: 1.05rem; color: #fff; font-weight: 700; }
-    .modal-close {
-      background: none; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;
-    }
+    .modal-close { background: none; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer; }
     .modal-close:hover { color: var(--neon-pink); }
-
-    /* Leaderboard Table */
-    .leaderboard-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.72rem;
-      margin-top: 8px;
-    }
-    .leaderboard-table th {
-      color: var(--neon-cyan);
-      text-align: left;
-      padding: 8px 6px;
-      border-bottom: 1px solid var(--border);
-      font-family: 'Orbitron', monospace;
-    }
-    .leaderboard-table td {
-      padding: 8px 6px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .leaderboard-table tr:hover {
-      background: rgba(0, 240, 255, 0.05);
-    }
-
-    /* Property & Business Cards */
     .dynasty-card {
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border);
@@ -402,7 +349,7 @@
     .ow-hack-feed {
       position: absolute;
       bottom: 28px;
-      left: 20px;
+      left: 175px;
       display: flex;
       flex-direction: column-reverse;
       gap: 6px;
@@ -411,12 +358,38 @@
       z-index: 25;
     }
 
-    /* Responsive Queries */
+    /* Mobile Controls */
+    .ow-mobile-actions-cluster {
+      display: none;
+      position: absolute;
+      bottom: 24px;
+      right: 20px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      z-index: 50;
+      touch-action: none;
+    }
+    .m-act-btn {
+      width: 50px; height: 50px;
+      border-radius: 50%;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.58rem; font-weight: 900;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center;
+    }
+    .m-btn-gas { background: rgba(0, 255, 102, 0.25); border: 2px solid var(--neon-green); color: var(--neon-green); }
+    .m-btn-brake { background: rgba(255, 0, 51, 0.25); border: 2px solid #ff0033; color: #ff0033; }
+    .m-btn-carjack { background: rgba(255, 0, 85, 0.25); border: 2px solid #ff0055; color: #ff0055; }
+    .m-btn-hack { background: rgba(0, 240, 255, 0.25); border: 2px solid var(--neon-cyan); color: var(--neon-cyan); }
+    .m-btn-greet { background: rgba(0, 240, 255, 0.25); border: 2px solid var(--neon-cyan); color: #fff; }
+    .m-btn-provoke { background: rgba(255, 170, 0, 0.25); border: 2px solid var(--neon-orange); color: #fff; }
+    .m-btn-fire { background: rgba(255, 170, 0, 0.25); border: 2px solid var(--neon-orange); color: var(--neon-orange); }
+
     @media (max-width: 900px) {
-      .ow-touch-joystick-wrap { display: block; }
       .ow-mobile-actions-cluster { display: grid; }
       .g3d-center-stats { display: none; }
       .g3d-cockpit { display: none; }
+      .g3d-chat-container { display: none; }
       .ow-hack-feed { left: 16px; bottom: 165px; max-width: 280px; }
     }
   </style>
@@ -426,11 +399,9 @@
 </head>
 <body>
 
-  <!-- Fullscreen 3D Viewport -->
   <div id="ow-viewport">
     <canvas id="openworld-canvas"></canvas>
 
-    <!-- Watch Dogs Profiler Reticle & Floating CTOS Card -->
     <div class="ow-profiler-reticle" id="ow-reticle">
       <div class="reticle-crosshair"></div>
       <div class="reticle-info" id="ctos-profiler-box" style="display: none;">
@@ -442,7 +413,6 @@
     </div>
   </div>
 
-  <!-- Dynamic Contextual Action Banner (Carjacking & RDR Social) -->
   <div class="g3d-context-banner" id="g3d-context-prompt" style="display: none;"></div>
 
   <!-- Top HUD Bar -->
@@ -451,7 +421,7 @@
       <img id="ow-user-avatar" src="https://github.com/equisde.png" alt="Avatar" class="g3d-avatar" />
       <div>
         <div class="g3d-u-name" id="ow-display-username">@equisde</div>
-        <div class="g3d-u-role">⚡ PARALLAX C2 OPERATIVE</div>
+        <div class="g3d-u-role">⚡ PARALLAX C2 [IMX CREW]</div>
       </div>
     </div>
 
@@ -462,42 +432,51 @@
 
     <div class="g3d-top-actions hud-interactive">
       <button class="g3d-btn g3d-btn-gold" onclick="openLeaderboardModal()">🏆 RANKING</button>
+      <button class="g3d-btn" onclick="openLSCustomsModal()">🔧 LSC CUSTOMS</button>
       <button class="g3d-btn" onclick="openBankModal()">🏦 MAZE BANK</button>
       <button class="g3d-btn" onclick="openRealEstateModal()">🏡 DYNASTY 8</button>
       <button class="g3d-btn" onclick="openBusinessModal()">🏢 SECUROSERV</button>
-      <button class="g3d-btn" onclick="openSmartphone()">📱 CYBERDECK</button>
-      <button class="g3d-btn" onclick="openCyberShop()">🏪 TIENDA</button>
+      <button class="g3d-btn" onclick="openSmartphone()">📱 MÓVIL</button>
       <button class="g3d-btn" onclick="toggleVehicleModal()">🚗 GARAJE</button>
       <a href="https://itsparallax.me" class="g3d-btn g3d-btn-exit">⬅ SALIR</a>
     </div>
   </div>
 
-  <!-- Cockpit HUD Dashboard -->
-  <div class="g3d-cockpit">
-    <div class="cockpit-row">
-      <div class="speedo-wrap">
-        <span class="speed-num" id="g3d-speed-val">0</span>
-        <span class="speed-unit">KM/H</span>
-      </div>
-      <span style="font-size: 0.8rem; font-weight: 700; color: var(--neon-gold);" id="gear-value">GEAR 1</span>
-    </div>
+  <!-- Radar Minimap -->
+  <div class="g3d-radar-box">
+    <canvas id="ow-radar-canvas" width="140" height="140"></canvas>
+  </div>
 
+  <!-- Cockpit HUD -->
+  <div class="g3d-cockpit">
+    <div class="speedo-wrap">
+      <span class="speed-num" id="g3d-speed-val">0</span>
+      <span class="speed-unit">KM/H</span>
+    </div>
     <div class="weapon-hud-card">
       <span id="weapon-name">🔫 PISTOLA 9MM</span>
-      <span style="color: var(--neon-green);" id="weapon-ammo">[1] Puños [2] Pistola [3] Rifle</span>
+      <span style="color: var(--neon-green);" id="weapon-ammo">[1] Puños [2] Pistola [3] Rifle [Q] Radio [V] Cámara</span>
     </div>
+  </div>
+
+  <!-- Multiplayer Chat -->
+  <div class="g3d-chat-container">
+    <div class="chat-feed" id="g3d-chat-feed">
+      <div class="chat-msg"><span style="color:#ffd700;">[SISTEMA]</span> Sesión GTA Online activa con sincronización de flota y crews.</div>
+    </div>
+    <input type="text" class="chat-input" id="g3d-chat-input" placeholder="Presiona Enter para enviar [T]..." onkeydown="if(event.key==='Enter'){window.cyberCityEngine?.sendMultiplayerChatMessage(this.value); this.value=''; this.blur();}" />
+  </div>
+
+  <!-- WASTED Screen -->
+  <div class="g3d-wasted-banner" id="g3d-wasted-banner">
+    <div class="wasted-title">WASTED</div>
+    <div style="font-size: 0.9rem; color: #fff; margin-top: 10px;">REAPARECIENDO EN EL HOSPITAL CENTRAL...</div>
   </div>
 
   <!-- Mobile Touch Controls -->
-  <div class="ow-touch-joystick-wrap" id="ow-joystick-wrap">
-    <div class="ow-touch-joystick-base" id="ow-joystick-base">
-      <div class="ow-touch-joystick-knob" id="ow-joystick-knob"></div>
-    </div>
-  </div>
-
   <div class="ow-mobile-actions-cluster">
-    <button class="m-act-btn m-btn-gas" id="mbtn-gas" onclick="window.cyberCityEngine?.onKeyDown({key:'w'}); setTimeout(()=>window.cyberCityEngine?.onKeyUp({key:'w'}), 300);">⚡ GAS</button>
-    <button class="m-act-btn m-btn-brake" id="mbtn-brake" onclick="window.cyberCityEngine?.onKeyDown({key:'s'}); setTimeout(()=>window.cyberCityEngine?.onKeyUp({key:'s'}), 300);">🛑 FRENO</button>
+    <button class="m-act-btn m-btn-gas" onclick="window.cyberCityEngine?.onKeyDown({key:'w'}); setTimeout(()=>window.cyberCityEngine?.onKeyUp({key:'w'}), 300);">⚡ GAS</button>
+    <button class="m-act-btn m-btn-brake" onclick="window.cyberCityEngine?.onKeyDown({key:'s'}); setTimeout(()=>window.cyberCityEngine?.onKeyUp({key:'s'}), 300);">🛑 FRENO</button>
     <button class="m-act-btn m-btn-carjack" onclick="window.cyberCityEngine?.onKeyDown({key:'f'})">🚗 ROBAR</button>
     <button class="m-act-btn m-btn-hack" onclick="window.cyberCityEngine?.executeCurrentWatchDogsHack()">💥 HACK</button>
     <button class="m-act-btn m-btn-greet" onclick="window.cyberCityEngine?.socialGreet()">🗣️ SALUDAR</button>
@@ -506,66 +485,49 @@
     <button class="m-act-btn" style="border: 2px solid #9d4edd; color: #9d4edd;" onclick="openSmartphone()">📱 MÓVIL</button>
   </div>
 
+  <!-- Los Santos Customs (Tuning Modal) -->
+  <div class="g3d-modal" id="lsc-tuning-modal">
+    <div class="modal-head">
+      <h3 class="modal-title">🔧 LOS SANTOS CUSTOMS // TALLER DE TUNING</h3>
+      <button class="modal-close" onclick="openLSCustomsModal()">✕</button>
+    </div>
+    <div style="font-size: 0.78rem; color: #94a3b8;">
+      Personaliza tu bólido con pintura exclusiva, tubos de neón bajo chasis y mejoras de rendimiento.
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+      <button class="buy-btn" style="background: #111; color: #fff;" onclick="window.cyberCityEngine?.applyCustomTuning(0x111111, 0x00f0ff, true, true); openLSCustomsModal();">🎨 Negro Mate + Neón Cyan</button>
+      <button class="buy-btn" style="background: #dc2626; color: #fff;" onclick="window.cyberCityEngine?.applyCustomTuning(0xdc2626, 0xff0055, true, true); openLSCustomsModal();">🎨 Rojo Furia + Neón Rosa</button>
+      <button class="buy-btn" style="background: #0284c7; color: #fff;" onclick="window.cyberCityEngine?.applyCustomTuning(0x0284c7, 0x00f0ff, true, true); openLSCustomsModal();">🎨 Azul Eléctrico + Neón Cyan</button>
+      <button class="buy-btn" style="background: #eab308; color: #000;" onclick="window.cyberCityEngine?.applyCustomTuning(0xeab308, 0xffd700, true, true); openLSCustomsModal();">🎨 Oro Vinewood + Neón Dorado</button>
+    </div>
+  </div>
+
+  <!-- Smartphone & Mechanic Modal -->
+  <div class="g3d-modal" id="cyber-phone-modal">
+    <div class="modal-head">
+      <h3 class="modal-title">📱 IFRUIT OS // CONTACTOS & SERVICIOS</h3>
+      <button class="modal-close" onclick="openSmartphone()">✕</button>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+      <button class="buy-btn" style="padding: 12px; font-size: 0.7rem;" onclick="callMechanicPrompt(); openSmartphone();">🚘 Llamar al Mecánico</button>
+      <button class="buy-btn" style="padding: 12px; font-size: 0.7rem;" onclick="window.cyberCityEngine?.executeCurrentWatchDogsHack(); openSmartphone();">💥 Hackear Objetivo</button>
+      <button class="buy-btn" style="padding: 12px; font-size: 0.7rem;" onclick="window.cyberCityEngine?.socialGreet(); openSmartphone();">🗣️ Saludar Vecino</button>
+      <button class="buy-btn" style="padding: 12px; font-size: 0.7rem;" onclick="window.cyberCityEngine?.socialAntagonize(); openSmartphone();">🤬 Provocar Pelea</button>
+    </div>
+  </div>
+
   <!-- Leaderboard Modal -->
   <div class="g3d-modal" id="g3d-leaderboard-modal">
     <div class="modal-head">
-      <h3 class="modal-title">🏆 CLASIFICACIÓN GLOBAL DE CRIMINALES</h3>
+      <h3 class="modal-title">🏆 CLASIFICACIÓN GLOBAL // GTA ONLINE</h3>
       <button class="modal-close" onclick="openLeaderboardModal()">✕</button>
     </div>
-    <table class="leaderboard-table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Operador</th>
-          <th>Fortuna</th>
-          <th>Kills</th>
-          <th>Autos Robados</th>
-          <th>Hacks</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td style="color: #ffd700;">1</td>
-          <td><b>@equisde (Tú)</b></td>
-          <td id="lb-player-networth" style="color: var(--neon-gold);">$95,000</td>
-          <td id="lb-player-kills">14</td>
-          <td id="lb-player-cars">8</td>
-          <td id="lb-player-hacks">26</td>
-        </tr>
-        <tr>
-          <td>2</td>
-          <td>Marcus_Holloway</td>
-          <td>$84,200</td>
-          <td>9</td>
-          <td>5</td>
-          <td>42</td>
-        </tr>
-        <tr>
-          <td>3</td>
-          <td>Franklin_C</td>
-          <td>$78,500</td>
-          <td>18</td>
-          <td>19</td>
-          <td>3</td>
-        </tr>
-        <tr>
-          <td>4</td>
-          <td>Arthur_M</td>
-          <td>$62,000</td>
-          <td>24</td>
-          <td>2</td>
-          <td>1</td>
-        </tr>
-        <tr>
-          <td>5</td>
-          <td>DedSec_Ghost</td>
-          <td>$51,800</td>
-          <td>6</td>
-          <td>4</td>
-          <td>39</td>
-        </tr>
-      </tbody>
-    </table>
+    <div id="lb-content" style="font-size: 0.75rem; color: #cbd5e1; line-height: 1.8;">
+      <div>1. <b style="color:var(--neon-gold);">[IMX] @equisde (Tú)</b> — Fortuna: $95,000 | Kills: 16 | Autos Robados: 12</div>
+      <div>2. <b>[DED] Marcus_H</b> — Fortuna: $84,200 | Kills: 9 | Hacks: 42</div>
+      <div>3. <b>[LSPD] Franklin_C</b> — Fortuna: $78,500 | Kills: 18 | Autos: 19</div>
+      <div>4. <b>[RDR] Arthur_M</b> — Fortuna: $62,000 | Kills: 24 | Duelos: 15</div>
+    </div>
   </div>
 
   <!-- Maze Bank ATM Modal -->
@@ -575,141 +537,82 @@
       <button class="modal-close" onclick="openBankModal()">✕</button>
     </div>
     <div style="font-size: 0.82rem; color: #94a3b8; line-height: 1.6;">
-      <div>Efectivo en Billetera: <b style="color: var(--neon-gold);" id="bank-modal-cash">$1,500</b></div>
-      <div>Saldo en Cuenta Corriente: <b style="color: var(--neon-cyan);" id="bank-modal-balance">$50,000</b></div>
+      <div>Efectivo: <b style="color: var(--neon-gold);" id="bank-modal-cash">$1,500</b></div>
+      <div>Saldo Cuenta: <b style="color: var(--neon-cyan);" id="bank-modal-balance">$50,000</b></div>
     </div>
     <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-      <button class="buy-btn" onclick="depositAllCash()">📥 Depositar Todo el Efectivo</button>
+      <button class="buy-btn" onclick="depositAllCash()">📥 Depositar Efectivo</button>
       <button class="buy-btn" style="background: rgba(0, 240, 255, 0.2); color: #fff;" onclick="withdrawCash(1000)">📤 Retirar $1,000</button>
-      <button class="buy-btn" style="background: linear-gradient(135deg, #ff007f, #990033); color: #fff;" onclick="hackCorporateVault()">⚡ Ciberataque a Bóveda Central (Hackear +$3,500)</button>
+      <button class="buy-btn" style="background: linear-gradient(135deg, #ff007f, #990033); color: #fff;" onclick="hackCorporateVault()">⚡ Ciberataque a Bóveda (+$3,500)</button>
     </div>
   </div>
 
   <!-- Dynasty 8 Real Estate Modal -->
   <div class="g3d-modal" id="g3d-realestate-modal">
     <div class="modal-head">
-      <h3 class="modal-title">🏡 DYNASTY 8 — INMOBILIARIA EXCLUSIVA</h3>
+      <h3 class="modal-title">🏡 DYNASTY 8 REAL ESTATE</h3>
       <button class="modal-close" onclick="openRealEstateModal()">✕</button>
     </div>
     <div class="dynasty-card">
       <div>
         <div style="font-weight: 700; color: #fff;">Mansión Vinewood Hills</div>
-        <div style="font-size: 0.7rem; color: #94a3b8;">Helipuerto privado, piscina infinita y garaje para 10 autos.</div>
+        <div style="font-size: 0.7rem; color: #94a3b8;">Helipuerto privado y garaje para 10 autos.</div>
       </div>
       <button class="buy-btn" onclick="buyProperty('Mansión Vinewood', 25000)">$25,000</button>
     </div>
     <div class="dynasty-card">
       <div>
         <div style="font-weight: 700; color: #fff;">Suite Penthouse Eclipse</div>
-        <div style="font-size: 0.7rem; color: #94a3b8;">Piso 45 con vista panorámica a la ciudad y helipuerto en la azotea.</div>
+        <div style="font-size: 0.7rem; color: #94a3b8;">Piso 45 con helipuerto en la azotea.</div>
       </div>
       <button class="buy-btn" onclick="buyProperty('Penthouse Eclipse', 15000)">$15,000</button>
-    </div>
-    <div class="dynasty-card">
-      <div>
-        <div style="font-weight: 700; color: #fff;">Villa Suburbana Los Santos</div>
-        <div style="font-size: 0.7rem; color: #94a3b8;">Ubicada en barrio residencial, patio amplio y taller privado.</div>
-      </div>
-      <button class="buy-btn" onclick="buyProperty('Villa Suburbana', 8500)">$8,500</button>
     </div>
   </div>
 
   <!-- SecuroServ Business Modal -->
   <div class="g3d-modal" id="g3d-business-modal">
     <div class="modal-head">
-      <h3 class="modal-title">🏢 SECUROSERV — NEGOCIOS Y CONTRABANDO</h3>
+      <h3 class="modal-title">🏢 SECUROSERV — NEGOCIOS VIP</h3>
       <button class="modal-close" onclick="openBusinessModal()">✕</button>
     </div>
     <div class="dynasty-card">
       <div>
         <div style="font-weight: 700; color: #fff;">Club Nocturno Cyberpunk</div>
-        <div style="font-size: 0.7rem; color: #94a3b8;">Genera ingresos pasivos continuos: +$450/min.</div>
+        <div style="font-size: 0.7rem; color: #94a3b8;">Ingresos pasivos: +$450/min.</div>
       </div>
       <button class="buy-btn" onclick="buyBusiness('Club Nocturno', 18000)">$18,000</button>
-    </div>
-    <div class="dynasty-card">
-      <div>
-        <div style="font-weight: 700; color: #fff;">Taller Clandestino de Armas</div>
-        <div style="font-size: 0.7rem; color: #94a3b8;">Genera suministros bélicos: +$250/min.</div>
-      </div>
-      <button class="buy-btn" onclick="buyBusiness('Taller de Armas', 10000)">$10,000</button>
     </div>
     <button class="buy-btn" style="background: linear-gradient(135deg, #00ff66, #009933); color: #000; width: 100%; margin-top: 8px;" onclick="collectBusinessIncome()">💰 RECOGER GANANCIAS ACUMULADAS</button>
   </div>
 
-  <!-- Cyber-Shop Modal -->
-  <div class="g3d-modal" id="cyber-shop-modal">
-    <div class="modal-head">
-      <h3 class="modal-title">🏪 MERCADO NEGRO CIBERNÉTICO</h3>
-      <button class="modal-close" onclick="openCyberShop()">✕</button>
-    </div>
-    <div class="dynasty-card">
-      <div>
-        <div style="font-weight: 700; color: #fff;">⛽ Bidón de Combustible (+40%)</div>
-        <div style="font-size: 0.7rem; color: #94a3b8;">Combustible sintético de alta densidad.</div>
-      </div>
-      <button class="buy-btn" onclick="buyShopItem('fuel_can')">30₮</button>
-    </div>
-    <div class="dynasty-card">
-      <div>
-        <div style="font-weight: 700; color: #fff;">🔋 Powerbank Cuántico (+100%)</div>
-        <div style="font-size: 0.7rem; color: #94a3b8;">Batería para smartphone / ciberdeck.</div>
-      </div>
-      <button class="buy-btn" onclick="buyShopItem('powerbank')">25₮</button>
-    </div>
-    <div class="dynasty-card">
-      <div>
-        <div style="font-weight: 700; color: #fff;">🛡️ Blindaje Nanotecnológico (+100%)</div>
-        <div style="font-size: 0.7rem; color: #94a3b8;">Reparación y chaleco antibalas.</div>
-      </div>
-      <button class="buy-btn" onclick="buyShopItem('armor')">75₮</button>
-    </div>
-  </div>
-
-  <!-- Smartphone Cyberdeck Modal -->
-  <div class="g3d-modal" id="cyber-phone-modal">
-    <div class="modal-head">
-      <h3 class="modal-title">📱 CYBERDECK OS v5.0</h3>
-      <button class="modal-close" onclick="openSmartphone()">✕</button>
-    </div>
-    <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px;">
-      Operador: <b style="color: #fff;">@equisde</b> &middot; Alianza: <b style="color: var(--neon-gold);">IMXNOOBX</b>
-    </div>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-      <button class="buy-btn" style="padding: 12px; font-size: 0.7rem;" onclick="window.cyberCityEngine?.triggerCityBlackout?.(); openSmartphone();">⚡ Blackout de Ciudad</button>
-      <button class="buy-btn" style="padding: 12px; font-size: 0.7rem;" onclick="window.cyberCityEngine?.executeCurrentWatchDogsHack(); openSmartphone();">💥 Hackear Objetivo</button>
-      <button class="buy-btn" style="padding: 12px; font-size: 0.7rem;" onclick="window.cyberCityEngine?.socialGreet(); openSmartphone();">🗣️ Saludar Vecino</button>
-      <button class="buy-btn" style="padding: 12px; font-size: 0.7rem;" onclick="window.cyberCityEngine?.socialAntagonize(); openSmartphone();">🤬 Provocar Pelea</button>
-    </div>
-  </div>
-
-  <!-- Hack Feed Toasts -->
   <div class="ow-hack-feed" id="ow-hack-feed"></div>
 
   <script src="cyber_city_3d.js"></script>
   <script>
     function toggleVehicleModal() {
-      const types = ['gta-sports-car', 'gta-police-car', 'helicopter', 'jet-fighter', 'motorbike', 'gta-bus', 'sedan', 'suv', 'foot', 'swat'];
-      const next = prompt('Selecciona Vehículo o Personaje:\n- gta-sports-car (Deportivo GT)\n- gta-police-car (Patrulla LSPD)\n- helicopter (Helicóptero Maverick)\n- jet-fighter (Caza Militar F-15/Lazer)\n- motorbike (Motocicleta)\n- gta-bus (Autobús)\n- sedan (Sedán)\n- suv (SUV)\n- foot (Gángster a pie)\n- swat (Agente SWAT a pie)', window.cyberCityEngine?.player?.vehicleType || 'gta-sports-car');
+      const types = ['gta-sports-car', 'gta-police-car', 'helicopter', 'jet-fighter', 'motorbike', 'gta-bus', 'sedan', 'suv', 'truck', 'ambulance', 'speedboat', 'foot'];
+      const next = prompt('Selecciona Vehículo GTA Online:\n- gta-sports-car (Deportivo GT)\n- gta-police-car (Patrulla LSPD)\n- helicopter (Helicóptero Maverick)\n- jet-fighter (Caza Militar Lazer)\n- motorbike (Motocicleta)\n- gta-bus (Autobús)\n- sedan (Sedán)\n- suv (SUV)\n- truck (Camión)\n- ambulance (Ambulancia)\n- speedboat (Lancha)\n- foot (A pie)', window.cyberCityEngine?.player?.vehicleType || 'gta-sports-car');
       if (next && window.cyberCityEngine) {
         window.cyberCityEngine.applyVehicleMesh(next.trim().toLowerCase());
       }
     }
 
+    function callMechanicPrompt() {
+      const v = prompt('Mecánico: "¿Qué vehículo quieres que te entregue?"\n- gta-sports-car\n- motorbike\n- gta-police-car\n- suv\n- helicopter', 'gta-sports-car');
+      if (v && window.cyberCityEngine) {
+        window.cyberCityEngine.callMechanicDelivery(v.trim().toLowerCase());
+      }
+    }
+
+    function openLSCustomsModal() {
+      const m = document.getElementById('lsc-tuning-modal');
+      if (!m) return;
+      m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+    }
+
     function openLeaderboardModal() {
       const m = document.getElementById('g3d-leaderboard-modal');
       if (!m) return;
-      if (window.cyberCityEngine) {
-        const p = window.cyberCityEngine.player;
-        const nwEl = document.getElementById('lb-player-networth');
-        const kEl = document.getElementById('lb-player-kills');
-        const cEl = document.getElementById('lb-player-cars');
-        const hEl = document.getElementById('lb-player-hacks');
-        if (nwEl) nwEl.textContent = `$${(p.cash + p.bank).toLocaleString()}`;
-        if (kEl) kEl.textContent = p.stats.kills || 0;
-        if (cEl) cEl.textContent = p.stats.carsStolen || 0;
-        if (hEl) hEl.textContent = p.stats.hacks || 0;
-      }
       m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
     }
 
@@ -730,7 +633,7 @@
       if (!window.cyberCityEngine) return;
       const p = window.cyberCityEngine.player;
       p.bank += p.cash;
-      window.cyberCityEngine.addHackFeedToast(`🏦 Depositaste $${p.cash.toLocaleString()} en tu cuenta de Maze Bank.`);
+      window.cyberCityEngine.addHackFeedToast(`🏦 Depositaste $${p.cash.toLocaleString()} en Maze Bank.`);
       p.cash = 0;
       openBankModal();
     }
@@ -741,9 +644,9 @@
       if (p.bank >= amt) {
         p.bank -= amt;
         p.cash += amt;
-        window.cyberCityEngine.addHackFeedToast(`🏧 Retiraste $${amt.toLocaleString()} del cajero.`);
+        window.cyberCityEngine.addHackFeedToast(`🏧 Retiraste $${amt.toLocaleString()}.`);
       } else {
-        alert('Fondos insuficientes en tu cuenta bancaria.');
+        alert('Fondos bancarios insuficientes.');
       }
       openBankModal();
     }
@@ -751,15 +654,12 @@
     function hackCorporateVault() {
       if (!window.cyberCityEngine) return;
       const p = window.cyberCityEngine.player;
-      if (p.battery < 20) {
-        alert('Batería insuficiente para hackear la bóveda central.');
-        return;
-      }
+      if (p.battery < 20) { alert('Batería insuficiente.'); return; }
       p.battery -= 20;
       p.cash += 3500;
       window.cyberCityEngine.audio?.playCashChime();
       window.cyberCityEngine.addWantedHeat(2);
-      window.cyberCityEngine.addHackFeedToast('⚡ BÓVEDA CORPORATIVA HACKEADA: +$3,500 en efectivo robados.');
+      window.cyberCityEngine.addHackFeedToast('⚡ BÓVEDA HACKEADA: +$3,500.');
       openBankModal();
     }
 
@@ -773,14 +673,14 @@
       if (!window.cyberCityEngine) return;
       const p = window.cyberCityEngine.player;
       if (p.bank + p.cash >= price) {
-        if (p.bank >= price) { p.bank -= price; }
+        if (p.bank >= price) p.bank -= price;
         else { const rem = price - p.bank; p.bank = 0; p.cash -= rem; }
         p.properties.push(name);
         window.cyberCityEngine.audio?.playCashChime();
-        window.cyberCityEngine.addHackFeedToast(`🏡 ¡Felicitaciones! Has adquirido ${name}.`);
+        window.cyberCityEngine.addHackFeedToast(`🏡 ¡Has adquirido ${name}!`);
         openRealEstateModal();
       } else {
-        alert(`Fondos insuficientes para comprar ${name} ($${price.toLocaleString()}).`);
+        alert(`Fondos insuficientes para ${name}.`);
       }
     }
 
@@ -794,60 +694,31 @@
       if (!window.cyberCityEngine) return;
       const p = window.cyberCityEngine.player;
       if (p.bank + p.cash >= price) {
-        if (p.bank >= price) { p.bank -= price; }
+        if (p.bank >= price) p.bank -= price;
         else { const rem = price - p.bank; p.bank = 0; p.cash -= rem; }
         p.businesses.push(name);
         window.cyberCityEngine.audio?.playCashChime();
-        window.cyberCityEngine.addHackFeedToast(`🏢 ¡Negocio adquirido! ${name} ya está produciendo.`);
+        window.cyberCityEngine.addHackFeedToast(`🏢 ¡Negocio adquirido! ${name}`);
         openBusinessModal();
       } else {
-        alert(`Fondos insuficientes para adquirir ${name} ($${price.toLocaleString()}).`);
+        alert(`Fondos insuficientes para ${name}.`);
       }
     }
 
     function collectBusinessIncome() {
       if (!window.cyberCityEngine) return;
       const p = window.cyberCityEngine.player;
-      const income = (p.businesses.length > 0) ? p.businesses.length * 1200 : 800;
-      p.cash += income;
+      const inc = (p.businesses.length > 0) ? p.businesses.length * 1200 : 800;
+      p.cash += inc;
       window.cyberCityEngine.audio?.playCashChime();
-      window.cyberCityEngine.addHackFeedToast(`💰 Ganancias recaudadas: +$${income.toLocaleString()} de tus empresas.`);
+      window.cyberCityEngine.addHackFeedToast(`💰 +$${inc.toLocaleString()} recolectados.`);
       openBusinessModal();
     }
 
-    function openCyberShop() {
-      const modal = document.getElementById('cyber-shop-modal');
-      if (!modal) return;
-      modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
-    }
-
-    function buyShopItem(item) {
-      if (!window.cyberCityEngine) return;
-      const p = window.cyberCityEngine.player;
-      if (item === 'fuel_can') {
-        if (p.cash < 30) { alert('Fondos insuficientes (necesitas $30).'); return; }
-        p.cash -= 30;
-        p.fuel = Math.min(100, p.fuel + 40);
-        window.cyberCityEngine.addHackFeedToast('⛽ Bidón aplicado: +40% combustible.');
-      } else if (item === 'powerbank') {
-        if (p.cash < 25) { alert('Fondos insuficientes (necesitas $25).'); return; }
-        p.cash -= 25;
-        p.battery = 100;
-        window.cyberCityEngine.addHackFeedToast('🔋 Powerbank cuántico: Batería móvil al 100%.');
-      } else if (item === 'armor') {
-        if (p.cash < 75) { alert('Fondos insuficientes (necesitas $75).'); return; }
-        p.cash -= 75;
-        p.armor = 100;
-        p.hp = 100;
-        window.cyberCityEngine.addHackFeedToast('🛡️ Blindaje restaurado al 100%.');
-      }
-      openCyberShop();
-    }
-
     function openSmartphone() {
-      const modal = document.getElementById('cyber-phone-modal');
-      if (!modal) return;
-      modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+      const m = document.getElementById('cyber-phone-modal');
+      if (!m) return;
+      m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
     }
 
     window.addEventListener('DOMContentLoaded', () => {
