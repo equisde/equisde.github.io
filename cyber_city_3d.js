@@ -692,6 +692,43 @@
       this.gasStations = [];
       this.gasStationMeshes = [];
 
+      // CCTV Surveillance Network (Watch Dogs)
+      this.cctvCameras = [
+        { id: 'cam_downtown', name: 'CAM-01 // DOWNTOWN FINANCIAL', x: -35, y: 13, z: 25, yaw: 0.8, pitch: -0.3 },
+        { id: 'cam_bank', name: 'CAM-02 // MAZE BANK TOWER', x: 25, y: 17, z: -35, yaw: -1.2, pitch: -0.4 },
+        { id: 'cam_gas', name: 'CAM-03 // RON OIL DOWNTOWN', x: -65, y: 11, z: 12, yaw: 2.4, pitch: -0.25 },
+        { id: 'cam_vinewood', name: 'CAM-04 // VINEWOOD BLVD', x: 75, y: 13, z: 65, yaw: -0.6, pitch: -0.3 },
+        { id: 'cam_rancho', name: 'CAM-05 // RANCHO VAGOS TURF', x: -70, y: 12, z: 125, yaw: 1.5, pitch: -0.35 },
+        { id: 'cam_marina', name: 'CAM-06 // DEL PERRO MARINA', x: 135, y: 13, z: 55, yaw: -2.1, pitch: -0.28 }
+      ];
+      this.activeCCTV = null;
+      this.cctvIndex = 0;
+      this.cctvZoom = 1.0;
+      this.cctvMeshes = [];
+
+      // 24/7 Store Robbery System
+      this.stores = [];
+      this.activeRobbery = null;
+
+      // Factions & Turf Wars (4 Gangs)
+      this.factions = {
+        vagos: { name: 'Los Santos Vagos', color: '#eab308', colorHex: 0xeab308, district: 'RANCHO & EL BURRO', x: -80, z: 110, control: 100 },
+        families: { name: 'The Families', color: '#22c55e', colorHex: 0x22c55e, district: 'CHAMBERLAIN HILLS', x: 0, z: 80, control: 100 },
+        sindicato: { name: 'Sindicato Portuario', color: '#06b6d4', colorHex: 0x06b6d4, district: 'DEL PERRO & DOCKS', x: 120, z: 60, control: 100 },
+        merryweather: { name: 'Merryweather Tactical', color: '#ef4444', colorHex: 0xef4444, district: 'VINEWOOD & FINANCIAL', x: 60, z: -60, control: 100 }
+      };
+      this.playerOwnedTurfs = [];
+      this.turfWarTimer = 0;
+      this.activeTurfWar = null;
+
+      // Destructible Hydrants & Pressurized Water
+      this.hydrants = [];
+      this.waterGeysers = [];
+
+      // Dead Eye / Focus Mode (RDR2)
+      this.isDeadEye = false;
+      this.deadEyeMarked = [];
+
       this.cameraMode = 0;
       this.isWasted = false;
       this.isPassiveMode = false;
@@ -847,6 +884,10 @@
       this.setupModelRegistry();
       this.buildRealisticCity();
       this.setupGasStations();
+      this.setupCCTVNetwork();
+      this.setupStores();
+      this.setupDestructibleHydrants();
+      this.setupGangTurfs();
       this.setupFullFleetNPCTraffic();
       this.setupPedestrianSystem();
       this.setupEasterEggs();
@@ -892,6 +933,405 @@
       this.scene.environment = pmrem.fromScene(envScene).texture;
 
       this.setupDynamicAtmosphere();
+    }
+
+    setupCCTVNetwork() {
+      this.cctvMeshes = [];
+      const camBodyGeo = new THREE.BoxGeometry(0.6, 0.45, 0.85);
+      const camBodyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.8 });
+      const lensGeo = new THREE.CylinderGeometry(0.18, 0.22, 0.4, 16);
+      const lensMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+      const ledMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
+
+      this.cctvCameras.forEach((cam, idx) => {
+        const group = new THREE.Group();
+        group.position.set(cam.x, cam.y, cam.z);
+        group.rotation.y = cam.yaw;
+
+        const body = new THREE.Mesh(camBodyGeo, camBodyMat);
+        body.castShadow = true;
+        group.add(body);
+
+        const lens = new THREE.Mesh(lensGeo, lensMat);
+        lens.rotation.x = Math.PI / 2;
+        lens.position.set(0, 0, 0.5);
+        group.add(lens);
+
+        const led = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), ledMat);
+        led.position.set(0.22, 0.16, 0.42);
+        group.add(led);
+
+        // Mount arm
+        const armGeo = new THREE.CylinderGeometry(0.06, 0.06, 1.2, 8);
+        const arm = new THREE.Mesh(armGeo, camBodyMat);
+        arm.position.set(0, -0.6, -0.3);
+        group.add(arm);
+
+        this.scene.add(group);
+        this.cctvMeshes.push(group);
+      });
+    }
+
+    enterCCTV(index = 0) {
+      if (this.cctvCameras.length === 0) return;
+      this.cctvIndex = (index + this.cctvCameras.length) % this.cctvCameras.length;
+      this.activeCCTV = this.cctvCameras[this.cctvIndex];
+      this.cctvZoom = 1.0;
+
+      const overlay = document.getElementById('cctv-overlay');
+      if (overlay) overlay.style.display = 'block';
+
+      const nameEl = document.getElementById('cctv-cam-name');
+      if (nameEl) nameEl.textContent = this.activeCCTV.name;
+
+      this.audio.playHackChirp();
+      this.addHackFeedToast(`📹 CONECTADO A CÁMARA ctOS: ${this.activeCCTV.name}`);
+    }
+
+    hopCCTV() {
+      if (!this.activeCCTV) return;
+      this.enterCCTV(this.cctvIndex + 1);
+    }
+
+    exitCCTV() {
+      if (!this.activeCCTV) return;
+      this.activeCCTV = null;
+      const overlay = document.getElementById('cctv-overlay');
+      if (overlay) overlay.style.display = 'none';
+
+      this.camera.fov = 65;
+      this.camera.updateProjectionMatrix();
+      this.audio.playHackChirp();
+      this.addHackFeedToast('📹 DESCONECTADO DE RED CCTV ctOS // VISTA RETORNADA');
+    }
+
+    setupStores() {
+      this.stores = [
+        {
+          id: 'store_downtown',
+          name: '24/7 DOWNTOWN SUPERMARKET',
+          x: -65,
+          z: -16,
+          cashier: {
+            x: -65,
+            z: -16,
+            intimidation: 0,
+            state: 'IDLE',
+            cashLoot: 2400,
+            hasDroppedLoot: false,
+            mesh: null
+          }
+        },
+        {
+          id: 'store_vinewood',
+          name: '24/7 VINEWOOD CONVENIENCE',
+          x: 75,
+          z: -86,
+          cashier: {
+            x: 75,
+            z: -86,
+            intimidation: 0,
+            state: 'IDLE',
+            cashLoot: 3100,
+            hasDroppedLoot: false,
+            mesh: null
+          }
+        },
+        {
+          id: 'store_docks',
+          name: '24/7 DEL PERRO HARBOR STORE',
+          x: -65,
+          z: 124,
+          cashier: {
+            x: -65,
+            z: 124,
+            intimidation: 0,
+            state: 'IDLE',
+            cashLoot: 1950,
+            hasDroppedLoot: false,
+            mesh: null
+          }
+        }
+      ];
+
+      this.stores.forEach(store => {
+        // Cashier NPC behind counter
+        const cashierMesh = this.instantiateGLB('character-male', 2.0, true);
+        cashierMesh.position.set(store.cashier.x, 0, store.cashier.z);
+        this.scene.add(cashierMesh);
+        store.cashier.mesh = cashierMesh;
+
+        // Counter Desk
+        const counterGeo = new THREE.BoxGeometry(4.0, 1.1, 1.2);
+        const counterMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6 });
+        const counter = new THREE.Mesh(counterGeo, counterMat);
+        counter.position.set(store.cashier.x, 0.55, store.cashier.z + 1.2);
+        counter.castShadow = true;
+        this.scene.add(counter);
+
+        // Cash Register
+        const regGeo = new THREE.BoxGeometry(0.8, 0.5, 0.6);
+        const regMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.8 });
+        const reg = new THREE.Mesh(regGeo, regMat);
+        reg.position.set(store.cashier.x, 1.35, store.cashier.z + 1.2);
+        this.scene.add(reg);
+      });
+    }
+
+    updateStoreRobberies(delta) {
+      if (this.isWasted) return;
+      const px = this.player.x, pz = this.player.z;
+      const robberyHud = document.getElementById('store-robbery-hud');
+      const robberyFill = document.getElementById('robbery-bar-fill');
+      const robberyVal = document.getElementById('robbery-intimidation-val');
+      const robberyStatus = document.getElementById('robbery-status-text');
+
+      let inStoreZone = false;
+
+      for (let store of this.stores) {
+        const c = store.cashier;
+        const dist = Math.hypot(px - c.x, pz - c.z);
+
+        if (dist < 6.5) {
+          inStoreZone = true;
+
+          // Check if player has a firearm drawn
+          const hasWeaponDrawn = (this.player.weaponSlot === 2 || this.player.weaponSlot === 3);
+
+          if (hasWeaponDrawn && c.state !== 'ROBBED') {
+            if (robberyHud) robberyHud.style.display = 'block';
+
+            // Increase intimidation rapidly when aiming
+            c.intimidation = Math.min(100, c.intimidation + delta * 38);
+
+            if (robberyFill) robberyFill.style.width = `${c.intimidation}%`;
+            if (robberyVal) robberyVal.textContent = `${Math.round(c.intimidation)}%`;
+
+            if (c.mesh) {
+              c.mesh.position.y = 0.15;
+              c.mesh.rotation.y = Math.atan2(px - c.x, pz - c.z);
+            }
+
+            if (c.intimidation >= 100 && !c.hasDroppedLoot) {
+              c.hasDroppedLoot = true;
+              c.state = 'ROBBED';
+
+              // Drop cash loot bag
+              this.spawnLootBag(c.x, c.z + 1.2, c.cashLoot);
+              this.audio.playCashChime();
+
+              // Silent Alarm triggers 2 Wanted Stars
+              this.addWantedHeat(2);
+              this.addHackFeedToast(`🚨 ${store.name}: ¡El cajero pulsó la alarma silenciosa! Patrullas en camino.`);
+              if (robberyStatus) robberyStatus.textContent = '¡BOTÍN EN EL MOSTRADOR! CÓGELO Y HUYE.';
+            }
+          } else if (c.state === 'ROBBED') {
+            if (robberyStatus) robberyStatus.textContent = 'TIENDA ROBADA. POLICÍA EN CAMINO.';
+          } else {
+            // Weapon put away - intimidation decays
+            c.intimidation = Math.max(0, c.intimidation - delta * 20);
+            if (robberyFill) robberyFill.style.width = `${c.intimidation}%`;
+            if (robberyVal) robberyVal.textContent = `${Math.round(c.intimidation)}%`;
+          }
+          break;
+        }
+      }
+
+      if (!inStoreZone && robberyHud) {
+        robberyHud.style.display = 'none';
+      }
+    }
+
+    setupDestructibleHydrants() {
+      this.hydrants = [
+        { x: -18, z: -25, broken: false, mesh: null },
+        { x: 18, z: 25, broken: false, mesh: null },
+        { x: -55, z: 50, broken: false, mesh: null },
+        { x: 55, z: -50, broken: false, mesh: null },
+        { x: -88, z: 88, broken: false, mesh: null },
+        { x: 88, z: -88, broken: false, mesh: null },
+        { x: -18, z: 120, broken: false, mesh: null },
+        { x: 120, z: -18, broken: false, mesh: null }
+      ];
+
+      const baseGeo = new THREE.CylinderGeometry(0.24, 0.28, 0.9, 12);
+      const topGeo = new THREE.SphereGeometry(0.26, 12, 12);
+      const nozzleGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.7, 8);
+      const hydMat = new THREE.MeshStandardMaterial({ color: 0xd92626, roughness: 0.35, metalness: 0.6 });
+
+      this.hydrants.forEach(h => {
+        const group = new THREE.Group();
+        group.position.set(h.x, 0.45, h.z);
+
+        const base = new THREE.Mesh(baseGeo, hydMat);
+        base.castShadow = true;
+        group.add(base);
+
+        const top = new THREE.Mesh(topGeo, hydMat);
+        top.position.y = 0.45;
+        group.add(top);
+
+        const nozzle = new THREE.Mesh(nozzleGeo, hydMat);
+        nozzle.rotation.z = Math.PI / 2;
+        nozzle.position.y = 0.25;
+        group.add(nozzle);
+
+        this.scene.add(group);
+        h.mesh = group;
+      });
+    }
+
+    burstHydrant(h) {
+      if (h.broken) return;
+      h.broken = true;
+
+      if (h.mesh) {
+        h.mesh.position.y = 1.4;
+        h.mesh.rotation.x = Math.PI / 3;
+        h.mesh.rotation.z = Math.PI / 4;
+      }
+
+      // Create pressurized vertical water geyser
+      const count = 450;
+      const geo = new THREE.BufferGeometry();
+      const pos = new Float32Array(count * 3);
+      const vels = new Float32Array(count * 3);
+
+      for (let i = 0; i < count; i++) {
+        pos[i * 3] = h.x + (Math.random() - 0.5) * 0.4;
+        pos[i * 3 + 1] = Math.random() * 8.0;
+        pos[i * 3 + 2] = h.z + (Math.random() - 0.5) * 0.4;
+
+        vels[i * 3] = (Math.random() - 0.5) * 2.2;
+        vels[i * 3 + 1] = 12 + Math.random() * 8;
+        vels[i * 3 + 2] = (Math.random() - 0.5) * 2.2;
+      }
+
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      const mat = new THREE.PointsMaterial({
+        color: 0x93c5fd,
+        size: 0.55,
+        transparent: true,
+        opacity: 0.8,
+        depthWrite: false
+      });
+
+      const points = new THREE.Points(geo, mat);
+      this.scene.add(points);
+
+      this.waterGeysers.push({
+        points,
+        geo,
+        pos,
+        vels,
+        originX: h.x,
+        originZ: h.z,
+        timer: 35
+      });
+
+      this.addHackFeedToast('🌊 ¡BOCA DE INCENDIO DESTROZADA! Géiser de agua presurizada.');
+    }
+
+    updateWaterGeysers(delta) {
+      for (let i = this.waterGeysers.length - 1; i >= 0; i--) {
+        const g = this.waterGeysers[i];
+        g.timer -= delta;
+
+        const pos = g.pos;
+        const vels = g.vels;
+        const count = pos.length / 3;
+
+        for (let j = 0; j < count; j++) {
+          pos[j * 3] += vels[j * 3] * delta;
+          pos[j * 3 + 1] += vels[j * 3 + 1] * delta;
+          pos[j * 3 + 2] += vels[j * 3 + 2] * delta;
+
+          vels[j * 3 + 1] -= delta * 24;
+
+          if (pos[j * 3 + 1] < 0.1) {
+            pos[j * 3] = g.originX + (Math.random() - 0.5) * 0.4;
+            pos[j * 3 + 1] = 0.2;
+            pos[j * 3 + 2] = g.originZ + (Math.random() - 0.5) * 0.4;
+            vels[j * 3 + 1] = 14 + Math.random() * 8;
+          }
+        }
+
+        g.geo.attributes.position.needsUpdate = true;
+
+        if (g.timer <= 0) {
+          this.scene.remove(g.points);
+          this.waterGeysers.splice(i, 1);
+        }
+      }
+    }
+
+    setupGangTurfs() {
+      const gangConfigs = [
+        { faction: 'vagos', x: -85, z: 105, weapon: 'weapon-pistol' },
+        { faction: 'vagos', x: -75, z: 120, weapon: 'weapon-rifle' },
+        { faction: 'families', x: 5, z: 85, weapon: 'weapon-pistol' },
+        { faction: 'families', x: -10, z: 75, weapon: 'weapon-rifle' },
+        { faction: 'sindicato', x: 125, z: 55, weapon: 'weapon-pistol' },
+        { faction: 'sindicato', x: 115, z: 70, weapon: 'weapon-rifle' },
+        { faction: 'merryweather', x: 65, z: -55, weapon: 'weapon-rifle' },
+        { faction: 'merryweather', x: 55, z: -70, weapon: 'weapon-rifle' }
+      ];
+
+      gangConfigs.forEach(g => {
+        const ped = {
+          mesh: this.instantiateGLB('char-gangster', 2.0, true),
+          x: g.x,
+          z: g.z,
+          faction: g.faction,
+          hp: 120,
+          isDead: false,
+          isCrawling: false,
+          isDisarmed: false,
+          speed: 1.2,
+          dir: Math.random() * Math.PI * 2
+        };
+        ped.mesh.position.set(g.x, 0, g.z);
+        this.scene.add(ped.mesh);
+        this.npcPedestrians.push(ped);
+      });
+    }
+
+    triggerTurfWar(factionKey) {
+      if (this.activeTurfWar) return;
+      this.activeTurfWar = factionKey;
+
+      const f = this.factions[factionKey];
+      const banner = document.getElementById('turf-war-banner');
+      const tag = document.getElementById('turf-war-faction-tag');
+
+      if (banner) {
+        banner.style.display = 'block';
+        if (tag) tag.innerHTML = `Distrito: <b>${f.district}</b> (${f.name})<br/>Elimina los refuerzos para capturar el territorio.`;
+        setTimeout(() => { banner.style.display = 'none'; }, 6000);
+      }
+
+      this.addHackFeedToast(`⚔️ GUERRA DE BANDAS INICIADA: ${f.name}`);
+      this.addWantedHeat(1);
+    }
+
+    toggleDeadEye() {
+      this.isDeadEye = !this.isDeadEye;
+      const overlay = document.getElementById('dead-eye-overlay');
+      if (overlay) overlay.style.display = this.isDeadEye ? 'block' : 'none';
+
+      if (this.isDeadEye) {
+        this.audio.playHackChirp();
+        this.addHackFeedToast('🎯 DEAD EYE / FOCUS ACTIVADO // CÁMARA LENTA (0.25x)');
+      } else {
+        if (this.deadEyeMarked.length > 0) {
+          this.deadEyeMarked.forEach(target => {
+            this.killPedestrian(target, 'dead_eye');
+          });
+          this.deadEyeMarked = [];
+          this.audio.playGunshot(true);
+        }
+        this.addHackFeedToast('🎯 DEAD EYE DESACTIVADO // DISPAROS EJECUTADOS');
+      }
     }
 
     setupModelRegistry() {
@@ -1625,10 +2065,16 @@
 
       const target = this.getClosestPedestrian(30);
       if (target && !target.isDead) {
+        const rand = Math.random();
+        const hitZone = (this.isDeadEye || rand < 0.22) ? 'head' : (rand < 0.48 ? 'leg' : (rand < 0.70 ? 'arm' : 'torso'));
         target.hp -= (isRifle ? 75 : 45);
-        this.bloodPool.spawnBurst(target.mesh.position.clone().setY(1.2), null, 20);
+        this.bloodPool.spawnBurst(target.mesh.position.clone().setY(hitZone === 'head' ? 1.7 : (hitZone === 'leg' ? 0.35 : 1.1)), null, 20);
         this.addWantedHeat(1);
-        if (target.hp <= 0) this.killPedestrian(target);
+        if (target.hp <= 0 || hitZone === 'head') {
+          this.killPedestrian(target, hitZone);
+        } else if (hitZone === 'leg' || hitZone === 'arm') {
+          this.killPedestrian(target, hitZone);
+        }
       }
     }
 
@@ -1646,14 +2092,45 @@
       });
     }
 
-    killPedestrian(target) {
+    killPedestrian(target, hitZone = 'torso') {
+      if (target.isDead) return;
+
+      if (hitZone === 'leg' && !target.isCrawling) {
+        // Anatomical Damage: Leg shot causes collapse & crawling
+        target.isCrawling = true;
+        target.hp = Math.max(15, target.hp - 45);
+        if (target.mesh) {
+          target.mesh.rotation.x = Math.PI / 2.3;
+          target.mesh.position.y = 0.25;
+        }
+        target.walkSpeed = 0.6;
+        this.bloodPool.spawnBurst(target.mesh.position.clone().setY(0.3), null, 14);
+        this.addHackFeedToast('💥 ¡DISPARO EN LA PIERNA! El sospechoso cae y gatea en el suelo.');
+        return;
+      }
+
+      if (hitZone === 'arm' && !target.isDisarmed) {
+        // Anatomical Damage: Arm shot disarms weapon
+        target.isDisarmed = true;
+        target.hp = Math.max(20, target.hp - 35);
+        this.spawnLootBag(target.mesh.position.x, target.mesh.position.z, 250);
+        this.bloodPool.spawnBurst(target.mesh.position.clone().setY(1.1), null, 10);
+        this.addHackFeedToast('💥 ¡DESARME! Disparo en el brazo hace caer su arma.');
+        return;
+      }
+
       target.isDead = true;
       target.mesh.rotation.x = Math.PI / 2;
       target.mesh.position.y = 0.2;
       this.player.stats.kills++;
-      this.addRP(100, 'Baja enemiga');
-      this.spawnLootBag(target.mesh.position.x, target.mesh.position.z, target.cash);
-      this.addHackFeedToast(`☠️ Eliminaste a ${target.name}. Soltó $${target.cash} de botín.`);
+      const isHead = (hitZone === 'head');
+      this.addRP(isHead ? 200 : 100, isHead ? '💀 HEADSHOT (+200 RP)' : 'Baja enemiga');
+      this.spawnLootBag(target.mesh.position.x, target.mesh.position.z, target.cash || 80);
+      this.addHackFeedToast(`☠️ Eliminaste a ${target.name || 'Enemigo'}. ${isHead ? '¡HEADSHOT CRÍTICO!' : ''}`);
+
+      if (target.faction) {
+        this.triggerTurfWar(target.faction);
+      }
     }
 
     spawnLootBag(x, z, amount) {
@@ -1875,6 +2352,22 @@
       if (k === '3') { this.player.weaponSlot = 3; this.addHackFeedToast('💥 Equipaste: Rifle de Asalto'); }
 
       // Radio Station [Q]
+      // CCTV Hopping [C]
+      if (k === 'c') {
+        if (this.activeCCTV) this.hopCCTV();
+        else this.enterCCTV(0);
+      }
+
+      // Exit CCTV [Escape] or [X]
+      if (k === 'escape' || k === 'x') {
+        if (this.activeCCTV) this.exitCCTV();
+      }
+
+      // RDR2 Dead Eye / Focus [CapsLock]
+      if (k === 'capslock') {
+        this.toggleDeadEye();
+      }
+
       if (k === 'q') {
         const name = this.audio.cycleRadioStation();
         this.addHackFeedToast(`📻 [RADIO] ${name} ♫`);
@@ -1979,6 +2472,18 @@
       p.x += Math.sin(p.yaw) * p.speed * delta;
       p.z += Math.cos(p.yaw) * p.speed * delta;
       p.stats.distance += Math.abs(p.speed * delta);
+
+      // Destructible Hydrant Collisions
+      if (this.hydrants) {
+        for (let h of this.hydrants) {
+          if (!h.broken && Math.hypot(p.x - h.x, p.z - h.z) < 2.6) {
+            if (p.inVehicle && Math.abs(p.speed) > 4.5) {
+              this.burstHydrant(h);
+              p.speed *= 0.85; // Kinetic impact resistance
+            }
+          }
+        }
+      }
 
       // Chassis Suspension Simulation (Roll & Pitch)
       if (p.inVehicle && this.playerChassis) {
@@ -2088,6 +2593,21 @@
 
       this.npcPedestrians.forEach(npc => {
         if (npc.isDead) return;
+
+        // Vehicle impact ragdoll
+        if (this.player.inVehicle && Math.abs(this.player.speed) > 4.5) {
+          const carDist = Math.hypot(this.player.x - npc.mesh.position.x, this.player.z - npc.mesh.position.z);
+          if (carDist < 2.6) {
+            this.bloodPool.spawnBurst(npc.mesh.position.clone().setY(0.8), null, 24);
+            npc.mesh.position.y += 1.6;
+            npc.mesh.rotation.x = Math.PI / 2.2;
+            this.killPedestrian(npc, 'torso');
+            this.addWantedHeat(1);
+            this.addHackFeedToast('🚗 ¡ATROPELLO! Peatón lanzado sobre el capó.');
+            return;
+          }
+        }
+
         if (npc.isAlly) {
           const dx = this.player.x - npc.mesh.position.x;
           const dz = this.player.z - npc.mesh.position.z;
@@ -2118,6 +2638,25 @@
 
     updateCamera() {
       if (!this.camera || !this.playerGroup) return;
+
+      if (this.activeCCTV) {
+        this.camera.position.set(this.activeCCTV.x, this.activeCCTV.y, this.activeCCTV.z);
+        const lookTarget = new THREE.Vector3(
+          this.activeCCTV.x + Math.sin(this.activeCCTV.yaw) * 30,
+          this.activeCCTV.y + this.activeCCTV.pitch * 30,
+          this.activeCCTV.z + Math.cos(this.activeCCTV.yaw) * 30
+        );
+        this.camera.lookAt(lookTarget);
+        this.camera.fov = 65 / (this.cctvZoom || 1.0);
+        this.camera.updateProjectionMatrix();
+
+        const tsEl = document.getElementById('cctv-cam-timestamp');
+        if (tsEl) {
+          const d = new Date();
+          tsEl.textContent = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+        }
+        return;
+      }
 
       if (this.isWasted) {
         this.camera.position.lerp(new THREE.Vector3(this.player.x, 32, this.player.z + 10), 0.04);
@@ -2160,6 +2699,22 @@
       ctx.beginPath();
       ctx.arc(cx, cy, cx - 2, 0, Math.PI * 2);
       ctx.fill();
+
+      // Gang Territory Sectors on Radar (Vagos, Families, Sindicato, Merryweather)
+      if (this.factions) {
+        ctx.save();
+        ctx.globalAlpha = 0.22;
+        Object.keys(this.factions).forEach(fKey => {
+          const f = this.factions[fKey];
+          const fx = cx + (f.x - this.player.x) * scale;
+          const fy = cy + (f.z - this.player.z) * scale;
+          ctx.fillStyle = f.color;
+          ctx.beginPath();
+          ctx.arc(fx, fy, 40 * scale, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.restore();
+      }
 
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
       ctx.lineWidth = 4;
@@ -2397,7 +2952,10 @@
       this.rafId = requestAnimationFrame(this.animate);
       const delta = Math.min(this.clock.getDelta(), 0.1);
 
-      this.updateDayNightAndWeather(delta);
+      const effectiveDelta = this.isDeadEye ? delta * 0.25 : delta;
+      this.updateDayNightAndWeather(effectiveDelta);
+      this.updateStoreRobberies(effectiveDelta);
+      this.updateWaterGeysers(effectiveDelta);
       this.updatePhysics(delta);
       this.updateNPCs(delta);
       this.fx.update(delta);
