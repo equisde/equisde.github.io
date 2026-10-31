@@ -631,6 +631,7 @@
       width: 100%;
       height: 100%;
       display: block;
+      touch-action: none;
     }
     .ow-profiler-reticle {
       position: absolute;
@@ -947,6 +948,80 @@
     }
     .console-head { font-size: 0.72rem; color: var(--neon-cyan); font-weight: bold; margin-bottom: 4px; }
     #ide-console-output { font-size: 0.76rem; color: #cbd5e1; margin: 0; white-space: pre-wrap; }
+    /* Virtual Analog Joystick & Mobile Controls */
+    .ow-touch-joystick-wrap {
+      display: none;
+      position: absolute;
+      bottom: 25px;
+      left: 20px;
+      width: 120px;
+      height: 120px;
+      z-index: 100;
+      touch-action: none;
+      user-select: none;
+    }
+    .ow-touch-joystick-base {
+      width: 100%;
+      height: 100%;
+      background: rgba(6, 12, 24, 0.7);
+      border: 2px solid var(--neon-cyan);
+      border-radius: 50%;
+      position: relative;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
+    }
+    .ow-touch-joystick-knob {
+      width: 50px;
+      height: 50px;
+      background: radial-gradient(circle, var(--neon-cyan), #007799);
+      border-radius: 50%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.85);
+      pointer-events: none;
+    }
+    .ow-mobile-actions-cluster {
+      display: none;
+      position: absolute;
+      bottom: 25px;
+      right: 20px;
+      gap: 10px;
+      z-index: 100;
+      touch-action: none;
+      user-select: none;
+    }
+    .m-act-btn {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.68rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+      user-select: none;
+      transition: transform 0.1s;
+    }
+    .m-act-btn:active { transform: scale(0.92); }
+    .m-btn-gas { background: rgba(0, 255, 102, 0.25); border: 2px solid var(--neon-green); color: var(--neon-green); }
+    .m-btn-brake { background: rgba(255, 0, 51, 0.25); border: 2px solid #ff0033; color: #ff0033; }
+    .m-btn-hack { background: rgba(0, 240, 255, 0.25); border: 2px solid var(--neon-cyan); color: var(--neon-cyan); }
+    .m-btn-cam { background: rgba(255, 215, 0, 0.25); border: 2px solid var(--neon-gold); color: var(--neon-gold); }
+
+    @media (max-width: 900px) {
+      .ow-touch-joystick-wrap { display: block; }
+      .ow-mobile-actions-cluster { display: grid; grid-template-columns: 1fr 1fr; }
+      .ow-radar-box { top: 12px; left: 12px; bottom: auto; width: 75px; height: 75px; }
+      .ow-speedometer { top: 12px; right: 12px; bottom: auto; padding: 6px 10px; }
+      .speed-num { font-size: 1.4rem; }
+      .ow-chat-wrap { display: none; }
+      .ow-controls-hint { display: none; }
+    }
     @media (max-width: 768px) {
       .ow-radar-box { width: 90px; height: 90px; bottom: 10px; left: 10px; }
       .ow-speedometer { bottom: 10px; right: 10px; padding: 6px 10px; }
@@ -1347,6 +1422,7 @@
     }
   </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
 
@@ -1594,6 +1670,21 @@
               <input type="text" id="ow-chat-input" placeholder="Escribe un mensaje en el grid... [T]" maxlength="100" />
               <button type="submit">ENVIAR</button>
             </form>
+          </div>
+
+          <!-- Virtual Analog Touch Joystick (Mobile) -->
+          <div class="ow-touch-joystick-wrap" id="ow-joystick-wrap">
+            <div class="ow-touch-joystick-base" id="ow-joystick-base">
+              <div class="ow-touch-joystick-knob" id="ow-joystick-knob"></div>
+            </div>
+          </div>
+
+          <!-- Mobile Action Buttons Cluster -->
+          <div class="ow-mobile-actions-cluster">
+            <button class="m-act-btn m-btn-gas" id="mbtn-gas">⚡ GAS</button>
+            <button class="m-act-btn m-btn-brake" id="mbtn-brake">🛑 FRENO</button>
+            <button class="m-act-btn m-btn-hack" id="mbtn-hack" onclick="window.cyberCityEngine?.executeCurrentWatchDogsHack()">💥 HACK</button>
+            <button class="m-act-btn m-btn-cam" id="mbtn-cam" onclick="window.cyberCityEngine?.toggleCameraMode()">🔄 CAM</button>
           </div>
 
           <!-- Controls Helper Bar -->

@@ -1,14 +1,16 @@
 /**
  * ============================================================================
- * PARALLAX CYBER-CITY 3D // OPEN-WORLD ACTION & HACKING ENGINE v3.0
- * Architecture: Three.js WebGL2 + Procedural City + Multi-Vehicle Physics
- * Watch Dogs Style Hacking + In-Game Cyberdeck Scripting IDE + Multiplayer Ready
+ * PARALLAX CYBER-CITY 3D // OPEN-WORLD ACTION & HACKING ENGINE v3.2 (ULTRA)
+ * Architecture: Three.js WebGL2 + Procedural High-Detail City + Realistic Multi-Vehicle Physics
+ * Watch Dogs Style Hacking + In-Game Cyberdeck Scripting IDE + Live Heroku Multiplayer
  * Author: Rodrigo Carrasco (Parallax / equisde) & IMXNOOBX Alliance
  * ============================================================================
  */
 
 (function() {
   'use strict';
+
+  const HEROKU_BACKEND_URL = 'https://parallax-cyber-city-5b72da76b505.herokuapp.com';
 
   class CyberCity3DEngine {
     constructor() {
@@ -18,9 +20,14 @@
       this.scene = null;
       this.camera = null;
       this.clock = new THREE.Clock();
+      this.rafId = null;
+      this.lastNetSync = 0;
+
+      // Mobile & Performance
+      this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (window.innerWidth <= 768);
 
       // World Settings
-      this.citySize = 500; // 500x500 meter grid
+      this.citySize = 500;
       this.buildings = [];
       this.roads = [];
       this.trafficLights = [];
@@ -28,10 +35,19 @@
       this.powerSubstations = [];
       this.npcVehicles = [];
       this.npcPedestrians = [];
-      this.hackParticles = [];
+      this.remotePlayers = new Map();
       this.waterMesh = null;
+      this.beaconLights = [];
 
-      // Active Camera Mode
+      // Particle Systems Pool
+      this.particleSystems = {
+        nitro: null,
+        driftSmoke: null,
+        hackArc: null,
+        sparks: []
+      };
+
+      // Camera Modes
       this.activeCameraMode = 'chase'; // 'chase', 'hood', 'free', 'cctv_hack'
       this.hackedCameraIndex = -1;
       this.cameraOrbit = { yaw: 0, pitch: 0.25, distance: 10 };
@@ -43,52 +59,45 @@
         left: false,
         right: false,
         shift: false,
-        space: false,
-        hack: false,
-        camToggle: false
+        space: false
       };
       this.mouse = { isDown: false, prevX: 0, prevY: 0 };
+      this.touchState = {
+        active: false,
+        startX: 0,
+        startY: 0,
+        currX: 0,
+        currY: 0,
+        joyX: 0,
+        joyY: 0
+      };
 
-      // Player & Vehicle State
+      // Player & Vehicle Physics State
       this.player = {
         username: localStorage.getItem('ow_github_user') || 'equisde',
         avatarUrl: `https://github.com/${localStorage.getItem('ow_github_user') || 'equisde'}.png`,
         mesh: null,
         nameTagMesh: null,
         vehicleType: 'supercar', // 'foot', 'supercar', 'bike', 'bicycle', 'jet', 'hovercraft', 'parachute', 'submarine'
-        pos: new THREE.Vector3(0, 0, 0),
+        pos: new THREE.Vector3(0, 0.4, 20),
         vel: new THREE.Vector3(0, 0, 0),
-        rot: new THREE.Euler(0, 0, 0, 'YXZ'),
         speed: 0,
-        maxSpeed: 45, // m/s (~160 km/h)
-        accel: 28,
-        brake: 35,
+        maxSpeed: 55,
+        accel: 30,
         turnSpeed: 2.2,
         nitro: 100,
         isNitro: false,
         driftFactor: 0,
-        altitude: 0, // for jet / parachute
+        yaw: 0,
         pitch: 0,
         roll: 0,
-        yaw: 0,
         cyberCredits: 2500,
         hacksExecuted: 0
       };
 
-      // Vehicle Meshes Pool
       this.vehicleMeshes = {};
-
-      // Watch Dogs Profiler Hacking State
       this.currentTarget = null;
-      this.isHackingActive = false;
-      this.blackoutTimer = 0;
-
-      // In-Game IDE & Multiplayer
-      this.isIDEOpen = false;
-      this.simulatedPeers = [];
-      this.socket = null; // Heroku WebSocket instance if online
-
-      // Sound Engine Integration
+      this.socket = null;
       this.audioCtx = null;
     }
 
@@ -100,30 +109,36 @@
       const width = this.container.clientWidth || 800;
       const height = this.container.clientHeight || 560;
 
-      // 1. Scene, Camera & WebGL Renderer
+      // 1. Scene, Camera, Renderer with Mobile DPR clamp
       this.scene = new THREE.Scene();
-      this.scene.background = new THREE.Color(0x04060c);
-      this.scene.fog = new THREE.FogExp2(0x04060c, 0.004);
+      this.scene.background = new THREE.Color(0x03050a);
+      this.scene.fog = new THREE.FogExp2(0x03050a, 0.0035);
 
       this.camera = new THREE.PerspectiveCamera(65, width / height, 0.1, 1500);
-      this.camera.position.set(0, 10, 20);
+      this.camera.position.set(0, 10, 25);
 
       this.renderer = new THREE.WebGLRenderer({
         canvas: this.canvas,
-        antialias: true,
+        antialias: !this.isMobile,
         powerPreference: 'high-performance'
       });
       this.renderer.setSize(width, height);
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      this.renderer.shadowMap.enabled = true;
-      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      this.renderer.toneMappingExposure = 1.1;
 
-      // 2. Setup Lighting
+      const dpr = this.isMobile ? Math.min(window.devicePixelRatio || 1, 1.25) : Math.min(window.devicePixelRatio || 1, 1.5);
+      this.renderer.setPixelRatio(dpr);
+
+      this.renderer.shadowMap.enabled = !this.isMobile;
+      if (!this.isMobile) {
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      }
+      this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      this.renderer.toneMappingExposure = 1.15;
+
+      // 2. High-End Visuals: Skybox, Stars & Moon
+      this.buildStarfieldAndSky();
       this.setupLighting();
 
-      // 3. Build Procedural City
+      // 3. City Geometry & Details
       this.buildCityGroundAndRoads();
       this.buildSkyscrapers();
       this.buildWaterBay();
@@ -133,93 +148,142 @@
       this.buildPowerSubstations();
       this.buildIMXNOOBXFortress();
 
-      // 4. Build Vehicles and Player Rig
+      // 4. Vehicles, Character & Visual FX
       this.buildPlayerAndVehicles();
-
-      // 5. Build NPCs & Traffic
       this.buildNPCs();
+      this.buildParticleEngines();
 
-      // 6. Setup Inputs & Events
+      // 5. Controls & Events
       this.setupInputListeners();
+      this.setupMobileTouchControls();
 
-      // 7. Initialize Audio & Radar
+      // 6. Connect Live Heroku Socket.IO Server
+      this.initHerokuSocket();
+
+      // 7. Radar & Loop
       this.initRadar();
-      this.initSimulatedPeers();
       this.checkUrlForGitHubOAuth();
 
-      // 8. Start Game Loop
       this.animate = this.animate.bind(this);
       requestAnimationFrame(this.animate);
 
-      console.log('⚡ [PARALLAX CYBER-CITY 3D] Engine initialized successfully.');
+      console.log('⚡ [PARALLAX CYBER-CITY 3D] Ultra Engine Live. Mobile:', this.isMobile);
+    }
+
+    buildStarfieldAndSky() {
+      // 1,500 Starfield Particles
+      const starGeo = new THREE.BufferGeometry();
+      const starCount = 1500;
+      const positions = new Float32Array(starCount * 3);
+      const colors = new Float32Array(starCount * 3);
+
+      for (let i = 0; i < starCount; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos((Math.random() * 2) - 1);
+        const radius = 600 + Math.random() * 200;
+
+        positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = Math.abs(radius * Math.cos(phi)) + 15; // Above horizon
+        positions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
+
+        // Cyberpunk star colors: white, cyan, gold
+        const rColor = Math.random();
+        if (rColor > 0.6) {
+          colors[i * 3] = 0.0; colors[i * 3 + 1] = 0.94; colors[i * 3 + 2] = 1.0; // Cyan
+        } else if (rColor > 0.3) {
+          colors[i * 3] = 1.0; colors[i * 3 + 1] = 0.84; colors[i * 3 + 2] = 0.0; // Gold
+        } else {
+          colors[i * 3] = 0.9; colors[i * 3 + 1] = 0.95; colors[i * 3 + 2] = 1.0; // White
+        }
+      }
+
+      starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      starGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const starMat = new THREE.PointsMaterial({
+        size: 2.2,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.85
+      });
+      const stars = new THREE.Points(starGeo, starMat);
+      this.scene.add(stars);
+
+      // High-Altitude Cyber Moon
+      const moonGeo = new THREE.SphereGeometry(18, 32, 32);
+      const moonMat = new THREE.MeshBasicMaterial({ color: 0xd8eeff });
+      const moon = new THREE.Mesh(moonGeo, moonMat);
+      moon.position.set(160, 320, -380);
+      this.scene.add(moon);
+
+      // Moon Atmospheric Glow Ring
+      const glowGeo = new THREE.RingGeometry(18, 32, 32);
+      const glowMat = new THREE.MeshBasicMaterial({
+        color: 0x00f0ff,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.25
+      });
+      const glow = new THREE.Mesh(glowGeo, glowMat);
+      glow.position.copy(moon.position);
+      glow.lookAt(0, 0, 0);
+      this.scene.add(glow);
     }
 
     setupLighting() {
-      // Ambient cyber blue light
       const hemiLight = new THREE.HemisphereLight(0x00f0ff, 0x110022, 0.45);
       this.scene.add(hemiLight);
 
-      // Main directional moonlight
       const moonLight = new THREE.DirectionalLight(0xddeeff, 0.9);
       moonLight.position.set(100, 250, 100);
-      moonLight.castShadow = true;
-      moonLight.shadow.mapSize.width = 2048;
-      moonLight.shadow.mapSize.height = 2048;
-      moonLight.shadow.camera.near = 10;
-      moonLight.shadow.camera.far = 600;
-      const d = 180;
-      moonLight.shadow.camera.left = -d;
-      moonLight.shadow.camera.right = d;
-      moonLight.shadow.camera.top = d;
-      moonLight.shadow.camera.bottom = -d;
-      moonLight.shadow.bias = -0.0005;
+      if (!this.isMobile) {
+        moonLight.castShadow = true;
+        moonLight.shadow.mapSize.width = 1024;
+        moonLight.shadow.mapSize.height = 1024;
+        moonLight.shadow.bias = -0.0005;
+      }
       this.scene.add(moonLight);
 
-      // Neon Plaza Accent Light
-      const plazaLight = new THREE.PointLight(0xff007f, 1.5, 90);
-      plazaLight.position.set(0, 15, 0);
+      const plazaLight = new THREE.PointLight(0xff007f, 1.8, 120);
+      plazaLight.position.set(0, 16, 0);
       this.scene.add(plazaLight);
     }
 
     buildCityGroundAndRoads() {
-      // Ground plane
-      const groundGeo = new THREE.PlaneGeometry(this.citySize, this.citySize, 32, 32);
+      const groundGeo = new THREE.PlaneGeometry(this.citySize, this.citySize);
       const groundMat = new THREE.MeshStandardMaterial({
-        color: 0x090d18,
+        color: 0x080b14,
         roughness: 0.85,
         metalness: 0.2
       });
       const ground = new THREE.Mesh(groundGeo, groundMat);
       ground.rotation.x = -Math.PI / 2;
-      ground.receiveShadow = true;
+      ground.receiveShadow = !this.isMobile;
       this.scene.add(ground);
 
-      // Main Grand Avenue (North-South: Z axis)
-      const nsRoadGeo = new THREE.PlaneGeometry(28, this.citySize);
+      // Grand Avenues with Wet-Look Specular Finish
       const roadMat = new THREE.MeshStandardMaterial({
         color: 0x111622,
-        roughness: 0.7,
-        metalness: 0.3
+        roughness: 0.35,
+        metalness: 0.65
       });
-      const nsRoad = new THREE.Mesh(nsRoadGeo, roadMat);
+
+      const nsRoad = new THREE.Mesh(new THREE.PlaneGeometry(28, this.citySize), roadMat);
       nsRoad.rotation.x = -Math.PI / 2;
       nsRoad.position.y = 0.02;
       nsRoad.receiveShadow = true;
       this.scene.add(nsRoad);
 
-      // Main Grand Boulevard (East-West: X axis)
-      const ewRoadGeo = new THREE.PlaneGeometry(this.citySize, 28);
-      const ewRoad = new THREE.Mesh(ewRoadGeo, roadMat);
+      const ewRoad = new THREE.Mesh(new THREE.PlaneGeometry(this.citySize, 28), roadMat);
       ewRoad.rotation.x = -Math.PI / 2;
       ewRoad.position.y = 0.03;
       ewRoad.receiveShadow = true;
       this.scene.add(ewRoad);
 
-      // Neon Road Markings (Cyan and Gold glowing strips)
+      // Neon Lane Dividers
       const lineMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
       for (let z = -240; z <= 240; z += 12) {
-        const lineGeo = new THREE.PlaneGeometry(0.8, 6);
-        const line = new THREE.Mesh(lineGeo, lineMat);
+        const line = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 6), lineMat);
         line.rotation.x = -Math.PI / 2;
         line.position.set(0, 0.05, z);
         this.scene.add(line);
@@ -227,7 +291,6 @@
     }
 
     buildSkyscrapers() {
-      // Procedural Window Grid Canvas Texture
       const canvas = document.createElement('canvas');
       canvas.width = 256;
       canvas.height = 512;
@@ -235,7 +298,6 @@
       ctx.fillStyle = '#0a0e1a';
       ctx.fillRect(0, 0, 256, 512);
 
-      // Windows
       for (let y = 8; y < 500; y += 18) {
         for (let x = 8; x < 240; x += 14) {
           if (Math.random() > 0.4) {
@@ -250,7 +312,6 @@
       windowTexture.wrapS = THREE.RepeatWrapping;
       windowTexture.wrapT = THREE.RepeatWrapping;
 
-      // Spawn Buildings in grid blocks
       const blockPositions = [
         { x: -75, z: -75 }, { x: -75, z: 75 },
         { x: 75, z: -75 }, { x: 75, z: 75 },
@@ -276,69 +337,79 @@
             });
             const building = new THREE.Mesh(bGeo, bMat);
             building.position.set(bPos.x + ox, h / 2, bPos.z + oz);
-            building.castShadow = true;
-            building.receiveShadow = true;
+            if (!this.isMobile) {
+              building.castShadow = true;
+              building.receiveShadow = true;
+            }
             this.scene.add(building);
             this.buildings.push(building);
 
-            // Neon Rooftop Accent Border
-            const roofBorderGeo = new THREE.BoxGeometry(w + 0.4, 1.2, d + 0.4);
+            // Rooftop Neon Accent
             const roofColor = idx % 2 === 0 ? 0x00f0ff : 0xff007f;
-            const roofMat = new THREE.MeshBasicMaterial({ color: roofColor });
-            const roofBorder = new THREE.Mesh(roofBorderGeo, roofMat);
+            const roofBorder = new THREE.Mesh(
+              new THREE.BoxGeometry(w + 0.4, 1.2, d + 0.4),
+              new THREE.MeshBasicMaterial({ color: roofColor })
+            );
             roofBorder.position.set(bPos.x + ox, h + 0.6, bPos.z + oz);
             this.scene.add(roofBorder);
+
+            // Rooftop Blinking Aviation Beacon Light
+            if (h > 70) {
+              const beacon = new THREE.PointLight(0xff0033, 1.5, 30);
+              beacon.position.set(bPos.x + ox, h + 2.5, bPos.z + oz);
+              this.scene.add(beacon);
+              this.beaconLights.push(beacon);
+            }
           }
         }
       });
     }
 
     buildWaterBay() {
-      // Western Water Area (X: -250 to -170)
-      const waterGeo = new THREE.PlaneGeometry(90, this.citySize);
+      // Dynamic Water Mesh with Sinusoidal Vertex Displacement
+      const waterGeo = new THREE.PlaneGeometry(90, this.citySize, 32, 32);
       const waterMat = new THREE.MeshStandardMaterial({
-        color: 0x003366,
+        color: 0x004477,
         roughness: 0.1,
-        metalness: 0.9,
+        metalness: 0.85,
         transparent: true,
-        opacity: 0.85
+        opacity: 0.88
       });
       this.waterMesh = new THREE.Mesh(waterGeo, waterMat);
       this.waterMesh.rotation.x = -Math.PI / 2;
       this.waterMesh.position.set(-205, -1.2, 0);
       this.scene.add(this.waterMesh);
 
-      // Water Floor for Submarine Exploration
-      const seaFloorGeo = new THREE.PlaneGeometry(90, this.citySize);
-      const seaFloorMat = new THREE.MeshStandardMaterial({ color: 0x020712, roughness: 0.9 });
-      const seaFloor = new THREE.Mesh(seaFloorGeo, seaFloorMat);
+      // Sea Floor for Submarine
+      const seaFloor = new THREE.Mesh(
+        new THREE.PlaneGeometry(90, this.citySize),
+        new THREE.MeshStandardMaterial({ color: 0x020712, roughness: 0.9 })
+      );
       seaFloor.rotation.x = -Math.PI / 2;
       seaFloor.position.set(-205, -28, 0);
       this.scene.add(seaFloor);
     }
 
     buildAirportRunway() {
-      // North-East Runway (X: 160 to 240, Z: -200 to -50)
-      const runwayGeo = new THREE.PlaneGeometry(26, 180);
-      const runwayMat = new THREE.MeshStandardMaterial({ color: 0x1a2130, roughness: 0.6 });
-      const runway = new THREE.Mesh(runwayGeo, runwayMat);
+      const runway = new THREE.Mesh(
+        new THREE.PlaneGeometry(26, 180),
+        new THREE.MeshStandardMaterial({ color: 0x1a2130, roughness: 0.6 })
+      );
       runway.rotation.x = -Math.PI / 2;
       runway.position.set(190, 0.04, -120);
       this.scene.add(runway);
 
-      // Runway threshold lights
       for (let z = -205; z <= -35; z += 15) {
-        const lightP = new THREE.PointLight(0x00ff66, 0.4, 25);
-        lightP.position.set(176, 0.5, z);
-        this.scene.add(lightP);
-        const lightR = new THREE.PointLight(0x00f0ff, 0.4, 25);
-        lightR.position.set(204, 0.5, z);
-        this.scene.add(lightR);
+        const lp = new THREE.PointLight(0x00ff66, 0.5, 25);
+        lp.position.set(176, 0.5, z);
+        this.scene.add(lp);
+        const lr = new THREE.PointLight(0x00f0ff, 0.5, 25);
+        lr.position.set(204, 0.5, z);
+        this.scene.add(lr);
       }
     }
 
     buildTrafficLights() {
-      // 8 Hackable Intersection Traffic Lights
       const coords = [
         { x: -16, z: -16 }, { x: 16, z: -16 },
         { x: -16, z: 16 }, { x: 16, z: 16 },
@@ -350,20 +421,20 @@
         const group = new THREE.Group();
         group.position.set(c.x, 0, c.z);
 
-        // Pole
-        const poleGeo = new THREE.CylinderGeometry(0.2, 0.2, 7);
-        const poleMat = new THREE.MeshStandardMaterial({ color: 0x222938 });
-        const pole = new THREE.Mesh(poleGeo, poleMat);
+        const pole = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.2, 0.2, 7),
+          new THREE.MeshStandardMaterial({ color: 0x222938 })
+        );
         pole.position.y = 3.5;
         group.add(pole);
 
-        // Light Box
-        const boxGeo = new THREE.BoxGeometry(0.8, 2.2, 0.8);
-        const box = new THREE.Mesh(boxGeo, poleMat);
+        const box = new THREE.Mesh(
+          new THREE.BoxGeometry(0.8, 2.2, 0.8),
+          new THREE.MeshStandardMaterial({ color: 0x1a2230 })
+        );
         box.position.set(0, 6.2, 0);
         group.add(box);
 
-        // Red & Green Bulbs
         const redBulb = new THREE.Mesh(
           new THREE.SphereGeometry(0.25, 12, 12),
           new THREE.MeshBasicMaterial({ color: 0xff0033 })
@@ -379,12 +450,11 @@
         group.add(greenBulb);
 
         this.scene.add(group);
-
         this.trafficLights.push({
           id: `TRAFFIC_LIGHT_${idx + 1}`,
           type: 'TRAFFIC_LIGHT',
           group,
-          phase: 'RED', // RED, GREEN
+          phase: 'RED',
           redBulb,
           greenBulb,
           pos: group.position,
@@ -394,7 +464,6 @@
     }
 
     buildSecurityCameras() {
-      // 6 Hackable Surveillance CCTV Cameras
       const camCoords = [
         { x: 18, y: 8, z: 18, angle: Math.PI / 4 },
         { x: -18, y: 8, z: -18, angle: -3 * Math.PI / 4 },
@@ -408,28 +477,24 @@
         const group = new THREE.Group();
         group.position.set(c.x, c.y, c.z);
 
-        const bodyGeo = new THREE.BoxGeometry(0.6, 0.5, 1.2);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0f1522 });
-        const camMesh = new THREE.Mesh(bodyGeo, bodyMat);
+        const camMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(0.6, 0.5, 1.2),
+          new THREE.MeshStandardMaterial({ color: 0x0f1522 })
+        );
         group.add(camMesh);
 
-        // Lens
-        const lensGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.3);
-        const lensMat = new THREE.MeshBasicMaterial({ color: 0xff0044 });
-        const lens = new THREE.Mesh(lensGeo, lensMat);
+        const lens = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.2, 0.2, 0.3),
+          new THREE.MeshBasicMaterial({ color: 0xff0044 })
+        );
         lens.rotation.x = Math.PI / 2;
         lens.position.z = 0.65;
         group.add(lens);
 
-        // Laser scan cone
-        const coneGeo = new THREE.ConeGeometry(4, 14, 16, 1, true);
-        const coneMat = new THREE.MeshBasicMaterial({
-          color: 0xff0033,
-          transparent: true,
-          opacity: 0.12,
-          wireframe: true
-        });
-        const scanCone = new THREE.Mesh(coneGeo, coneMat);
+        const scanCone = new THREE.Mesh(
+          new THREE.ConeGeometry(4, 14, 16, 1, true),
+          new THREE.MeshBasicMaterial({ color: 0xff0033, transparent: true, opacity: 0.12, wireframe: true })
+        );
         scanCone.rotation.x = -Math.PI / 2.3;
         scanCone.position.set(0, -6, 7);
         group.add(scanCone);
@@ -450,23 +515,18 @@
     }
 
     buildPowerSubstations() {
-      // 4 Hackable Electrical Substations
-      const pCoords = [
-        { x: 30, z: -30 }, { x: -30, z: 30 },
-        { x: 90, z: 30 }, { x: -90, z: -30 }
-      ];
-
+      const pCoords = [{ x: 30, z: -30 }, { x: -30, z: 30 }, { x: 90, z: 30 }, { x: -90, z: -30 }];
       pCoords.forEach((c, idx) => {
         const group = new THREE.Group();
         group.position.set(c.x, 0, c.z);
 
-        const boxGeo = new THREE.BoxGeometry(3, 4, 2.5);
-        const boxMat = new THREE.MeshStandardMaterial({ color: 0x1e2738, roughness: 0.5 });
-        const box = new THREE.Mesh(boxGeo, boxMat);
+        const box = new THREE.Mesh(
+          new THREE.BoxGeometry(3, 4, 2.5),
+          new THREE.MeshStandardMaterial({ color: 0x1e2738, roughness: 0.5 })
+        );
         box.position.y = 2;
         group.add(box);
 
-        // High Voltage Warning Plate
         const plate = new THREE.Mesh(
           new THREE.PlaneGeometry(1.2, 0.8),
           new THREE.MeshBasicMaterial({ color: 0xffd700 })
@@ -475,7 +535,6 @@
         group.add(plate);
 
         this.scene.add(group);
-
         this.powerSubstations.push({
           id: `SUBSTATION_GRID_${idx + 1}`,
           type: 'POWER_SUBSTATION',
@@ -487,30 +546,23 @@
     }
 
     buildIMXNOOBXFortress() {
-      // Central VIP Outpost for IMXNOOBX
       const outpostGroup = new THREE.Group();
       outpostGroup.position.set(50, 0, 50);
 
-      // Main Bastion Tower
-      const towerGeo = new THREE.CylinderGeometry(8, 10, 16, 8);
-      const towerMat = new THREE.MeshStandardMaterial({
-        color: 0x0d121f,
-        roughness: 0.3,
-        metalness: 0.8
-      });
-      const tower = new THREE.Mesh(towerGeo, towerMat);
+      const tower = new THREE.Mesh(
+        new THREE.CylinderGeometry(8, 10, 16, 8),
+        new THREE.MeshStandardMaterial({ color: 0x0d121f, roughness: 0.3, metalness: 0.8 })
+      );
       tower.position.y = 8;
       outpostGroup.add(tower);
 
-      // Rotating Radar Dish
-      const dishGeo = new THREE.SphereGeometry(3.5, 16, 8, 0, Math.PI);
-      const dishMat = new THREE.MeshBasicMaterial({ color: 0xffd700, wireframe: true });
-      this.radarDish = new THREE.Mesh(dishGeo, dishMat);
+      this.radarDish = new THREE.Mesh(
+        new THREE.SphereGeometry(3.5, 16, 8, 0, Math.PI),
+        new THREE.MeshBasicMaterial({ color: 0xffd700, wireframe: true })
+      );
       this.radarDish.position.set(0, 18, 0);
       outpostGroup.add(this.radarDish);
 
-      // Gold Holographic Banner
-      const bannerGeo = new THREE.PlaneGeometry(16, 3);
       const bannerCanvas = document.createElement('canvas');
       bannerCanvas.width = 512;
       bannerCanvas.height = 128;
@@ -521,26 +573,50 @@
       bCtx.lineWidth = 6;
       bCtx.strokeRect(4, 4, 504, 120);
       bCtx.fillStyle = '#ffd700';
-      bCtx.font = 'bold 36px monospace';
+      bCtx.font = 'bold 34px monospace';
       bCtx.textAlign = 'center';
       bCtx.fillText('⚡ IMXNOOBX WEAPONRY ⚡', 256, 75);
 
-      const bannerTex = new THREE.CanvasTexture(bannerCanvas);
-      const bannerMesh = new THREE.Mesh(bannerGeo, new THREE.MeshBasicMaterial({ map: bannerTex }));
+      const bannerMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(16, 3),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(bannerCanvas) })
+      );
       bannerMesh.position.set(0, 14, 8.5);
       outpostGroup.add(bannerMesh);
 
       this.scene.add(outpostGroup);
     }
 
+    buildParticleEngines() {
+      // 1. Nitro Exhaust Particles
+      const nitroGeo = new THREE.BufferGeometry();
+      const nitroCount = 60;
+      const nitroPositions = new Float32Array(nitroCount * 3);
+      nitroGeo.setAttribute('position', new THREE.BufferAttribute(nitroPositions, 3));
+      const nitroMat = new THREE.PointsMaterial({
+        color: 0x00f0ff,
+        size: 1.8,
+        transparent: true,
+        opacity: 0.75,
+        blending: THREE.AdditiveBlending
+      });
+      this.particleSystems.nitro = new THREE.Points(nitroGeo, nitroMat);
+      this.scene.add(this.particleSystems.nitro);
+
+      // 2. Hacking Electric Lightning Arc Line
+      const arcGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+      const arcMat = new THREE.LineBasicMaterial({ color: 0x00f0ff, linewidth: 2 });
+      this.particleSystems.hackArc = new THREE.Line(arcGeo, arcMat);
+      this.particleSystems.hackArc.visible = false;
+      this.scene.add(this.particleSystems.hackArc);
+    }
+
     buildPlayerAndVehicles() {
-      // Root Player Container
       this.player.mesh = new THREE.Group();
       this.player.pos.set(0, 0.5, 20);
       this.player.mesh.position.copy(this.player.pos);
       this.scene.add(this.player.mesh);
 
-      // Build Vehicle Models into vehicleMeshes dict
       this.vehicleMeshes.foot = this.createHumanoidModel();
       this.vehicleMeshes.supercar = this.createSupercarModel();
       this.vehicleMeshes.bike = this.createMotorbikeModel();
@@ -550,136 +626,81 @@
       this.vehicleMeshes.parachute = this.createParachuteModel();
       this.vehicleMeshes.submarine = this.createSubmarineModel();
 
-      // Attach active vehicle
       this.applyVehicleMesh(this.player.vehicleType);
-
-      // Overhead 3D Holographic GitHub Nameplate
       this.createOverheadNameplate();
     }
 
     createHumanoidModel() {
       const group = new THREE.Group();
+      const armorMat = new THREE.MeshStandardMaterial({ color: 0x0a101d, metalness: 0.8, roughness: 0.3 });
 
-      // Torso
-      const torsoGeo = new THREE.BoxGeometry(0.8, 1.2, 0.5);
-      const cyberArmorMat = new THREE.MeshStandardMaterial({ color: 0x0a101d, metalness: 0.8, roughness: 0.3 });
-      const torso = new THREE.Mesh(torsoGeo, cyberArmorMat);
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.2, 0.5), armorMat);
       torso.position.y = 1.3;
       group.add(torso);
 
-      // Head & Neon Visor
-      const headGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-      const head = new THREE.Mesh(headGeo, cyberArmorMat);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), armorMat);
       head.position.y = 2.15;
       group.add(head);
 
-      const visorGeo = new THREE.BoxGeometry(0.52, 0.18, 0.25);
-      const visorMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
-      const visor = new THREE.Mesh(visorGeo, visorMat);
+      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.18, 0.25), new THREE.MeshBasicMaterial({ color: 0x00f0ff }));
       visor.position.set(0, 2.15, 0.2);
       group.add(visor);
 
-      // Limbs
       const limbMat = new THREE.MeshStandardMaterial({ color: 0x1a2333 });
       const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.25, 1.0, 0.25), limbMat);
-      lArm.position.set(-0.6, 1.2, 0);
-      group.add(lArm);
+      lArm.position.set(-0.6, 1.2, 0); group.add(lArm);
 
       const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.25, 1.0, 0.25), limbMat);
-      rArm.position.set(0.6, 1.2, 0);
-      group.add(rArm);
+      rArm.position.set(0.6, 1.2, 0); group.add(rArm);
 
       const lLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.1, 0.3), limbMat);
-      lLeg.position.set(-0.25, 0.55, 0);
-      group.add(lLeg);
+      lLeg.position.set(-0.25, 0.55, 0); group.add(lLeg);
 
       const rLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.1, 0.3), limbMat);
-      rLeg.position.set(0.25, 0.55, 0);
-      group.add(rLeg);
+      rLeg.position.set(0.25, 0.55, 0); group.add(rLeg);
 
       return group;
     }
 
     createSupercarModel() {
       const car = new THREE.Group();
-
-      // Main Chassis (Low-poly cyberpunk wedge)
-      const bodyGeo = new THREE.BoxGeometry(2.3, 0.7, 4.8);
-      const bodyMat = new THREE.MeshStandardMaterial({
-        color: 0x0d1527,
-        roughness: 0.2,
-        metalness: 0.85
-      });
-      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      const body = new THREE.Mesh(
+        new THREE.BoxGeometry(2.3, 0.7, 4.8),
+        new THREE.MeshStandardMaterial({ color: 0x0d1527, roughness: 0.2, metalness: 0.85 })
+      );
       body.position.y = 0.55;
-      body.castShadow = true;
       car.add(body);
 
-      // Cabin / Glass Cockpit
-      const cabinGeo = new THREE.BoxGeometry(1.8, 0.6, 2.2);
-      const cabinMat = new THREE.MeshPhysicalMaterial({
-        color: 0x00f0ff,
-        roughness: 0.1,
-        metalness: 0.9,
-        transparent: true,
-        opacity: 0.7
-      });
-      const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+      const cabin = new THREE.Mesh(
+        new THREE.BoxGeometry(1.8, 0.6, 2.2),
+        new THREE.MeshPhysicalMaterial({ color: 0x00f0ff, roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.7 })
+      );
       cabin.position.set(0, 1.05, -0.2);
       car.add(cabin);
 
-      // Rear Spoiler / Wing
-      const wingGeo = new THREE.BoxGeometry(2.4, 0.1, 0.6);
-      const wingMat = new THREE.MeshStandardMaterial({ color: 0xff007f });
-      const wing = new THREE.Mesh(wingGeo, wingMat);
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.1, 0.6), new THREE.MeshStandardMaterial({ color: 0xff007f }));
       wing.position.set(0, 1.25, 2.1);
       car.add(wing);
 
-      // 4 Wheels
       const wheelGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.4, 16);
       const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.9 });
       const rimMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
 
-      const wheelPositions = [
-        [-1.2, 0.45, 1.4], [1.2, 0.45, 1.4],
-        [-1.2, 0.45, -1.4], [1.2, 0.45, -1.4]
-      ];
-
       car.wheels = [];
-      wheelPositions.forEach(pos => {
+      [[-1.2, 0.45, 1.4], [1.2, 0.45, 1.4], [-1.2, 0.45, -1.4], [1.2, 0.45, -1.4]].forEach(pos => {
         const wGroup = new THREE.Group();
         wGroup.position.set(pos[0], pos[1], pos[2]);
-
         const tire = new THREE.Mesh(wheelGeo, wheelMat);
         tire.rotation.z = Math.PI / 2;
         wGroup.add(tire);
-
         const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.42, 8), rimMat);
         rim.rotation.z = Math.PI / 2;
         wGroup.add(rim);
-
         car.add(wGroup);
         car.wheels.push(wGroup);
       });
 
-      // Front Headlights
-      const hLightL = new THREE.SpotLight(0x00f0ff, 2.5, 40, Math.PI / 6, 0.3);
-      hLightL.position.set(-0.8, 0.65, -2.4);
-      hLightL.target.position.set(-0.8, 0, -20);
-      car.add(hLightL);
-      car.add(hLightL.target);
-
-      const hLightR = new THREE.SpotLight(0x00f0ff, 2.5, 40, Math.PI / 6, 0.3);
-      hLightR.position.set(0.8, 0.65, -2.4);
-      hLightR.target.position.set(0.8, 0, -20);
-      car.add(hLightR);
-      car.add(hLightR.target);
-
-      // Rear Red Taillight Bar
-      const tailLight = new THREE.Mesh(
-        new THREE.BoxGeometry(2.1, 0.15, 0.1),
-        new THREE.MeshBasicMaterial({ color: 0xff0033 })
-      );
+      const tailLight = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.15, 0.1), new THREE.MeshBasicMaterial({ color: 0xff0033 }));
       tailLight.position.set(0, 0.65, 2.45);
       car.add(tailLight);
 
@@ -689,273 +710,137 @@
     createMotorbikeModel() {
       const bike = new THREE.Group();
       const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff007f, metalness: 0.8 });
-
-      // Frame
       const frame = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 2.2), bodyMat);
-      frame.position.y = 0.65;
-      bike.add(frame);
+      frame.position.y = 0.65; bike.add(frame);
 
-      // 2 Wheels
       const wMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
       const fWheel = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.25, 16), wMat);
-      fWheel.rotation.z = Math.PI / 2;
-      fWheel.position.set(0, 0.4, -1.0);
-      bike.add(fWheel);
+      fWheel.rotation.z = Math.PI / 2; fWheel.position.set(0, 0.4, -1.0); bike.add(fWheel);
 
       const rWheel = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.3, 16), wMat);
-      rWheel.rotation.z = Math.PI / 2;
-      rWheel.position.set(0, 0.45, 1.0);
-      bike.add(rWheel);
-
-      // Handlebars
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.08, 0.08), bodyMat);
-      bar.position.set(0, 1.1, -0.6);
-      bike.add(bar);
+      rWheel.rotation.z = Math.PI / 2; rWheel.position.set(0, 0.45, 1.0); bike.add(rWheel);
 
       return bike;
     }
 
     createBicycleModel() {
       const bike = new THREE.Group();
-      const frameMat = new THREE.MeshStandardMaterial({ color: 0x38ef7d, metalness: 0.5 });
+      const frame = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.4), new THREE.MeshStandardMaterial({ color: 0x38ef7d }));
+      frame.rotation.x = Math.PI / 2; frame.position.set(0, 0.8, 0); bike.add(frame);
 
-      // Slender tubes
-      const topTube = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.4), frameMat);
-      topTube.rotation.x = Math.PI / 2;
-      topTube.position.set(0, 0.8, 0);
-      bike.add(topTube);
-
-      // Wheels
       const wMat = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, wireframe: true });
       const fWheel = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.08, 12), wMat);
-      fWheel.rotation.z = Math.PI / 2;
-      fWheel.position.set(0, 0.35, -0.8);
-      bike.add(fWheel);
+      fWheel.rotation.z = Math.PI / 2; fWheel.position.set(0, 0.35, -0.8); bike.add(fWheel);
 
       const rWheel = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.08, 12), wMat);
-      rWheel.rotation.z = Math.PI / 2;
-      rWheel.position.set(0, 0.35, 0.8);
-      bike.add(rWheel);
+      rWheel.rotation.z = Math.PI / 2; rWheel.position.set(0, 0.35, 0.8); bike.add(rWheel);
 
       return bike;
     }
 
     createJetModel() {
       const jet = new THREE.Group();
-      const stealthMat = new THREE.MeshStandardMaterial({
-        color: 0x161c2b,
-        metalness: 0.9,
-        roughness: 0.2
-      });
+      const stealthMat = new THREE.MeshStandardMaterial({ color: 0x161c2b, metalness: 0.9, roughness: 0.2 });
 
-      // Fuselage
       const body = new THREE.Mesh(new THREE.ConeGeometry(1.2, 7.5, 8), stealthMat);
-      body.rotation.x = Math.PI / 2;
-      body.position.y = 1.0;
-      jet.add(body);
+      body.rotation.x = Math.PI / 2; body.position.y = 1.0; jet.add(body);
 
-      // Delta Wings
-      const wingGeo = new THREE.BoxGeometry(8.5, 0.12, 3.2);
-      const wing = new THREE.Mesh(wingGeo, stealthMat);
-      wing.position.set(0, 1.0, 0.5);
-      jet.add(wing);
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(8.5, 0.12, 3.2), stealthMat);
+      wing.position.set(0, 1.0, 0.5); jet.add(wing);
 
-      // Twin Vertical Rudders
-      const rudderMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff });
-      const r1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.5, 1.2), rudderMat);
-      r1.position.set(-1.2, 1.8, 2.5);
-      r1.rotation.z = -0.2;
-      jet.add(r1);
-
-      const r2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.5, 1.2), rudderMat);
-      r2.position.set(1.2, 1.8, 2.5);
-      r2.rotation.z = 0.2;
-      jet.add(r2);
-
-      // Dual Glowing Afterburners
-      const flameGeo = new THREE.ConeGeometry(0.5, 2.2, 12);
       const flameMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
-      const f1 = new THREE.Mesh(flameGeo, flameMat);
-      f1.rotation.x = -Math.PI / 2;
-      f1.position.set(-0.6, 1.0, 3.8);
-      jet.add(f1);
+      const f1 = new THREE.Mesh(new THREE.ConeGeometry(0.5, 2.2, 12), flameMat);
+      f1.rotation.x = -Math.PI / 2; f1.position.set(-0.6, 1.0, 3.8); jet.add(f1);
 
-      const f2 = new THREE.Mesh(flameGeo, flameMat);
-      f2.rotation.x = -Math.PI / 2;
-      f2.position.set(0.6, 1.0, 3.8);
-      jet.add(f2);
+      const f2 = new THREE.Mesh(new THREE.ConeGeometry(0.5, 2.2, 12), flameMat);
+      f2.rotation.x = -Math.PI / 2; f2.position.set(0.6, 1.0, 3.8); jet.add(f2);
 
       return jet;
     }
 
     createHovercraftModel() {
       const craft = new THREE.Group();
-
-      // Inflatable Cushion Skirt
-      const skirtGeo = new THREE.TorusGeometry(2.4, 0.7, 12, 24);
-      const skirtMat = new THREE.MeshStandardMaterial({ color: 0x1e273b, roughness: 0.9 });
-      const skirt = new THREE.Mesh(skirtGeo, skirtMat);
-      skirt.rotation.x = Math.PI / 2;
-      skirt.scale.set(1.0, 1.6, 0.6);
-      skirt.position.y = 0.6;
-      craft.add(skirt);
-
-      // Cockpit Deck
-      const deck = new THREE.Mesh(
-        new THREE.BoxGeometry(2.8, 0.5, 5.2),
-        new THREE.MeshStandardMaterial({ color: 0x00f0ff, metalness: 0.7 })
+      const skirt = new THREE.Mesh(
+        new THREE.TorusGeometry(2.4, 0.7, 12, 24),
+        new THREE.MeshStandardMaterial({ color: 0x1e273b, roughness: 0.9 })
       );
-      deck.position.y = 0.9;
-      craft.add(deck);
+      skirt.rotation.x = Math.PI / 2; skirt.scale.set(1.0, 1.6, 0.6); skirt.position.y = 0.6; craft.add(skirt);
 
-      // Twin Rear Propulsion Ducts
-      const ductMat = new THREE.MeshStandardMaterial({ color: 0x111622 });
-      const fan1 = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.6, 16), ductMat);
-      fan1.rotation.x = Math.PI / 2;
-      fan1.position.set(-0.9, 1.6, 1.9);
-      craft.add(fan1);
-
-      const fan2 = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.6, 16), ductMat);
-      fan2.rotation.x = Math.PI / 2;
-      fan2.position.set(0.9, 1.6, 1.9);
-      craft.add(fan2);
+      const deck = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.5, 5.2), new THREE.MeshStandardMaterial({ color: 0x00f0ff, metalness: 0.7 }));
+      deck.position.y = 0.9; craft.add(deck);
 
       return craft;
     }
 
     createParachuteModel() {
       const chute = new THREE.Group();
-
-      // Colorful Canopy
-      const canopyGeo = new THREE.SphereGeometry(3.8, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2);
-      const canopyMat = new THREE.MeshBasicMaterial({
-        color: 0xff007f,
-        wireframe: true,
-        side: THREE.DoubleSide
-      });
-      const canopy = new THREE.Mesh(canopyGeo, canopyMat);
-      canopy.position.y = 4.5;
-      chute.add(canopy);
-
-      // Suspension Lines
-      const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-      for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) {
-        const lx = Math.cos(a) * 3.5;
-        const lz = Math.sin(a) * 3.5;
-        const lineGeo = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(0, 1.5, 0),
-          new THREE.Vector3(lx, 4.5, lz)
-        ]);
-        chute.add(new THREE.Line(lineGeo, lineMat));
-      }
-
-      // Suspended Operative
+      const canopy = new THREE.Mesh(
+        new THREE.SphereGeometry(3.8, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: 0xff007f, wireframe: true, side: THREE.DoubleSide })
+      );
+      canopy.position.y = 4.5; chute.add(canopy);
       chute.add(this.createHumanoidModel());
-
       return chute;
     }
 
     createSubmarineModel() {
       const sub = new THREE.Group();
-      const hullMat = new THREE.MeshStandardMaterial({
-        color: 0x091424,
-        metalness: 0.9,
-        roughness: 0.2
-      });
-
-      // Hydrodynamic Hull
+      const hullMat = new THREE.MeshStandardMaterial({ color: 0x091424, metalness: 0.9, roughness: 0.2 });
       const hull = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 6.5, 16), hullMat);
-      hull.rotation.x = Math.PI / 2;
-      hull.position.y = 1.0;
-      sub.add(hull);
+      hull.rotation.x = Math.PI / 2; hull.position.y = 1.0; sub.add(hull);
 
-      // Conning Tower / Periscope
       const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 1.4), hullMat);
-      tower.position.set(0, 2.2, 0);
-      sub.add(tower);
-
-      // Sonar / Headlight
-      const sonarLight = new THREE.PointLight(0x00f0ff, 3.0, 50);
-      sonarLight.position.set(0, 1.0, -3.5);
-      sub.add(sonarLight);
+      tower.position.set(0, 2.2, 0); sub.add(tower);
 
       return sub;
     }
 
     applyVehicleMesh(type) {
-      // Clear previous vehicle meshes from player root
       while (this.player.mesh.children.length > 0) {
         this.player.mesh.remove(this.player.mesh.children[0]);
       }
-
       this.player.vehicleType = type;
       const vModel = this.vehicleMeshes[type];
-      if (vModel) {
-        this.player.mesh.add(vModel);
-      }
+      if (vModel) this.player.mesh.add(vModel);
+      if (this.player.nameTagMesh) this.player.mesh.add(this.player.nameTagMesh);
 
-      // Re-attach overhead nameplate
-      if (this.player.nameTagMesh) {
-        this.player.mesh.add(this.player.nameTagMesh);
-      }
-
-      // Update vehicle specific stats
-      if (type === 'foot') {
-        this.player.maxSpeed = 8;
-        this.player.accel = 15;
-      } else if (type === 'bicycle') {
-        this.player.maxSpeed = 14;
-        this.player.accel = 12;
-      } else if (type === 'supercar') {
-        this.player.maxSpeed = 55;
-        this.player.accel = 32;
-      } else if (type === 'bike') {
-        this.player.maxSpeed = 52;
-        this.player.accel = 36;
-      } else if (type === 'jet') {
-        this.player.maxSpeed = 95;
-        this.player.accel = 45;
-        if (this.player.pos.y < 8) this.player.pos.y = 15;
-      } else if (type === 'hovercraft') {
-        this.player.maxSpeed = 38;
-        this.player.accel = 24;
-      } else if (type === 'parachute') {
-        this.player.maxSpeed = 16;
-        if (this.player.pos.y < 35) this.player.pos.y = 70;
-      } else if (type === 'submarine') {
-        this.player.maxSpeed = 22;
-        this.player.accel = 15;
-        this.player.pos.x = -200; // Place in water bay
-        this.player.pos.y = -8;
-      }
+      if (type === 'foot') { this.player.maxSpeed = 8; this.player.accel = 15; }
+      else if (type === 'bicycle') { this.player.maxSpeed = 14; this.player.accel = 12; }
+      else if (type === 'supercar') { this.player.maxSpeed = 55; this.player.accel = 32; }
+      else if (type === 'bike') { this.player.maxSpeed = 52; this.player.accel = 36; }
+      else if (type === 'jet') { this.player.maxSpeed = 95; this.player.accel = 45; if (this.player.pos.y < 8) this.player.pos.y = 15; }
+      else if (type === 'hovercraft') { this.player.maxSpeed = 38; this.player.accel = 24; }
+      else if (type === 'parachute') { this.player.maxSpeed = 16; if (this.player.pos.y < 35) this.player.pos.y = 70; }
+      else if (type === 'submarine') { this.player.maxSpeed = 22; this.player.accel = 15; this.player.pos.x = -200; this.player.pos.y = -8; }
 
       this.updateVehicleChipsUI(type);
+
+      // Broadcast to Heroku server
+      if (this.socket && this.socket.connected) {
+        this.socket.emit('player:move', {
+          position: this.player.pos,
+          rotation: { y: this.player.yaw },
+          vehicle: type
+        });
+      }
     }
 
     createOverheadNameplate() {
       const canvas = document.createElement('canvas');
-      canvas.width = 384;
-      canvas.height = 96;
+      canvas.width = 384; canvas.height = 96;
       const ctx = canvas.getContext('2d');
-
-      // Draw cyber badge
       ctx.fillStyle = 'rgba(6, 10, 20, 0.85)';
       ctx.fillRect(4, 4, 376, 88);
-      ctx.strokeStyle = '#00f0ff';
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 3;
       ctx.strokeRect(4, 4, 376, 88);
 
-      ctx.fillStyle = '#00f0ff';
-      ctx.font = 'bold 30px monospace';
-      ctx.textAlign = 'center';
+      ctx.fillStyle = '#00f0ff'; ctx.font = 'bold 30px monospace'; ctx.textAlign = 'center';
       ctx.fillText(`@${this.player.username}`, 192, 42);
 
-      ctx.fillStyle = '#ffd700';
-      ctx.font = '600 18px sans-serif';
+      ctx.fillStyle = '#ffd700'; ctx.font = '600 18px sans-serif';
       ctx.fillText('⚡ VERIFIED DEVSECOPS OPERATIVE', 192, 72);
 
-      const texture = new THREE.CanvasTexture(canvas);
-      const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+      const spriteMat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true });
       this.player.nameTagMesh = new THREE.Sprite(spriteMat);
       this.player.nameTagMesh.scale.set(4, 1, 1);
       this.player.nameTagMesh.position.set(0, 3.8, 0);
@@ -965,29 +850,33 @@
     updateNameplateUsername(newUsername) {
       this.player.username = newUsername;
       localStorage.setItem('ow_github_user', newUsername);
-      if (this.player.nameTagMesh) {
-        this.player.mesh.remove(this.player.nameTagMesh);
-      }
+      if (this.player.nameTagMesh) this.player.mesh.remove(this.player.nameTagMesh);
       this.createOverheadNameplate();
 
       const userDisplay = document.getElementById('ow-display-username');
       const userAvatar = document.getElementById('ow-user-avatar');
       if (userDisplay) userDisplay.innerText = `@${newUsername}`;
       if (userAvatar) userAvatar.src = `https://github.com/${newUsername}.png`;
+
+      if (this.socket && this.socket.connected) {
+        this.socket.emit('player:join', {
+          username: newUsername,
+          avatarUrl: `https://github.com/${newUsername}.png`,
+          position: this.player.pos,
+          vehicle: this.player.vehicleType
+        });
+      }
     }
 
     buildNPCs() {
-      // 8 Autonomous NPC Cars driving in grid
       const carColors = [0xff007f, 0x00f0ff, 0xffd700, 0x38ef7d, 0x9d4edd];
       for (let i = 0; i < 8; i++) {
         const car = new THREE.Group();
-        const col = carColors[i % carColors.length];
         const body = new THREE.Mesh(
           new THREE.BoxGeometry(2.1, 0.7, 4.4),
-          new THREE.MeshStandardMaterial({ color: col, metalness: 0.6 })
+          new THREE.MeshStandardMaterial({ color: carColors[i % carColors.length], metalness: 0.6 })
         );
-        body.position.y = 0.55;
-        car.add(body);
+        body.position.y = 0.55; car.add(body);
 
         const isNS = i % 2 === 0;
         const startPos = isNS
@@ -1002,27 +891,17 @@
           mesh: car,
           speed: 12 + Math.random() * 8,
           isNS,
-          dir: isNS ? (i < 4 ? 1 : -1) : (i < 4 ? 1 : -1),
+          dir: 1,
           hackedSpeed: 0,
           exploit: 'CAN_BUS_OVERFLOW // REMOTE_ACCEL'
         });
       }
 
-      // 10 Pedestrian Citizens
       for (let i = 0; i < 10; i++) {
         const ped = new THREE.Group();
-        const body = new THREE.Mesh(
-          new THREE.BoxGeometry(0.6, 1.4, 0.4),
-          new THREE.MeshStandardMaterial({ color: 0x8899aa })
-        );
-        body.position.y = 0.9;
-        ped.add(body);
-
-        ped.position.set(
-          (Math.random() - 0.5) * 160,
-          0,
-          (Math.random() - 0.5) * 160
-        );
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.4, 0.4), new THREE.MeshStandardMaterial({ color: 0x8899aa }));
+        body.position.y = 0.9; ped.add(body);
+        ped.position.set((Math.random() - 0.5) * 160, 0, (Math.random() - 0.5) * 160);
         this.scene.add(ped);
 
         this.npcPedestrians.push({
@@ -1039,7 +918,6 @@
     setupInputListeners() {
       window.addEventListener('keydown', (e) => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-
         switch (e.code) {
           case 'KeyW': case 'ArrowUp': this.keys.forward = true; break;
           case 'KeyS': case 'ArrowDown': this.keys.backward = true; break;
@@ -1049,24 +927,12 @@
           case 'Space': this.keys.space = true; break;
           case 'KeyE': this.executeCurrentWatchDogsHack(); break;
           case 'KeyC': this.toggleCameraMode(); break;
-          case 'Backquote': case 'Tab':
-            e.preventDefault();
-            this.toggleCyberdeckIDE();
-            break;
-          case 'Digit1': this.applyVehicleMesh('foot'); break;
-          case 'Digit2': this.applyVehicleMesh('supercar'); break;
-          case 'Digit3': this.applyVehicleMesh('bike'); break;
-          case 'Digit4': this.applyVehicleMesh('bicycle'); break;
-          case 'Digit5': this.applyVehicleMesh('jet'); break;
-          case 'Digit6': this.applyVehicleMesh('hovercraft'); break;
-          case 'Digit7': this.applyVehicleMesh('parachute'); break;
-          case 'Digit8': this.applyVehicleMesh('submarine'); break;
+          case 'Backquote': case 'Tab': e.preventDefault(); this.toggleCyberdeckIDE(); break;
         }
       });
 
       window.addEventListener('keyup', (e) => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-
         switch (e.code) {
           case 'KeyW': case 'ArrowUp': this.keys.forward = false; break;
           case 'KeyS': case 'ArrowDown': this.keys.backward = false; break;
@@ -1077,28 +943,22 @@
         }
       });
 
-      // Mouse Orbit Camera
+      // Desktop Mouse Orbit
       this.canvas.addEventListener('mousedown', (e) => {
         this.mouse.isDown = true;
         this.mouse.prevX = e.clientX;
         this.mouse.prevY = e.clientY;
       });
 
-      window.addEventListener('mouseup', () => {
-        this.mouse.isDown = false;
-      });
-
+      window.addEventListener('mouseup', () => { this.mouse.isDown = false; });
       window.addEventListener('mousemove', (e) => {
         if (!this.mouse.isDown) return;
-        const dx = e.clientX - this.mouse.prevX;
-        const dy = e.clientY - this.mouse.prevY;
-        this.cameraOrbit.yaw -= dx * 0.005;
-        this.cameraOrbit.pitch = Math.max(0.05, Math.min(1.2, this.cameraOrbit.pitch + dy * 0.005));
+        this.cameraOrbit.yaw -= (e.clientX - this.mouse.prevX) * 0.005;
+        this.cameraOrbit.pitch = Math.max(0.05, Math.min(1.2, this.cameraOrbit.pitch + (e.clientY - this.mouse.prevY) * 0.005));
         this.mouse.prevX = e.clientX;
         this.mouse.prevY = e.clientY;
       });
 
-      // Window Resize
       window.addEventListener('resize', () => {
         if (!this.container || !this.renderer || !this.camera) return;
         const width = this.container.clientWidth;
@@ -1109,6 +969,272 @@
       });
     }
 
+    setupMobileTouchControls() {
+      // 1. Virtual Analog Touch Joystick
+      const joyBase = document.getElementById('ow-joystick-base');
+      const joyKnob = document.getElementById('ow-joystick-knob');
+
+      if (joyBase && joyKnob) {
+        let activePointerId = null;
+
+        const onPointerDown = (e) => {
+          activePointerId = e.pointerId;
+          joyBase.setPointerCapture(activePointerId);
+          handleJoystick(e);
+        };
+
+        const onPointerMove = (e) => {
+          if (e.pointerId === activePointerId) handleJoystick(e);
+        };
+
+        const onPointerUp = (e) => {
+          if (e.pointerId === activePointerId) {
+            activePointerId = null;
+            this.touchState.joyX = 0;
+            this.touchState.joyY = 0;
+            joyKnob.style.transform = 'translate(-50%, -50%)';
+            this.keys.forward = false;
+            this.keys.backward = false;
+            this.keys.left = false;
+            this.keys.right = false;
+          }
+        };
+
+        const handleJoystick = (e) => {
+          const rect = joyBase.getBoundingClientRect();
+          const cx = rect.left + rect.width / 2;
+          const cy = rect.top + rect.height / 2;
+          const maxDist = rect.width / 2;
+
+          let dx = e.clientX - cx;
+          let dy = e.clientY - cy;
+          const dist = Math.hypot(dx, dy);
+
+          if (dist > maxDist) {
+            dx = (dx / dist) * maxDist;
+            dy = (dy / dist) * maxDist;
+          }
+
+          joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+
+          // Dead zone check (0.15)
+          const normX = dx / maxDist;
+          const normY = dy / maxDist;
+
+          this.touchState.joyX = Math.abs(normX) > 0.15 ? normX : 0;
+          this.touchState.joyY = Math.abs(normY) > 0.15 ? normY : 0;
+
+          this.keys.forward = this.touchState.joyY < -0.25;
+          this.keys.backward = this.touchState.joyY > 0.25;
+          this.keys.left = this.touchState.joyX < -0.25;
+          this.keys.right = this.touchState.joyX > 0.25;
+        };
+
+        joyBase.addEventListener('pointerdown', onPointerDown);
+        joyBase.addEventListener('pointermove', onPointerMove);
+        joyBase.addEventListener('pointerup', onPointerUp);
+        joyBase.addEventListener('pointercancel', onPointerUp);
+      }
+
+      // 2. Mobile Action Buttons
+      const btnGas = document.getElementById('mbtn-gas');
+      const btnBrake = document.getElementById('mbtn-brake');
+
+      if (btnGas) {
+        const startGas = (e) => {
+          if (e.cancelable) e.preventDefault();
+          this.keys.forward = true;
+          this.keys.shift = true; // Nitro on mobile gas
+        };
+        const stopGas = () => {
+          this.keys.forward = false;
+          this.keys.shift = false;
+        };
+        btnGas.addEventListener('pointerdown', startGas);
+        btnGas.addEventListener('pointerup', stopGas);
+        btnGas.addEventListener('pointercancel', stopGas);
+        btnGas.addEventListener('pointerleave', stopGas);
+        btnGas.addEventListener('lostpointercapture', stopGas);
+      }
+
+      if (btnBrake) {
+        const startBrake = (e) => {
+          if (e.cancelable) e.preventDefault();
+          this.keys.backward = true;
+          this.keys.space = true; // Drift handbrake
+        };
+        const stopBrake = () => {
+          this.keys.backward = false;
+          this.keys.space = false;
+        };
+        btnBrake.addEventListener('pointerdown', startBrake);
+        btnBrake.addEventListener('pointerup', stopBrake);
+        btnBrake.addEventListener('pointercancel', stopBrake);
+        btnBrake.addEventListener('pointerleave', stopBrake);
+        btnBrake.addEventListener('lostpointercapture', stopBrake);
+      }
+
+      // 3. Touch Orbit on Canvas
+      let touchCamId = null;
+      let prevTouchX = 0, prevTouchY = 0;
+
+      this.canvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 0) {
+          const t = e.touches[0];
+          touchCamId = t.identifier;
+          prevTouchX = t.clientX;
+          prevTouchY = t.clientY;
+        }
+      }, { passive: true });
+
+      this.canvas.addEventListener('touchmove', (e) => {
+        for (let i = 0; i < e.touches.length; i++) {
+          const t = e.touches[i];
+          if (t.identifier === touchCamId) {
+            const dx = t.clientX - prevTouchX;
+            const dy = t.clientY - prevTouchY;
+            this.cameraOrbit.yaw -= dx * 0.007;
+            this.cameraOrbit.pitch = Math.max(0.05, Math.min(1.2, this.cameraOrbit.pitch + dy * 0.007));
+            prevTouchX = t.clientX;
+            prevTouchY = t.clientY;
+            break;
+          }
+        }
+      }, { passive: true });
+
+      this.canvas.addEventListener('touchend', () => { touchCamId = null; }, { passive: true });
+      this.canvas.addEventListener('touchcancel', () => { touchCamId = null; }, { passive: true });
+    }
+
+    disposeHierarchy(node) {
+      if (!node) return;
+      node.traverse((child) => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach((mat) => {
+              if (mat.map) mat.map.dispose();
+              mat.dispose();
+            });
+          } else {
+            if (child.material.map) child.material.map.dispose();
+            child.material.dispose();
+          }
+        }
+      });
+    }
+
+    initHerokuSocket() {
+      if (typeof io === 'undefined') return;
+
+      try {
+        this.socket = io(HEROKU_BACKEND_URL, {
+          transports: ['websocket', 'polling'],
+          timeout: 8000
+        });
+
+        this.socket.on('connect', () => {
+          console.log('⚡ [NET] Connected to Heroku Authoritative Server:', HEROKU_BACKEND_URL);
+          this.showHackFeedToast('🟢 GRID ONLINE // HEROKU SERVER CONNECTED');
+
+          this.socket.emit('player:join', {
+            username: this.player.username,
+            avatarUrl: this.player.avatarUrl,
+            position: this.player.pos,
+            vehicle: this.player.vehicleType
+          });
+        });
+
+        this.socket.on('world:init', (data) => {
+          if (data && Array.isArray(data.players)) {
+            data.players.forEach((p) => {
+              if (p.id !== this.socket.id) {
+                this.addRemotePlayer(p);
+              }
+            });
+          }
+        });
+
+        this.socket.on('player:spawned', (peerData) => {
+          this.addRemotePlayer(peerData);
+          this.showHackFeedToast(`Operative @${peerData.username} joined the grid.`);
+        });
+
+        this.socket.on('player:moved', (data) => {
+          const peer = this.remotePlayers.get(data.id);
+          if (peer && peer.mesh) {
+            peer.mesh.position.lerp(new THREE.Vector3(data.position.x, data.position.y, data.position.z), 0.3);
+            if (data.rotation) peer.mesh.rotation.y = data.rotation.y;
+          }
+        });
+
+        this.socket.on('player:left', (id) => {
+          const peer = this.remotePlayers.get(id);
+          if (peer && peer.mesh) {
+            this.scene.remove(peer.mesh);
+            this.disposeHierarchy(peer.mesh);
+            this.remotePlayers.delete(id);
+          }
+        });
+
+        this.socket.on('chat:system', (sysMsg) => {
+          const msgBox = document.getElementById('ow-chat-messages');
+          if (msgBox) {
+            const div = document.createElement('div');
+            div.className = 'chat-msg chat-sys';
+            div.style.color = '#ffcc00';
+            div.style.fontSize = '0.72rem';
+            div.textContent = `[GRID SYS] ${sysMsg}`;
+            msgBox.appendChild(div);
+            msgBox.scrollTop = msgBox.scrollHeight;
+          }
+        });
+
+        this.socket.on('chat:broadcast', (msg) => {
+          const msgBox = document.getElementById('ow-chat-messages');
+          if (msgBox) {
+            const div = document.createElement('div');
+            div.className = 'chat-msg';
+            const userSpan = document.createElement('span');
+            userSpan.className = 'c-user';
+            userSpan.textContent = `@${msg.username}: `;
+            const textNode = document.createTextNode(msg.text || '');
+            div.appendChild(userSpan);
+            div.appendChild(textNode);
+            msgBox.appendChild(div);
+            msgBox.scrollTop = msgBox.scrollHeight;
+          }
+        });
+      } catch (err) {
+        console.warn('[NET] Heroku Socket fallback to local simulation:', err.message);
+      }
+    }
+
+    addRemotePlayer(p) {
+      if (this.remotePlayers.has(p.id)) return;
+      const peerGroup = new THREE.Group();
+      peerGroup.position.set(p.position.x, p.position.y, p.position.z);
+
+      const car = this.createSupercarModel();
+      peerGroup.add(car);
+
+      // Nameplate
+      const tagCanvas = document.createElement('canvas');
+      tagCanvas.width = 256; tagCanvas.height = 64;
+      const tCtx = tagCanvas.getContext('2d');
+      tCtx.fillStyle = 'rgba(0,0,0,0.8)'; tCtx.fillRect(0,0,256,64);
+      tCtx.fillStyle = '#00f0ff'; tCtx.font = 'bold 24px monospace'; tCtx.textAlign = 'center';
+      tCtx.fillText(`@${p.username}`, 128, 40);
+
+      const tagSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(tagCanvas) }));
+      tagSprite.scale.set(3, 0.8, 1);
+      tagSprite.position.y = 3.5;
+      peerGroup.add(tagSprite);
+
+      this.scene.add(peerGroup);
+      this.remotePlayers.set(p.id, { ...p, mesh: peerGroup });
+    }
+
     updatePhysics(delta) {
       const p = this.player;
 
@@ -1117,7 +1243,6 @@
       if (this.keys.right) p.yaw -= p.turnSpeed * delta;
       p.mesh.rotation.y = p.yaw;
 
-      // Throttle & Acceleration
       let targetSpeed = 0;
       if (this.keys.forward) {
         let maxSpd = p.maxSpeed;
@@ -1137,57 +1262,46 @@
         p.isNitro = false;
       }
 
-      // Handbrake drift
-      if (this.keys.space && (p.vehicleType === 'supercar' || p.vehicleType === 'bike')) {
-        p.driftFactor = Math.min(1.0, p.driftFactor + delta * 3);
-        targetSpeed *= 0.4;
-      } else {
-        p.driftFactor = Math.max(0, p.driftFactor - delta * 2);
-      }
-
-      // Speed Interpolation
       p.speed = THREE.MathUtils.lerp(p.speed, targetSpeed, delta * 3.5);
-
-      // Movement Vector
       const forwardDir = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), p.yaw);
 
-      // Special Physics per Vehicle
       if (p.vehicleType === 'jet') {
-        // Flight dynamics: climb/dive
-        if (this.keys.forward) {
-          p.pos.y = Math.min(220, p.pos.y + (this.keys.shift ? 15 : 6) * delta);
-        }
-        if (this.keys.backward) {
-          p.pos.y = Math.max(3, p.pos.y - 12 * delta);
-        }
+        if (this.keys.forward) p.pos.y = Math.min(220, p.pos.y + (this.keys.shift ? 15 : 6) * delta);
+        if (this.keys.backward) p.pos.y = Math.max(3, p.pos.y - 12 * delta);
       } else if (p.vehicleType === 'parachute') {
-        // Controlled slow descent
         p.pos.y = Math.max(0.5, p.pos.y - 4.5 * delta);
         p.speed = Math.min(p.speed, 12);
       } else if (p.vehicleType === 'hovercraft') {
-        // Levitating on air cushion (smooth 0.8m above ground)
         p.pos.y = 0.8 + Math.sin(Date.now() * 0.006) * 0.1;
       } else if (p.vehicleType === 'submarine') {
-        // Depth controls in water
-        if (this.keys.space) p.pos.y = Math.max(-25, p.pos.y - 8 * delta); // dive
-        if (this.keys.shift) p.pos.y = Math.min(-1.5, p.pos.y + 8 * delta); // surface
+        if (this.keys.space) p.pos.y = Math.max(-25, p.pos.y - 8 * delta);
+        if (this.keys.shift) p.pos.y = Math.min(-1.5, p.pos.y + 8 * delta);
       } else {
-        // Ground lock
         p.pos.y = p.vehicleType === 'foot' ? 0 : 0.4;
       }
 
-      // Apply forward velocity
       p.pos.addScaledVector(forwardDir, p.speed * delta);
       p.mesh.position.copy(p.pos);
 
-      // Rotate car wheels
+      // Rotate wheels
       if (p.vehicleType === 'supercar' && p.mesh.children[0]?.wheels) {
         p.mesh.children[0].wheels.forEach(w => {
           w.children[0].rotation.x += p.speed * delta * 2;
         });
       }
 
-      // Update HUD
+      // Sync with Heroku (throttled to ~20 Hz to prevent network flooding)
+      const now = performance.now();
+      if (this.socket && this.socket.connected && Math.abs(p.speed) > 0.05 && (now - this.lastNetSync > 48)) {
+        this.lastNetSync = now;
+        this.socket.emit('player:move', {
+          position: p.pos,
+          rotation: { y: p.yaw },
+          speed: p.speed,
+          vehicle: p.vehicleType
+        });
+      }
+
       this.updateHUD(p.speed, p.nitro);
     }
 
@@ -1201,7 +1315,6 @@
         }
       }
 
-      // Chase Camera behind vehicle
       const p = this.player;
       const angle = p.yaw + this.cameraOrbit.yaw;
       const dist = p.vehicleType === 'jet' ? 24 : (p.vehicleType === 'foot' ? 6 : 10);
@@ -1218,7 +1331,6 @@
     }
 
     updateNPCs(delta) {
-      // NPC Cars Navigation & Hacking Effect
       this.npcVehicles.forEach(c => {
         const spd = (c.hackedSpeed > 0 ? c.hackedSpeed : c.speed) * delta;
         if (c.isNS) {
@@ -1232,7 +1344,6 @@
         }
       });
 
-      // Pedestrians Wandering
       this.npcPedestrians.forEach(p => {
         const dir = new THREE.Vector3().subVectors(p.targetPos, p.mesh.position);
         if (dir.length() < 2) {
@@ -1243,22 +1354,23 @@
         }
       });
 
-      // Security Camera Sweep
-      this.securityCameras.forEach((cam, idx) => {
-        const sweep = Math.sin(Date.now() * 0.001 + idx) * 0.45;
-        cam.group.rotation.y = cam.baseAngle + sweep;
+      // Animated Water Waves
+      if (this.waterMesh) {
+        this.waterMesh.position.y = -1.2 + Math.sin(Date.now() * 0.003) * 0.35;
+      }
+
+      // Blinking Aviation Beacons
+      const beaconPhase = Math.sin(Date.now() * 0.008) > 0.3;
+      this.beaconLights.forEach(b => {
+        b.intensity = beaconPhase ? 1.8 : 0.05;
       });
 
-      // Fortress Radar
-      if (this.radarDish) {
-        this.radarDish.rotation.y += delta * 1.5;
-      }
+      if (this.radarDish) this.radarDish.rotation.y += delta * 1.5;
     }
 
     updateWatchDogsProfiler() {
-      // Raycast or distance check for hackables
       let closestTarget = null;
-      let minDistance = 35; // 35 meter range
+      let minDistance = 35;
 
       const allTargets = [
         ...this.trafficLights,
@@ -1298,6 +1410,17 @@
       this.player.cyberCredits += 250;
       this.playHackingSFX();
 
+      // Draw Cyan Electric Lightning Arc to Target
+      if (this.particleSystems.hackArc) {
+        const arcGeo = this.particleSystems.hackArc.geometry;
+        arcGeo.setFromPoints([
+          this.player.pos.clone().add(new THREE.Vector3(0, 1.2, 0)),
+          t.pos.clone().add(new THREE.Vector3(0, 1.0, 0))
+        ]);
+        this.particleSystems.hackArc.visible = true;
+        setTimeout(() => { this.particleSystems.hackArc.visible = false; }, 350);
+      }
+
       this.showHackFeedToast(`⚡ HACK EXECUTED: [${t.id}] via ${t.exploit}`);
 
       if (t.type === 'TRAFFIC_LIGHT') {
@@ -1317,7 +1440,7 @@
       } else if (t.type === 'NPC_VEHICLE') {
         const car = this.npcVehicles.find(c => c.id === t.id);
         if (car) {
-          car.hackedSpeed = 48; // Accelerate wildly
+          car.hackedSpeed = 48;
           setTimeout(() => { car.hackedSpeed = 0; }, 4000);
         }
       } else if (t.type === 'POWER_SUBSTATION') {
@@ -1329,15 +1452,24 @@
           this.showHackFeedToast(`💰 SIPHONED +${ped.walletCrypto} CYBER-CREDITS FROM ${ped.id}`);
         }
       }
+
+      // Sync hack event with Heroku server
+      if (this.socket && this.socket.connected) {
+        this.socket.emit('hack:execute', {
+          targetType: t.type,
+          targetId: t.id,
+          exploit: t.exploit
+        });
+      }
     }
 
     triggerCityBlackout(durationMs) {
       this.scene.fog.color.setHex(0x000205);
-      this.renderer.toneMappingExposure = 0.3;
+      this.renderer.toneMappingExposure = 0.25;
       this.showHackFeedToast('⚠️ SCADA OVERRIDE: CITYWIDE GRID BLACKOUT INITIATED');
       setTimeout(() => {
-        this.scene.fog.color.setHex(0x04060c);
-        this.renderer.toneMappingExposure = 1.1;
+        this.scene.fog.color.setHex(0x03050a);
+        this.renderer.toneMappingExposure = 1.15;
       }, durationMs || 5000);
     }
 
@@ -1357,9 +1489,7 @@
     toggleCyberdeckIDE() {
       this.isIDEOpen = !this.isIDEOpen;
       const modal = document.getElementById('ow-cyberdeck-modal');
-      if (modal) {
-        modal.style.display = this.isIDEOpen ? 'flex' : 'none';
-      }
+      if (modal) modal.style.display = this.isIDEOpen ? 'flex' : 'none';
     }
 
     executeCyberdeckScript() {
@@ -1371,13 +1501,10 @@
       consoleOut.innerText = `> Executing script in sandboxed context...\n`;
 
       try {
-        // Sandboxed API exposure
         const sandboxCity = {
           triggerBlackout: (d) => this.triggerCityBlackout(d),
           hackTrafficLights: (phase) => {
-            this.trafficLights.forEach(l => {
-              l.phase = phase === 'ALL_GREEN' ? 'GREEN' : 'RED';
-            });
+            this.trafficLights.forEach(l => { l.phase = phase === 'ALL_GREEN' ? 'GREEN' : 'RED'; });
             this.showHackFeedToast(`[IDE] All traffic lights switched to ${phase}`);
           },
           siphonNearbyCitizens: () => {
@@ -1444,8 +1571,7 @@
 
     initRadar() {
       this.radarCanvas = document.getElementById('ow-radar-canvas');
-      if (!this.radarCanvas) return;
-      this.radarCtx = this.radarCanvas.getContext('2d');
+      if (this.radarCanvas) this.radarCtx = this.radarCanvas.getContext('2d');
     }
 
     drawRadar() {
@@ -1459,7 +1585,6 @@
 
       ctx.clearRect(0, 0, w, h);
 
-      // Radar circles
       ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
@@ -1468,47 +1593,29 @@
       ctx.arc(cx, cy, 18, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Draw Hackable Nodes
       ctx.fillStyle = '#00ff66';
       this.trafficLights.forEach(tl => {
         const rx = cx + (tl.pos.x - this.player.pos.x) * scale;
         const ry = cy + (tl.pos.z - this.player.pos.z) * scale;
-        if (Math.hypot(rx - cx, ry - cy) < 55) {
-          ctx.fillRect(rx - 2, ry - 2, 4, 4);
-        }
+        if (Math.hypot(rx - cx, ry - cy) < 55) ctx.fillRect(rx - 2, ry - 2, 4, 4);
       });
 
-      // Draw NPC Vehicles
       ctx.fillStyle = '#ff007f';
       this.npcVehicles.forEach(v => {
         const rx = cx + (v.mesh.position.x - this.player.pos.x) * scale;
         const ry = cy + (v.mesh.position.z - this.player.pos.z) * scale;
-        if (Math.hypot(rx - cx, ry - cy) < 55) {
-          ctx.fillRect(rx - 2, ry - 2, 4, 4);
-        }
+        if (Math.hypot(rx - cx, ry - cy) < 55) ctx.fillRect(rx - 2, ry - 2, 4, 4);
       });
 
-      // Draw Player Arrow in center
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(-this.player.yaw);
       ctx.fillStyle = '#00f0ff';
       ctx.beginPath();
-      ctx.moveTo(0, -6);
-      ctx.lineTo(-4, 5);
-      ctx.lineTo(4, 5);
+      ctx.moveTo(0, -6); ctx.lineTo(-4, 5); ctx.lineTo(4, 5);
       ctx.closePath();
       ctx.fill();
       ctx.restore();
-    }
-
-    initSimulatedPeers() {
-      // Simulated Allied Operatives on the Grid
-      this.simulatedPeers = [
-        { username: 'IMXNOOBX', vehicle: 'supercar', x: 45, z: 45 },
-        { username: 'torvalds', vehicle: 'jet', x: 0, z: -100 },
-        { username: 'antigravity', vehicle: 'bike', x: -50, z: 20 }
-      ];
     }
 
     showHackFeedToast(msg) {
@@ -1558,8 +1665,34 @@
       }
     }
 
+    updateParticles(delta) {
+      if (!this.particleSystems || !this.particleSystems.nitro) return;
+
+      if (this.player.isNitro && this.player.speed > 5) {
+        this.particleSystems.nitro.visible = true;
+        const posAttr = this.particleSystems.nitro.geometry.attributes.position;
+        const count = posAttr.count;
+        const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.player.yaw);
+        const rear = this.player.pos.clone().sub(forward.clone().multiplyScalar(2.6)).add(new THREE.Vector3(0, 0.4, 0));
+
+        for (let i = 0; i < count; i++) {
+          const scatter = (Math.random() - 0.5) * 0.45;
+          const trailDist = Math.random() * 2.8;
+          posAttr.setXYZ(
+            i,
+            rear.x - forward.x * trailDist + scatter,
+            rear.y + (Math.random() - 0.5) * 0.3,
+            rear.z - forward.z * trailDist + scatter
+          );
+        }
+        posAttr.needsUpdate = true;
+      } else {
+        this.particleSystems.nitro.visible = false;
+      }
+    }
+
     animate() {
-      requestAnimationFrame(this.animate);
+      this.rafId = requestAnimationFrame(this.animate);
       const delta = Math.min(this.clock.getDelta(), 0.1);
 
       this.updatePhysics(delta);
@@ -1567,15 +1700,33 @@
       this.updateNPCs(delta);
       this.updateWatchDogsProfiler();
       this.drawRadar();
+      this.updateParticles(delta);
 
       this.renderer.render(this.scene, this.camera);
     }
+
+    destroy() {
+      if (this.rafId) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
+      if (this.socket) {
+        this.socket.disconnect();
+        this.socket = null;
+      }
+      if (this.renderer) {
+        this.renderer.dispose();
+      }
+      if (this.scene) {
+        this.disposeHierarchy(this.scene);
+      }
+      this.remotePlayers.clear();
+      this.beaconLights = [];
+    }
   }
 
-  // Expose global instance
   window.cyberCityEngine = new CyberCity3DEngine();
 
-  // Helper globals for buttons
   window.setPlayerVehicle = function(type) {
     if (window.cyberCityEngine) window.cyberCityEngine.applyVehicleMesh(type);
   };
@@ -1603,7 +1754,6 @@
   window.loadIDETemplate = function(tplKey) {
     const editor = document.getElementById('ide-code-editor');
     if (!editor) return;
-
     const templates = {
       traffic: `// Hackear todos los semáforos de la ciudad a Verde Masivo\ncity.hackTrafficLights('ALL_GREEN');\nconsole.log('Todos los semáforos hackeados a VERDE.');`,
       blackout: `// Provocar sobretensión SCADA y apagón de red eléctrica\ncity.triggerBlackout(7000);\nconsole.log('Apagón de red eléctrica activado durante 7 segundos.');`,
@@ -1612,10 +1762,7 @@
       allcars: `// Sobrecarga masiva de buses CAN en vehículos autónomos\ncity.remoteAccelerateCars(60);\nconsole.log('Aceleración remota forzada en todos los vehículos NPC.');`,
       jet: `// Invocar y equipar Caza a Reacción (Jet de Combate)\nplayer.setVehicle('jet');\nconsole.log('Caza a reacción desplegado.');`
     };
-
-    if (templates[tplKey]) {
-      editor.value = templates[tplKey];
-    }
+    if (templates[tplKey]) editor.value = templates[tplKey];
   };
 
   window.toggle3DFullscreen = function() {
@@ -1644,13 +1791,16 @@
     msgBox.scrollTop = msgBox.scrollHeight;
     input.value = '';
 
-    // Simulated NPC response
-    setTimeout(() => {
-      const respDiv = document.createElement('div');
-      respDiv.className = 'chat-msg';
-      respDiv.innerHTML = `<span class="c-user" style="color: #ffd700;">@IMXNOOBX:</span> [Grid Defense] Copy that @${user}. Node telemetry synchronized.`;
-      msgBox.appendChild(respDiv);
-      msgBox.scrollTop = msgBox.scrollHeight;
-    }, 1200);
+    if (window.cyberCityEngine?.socket?.connected) {
+      window.cyberCityEngine.socket.emit('chat:message', text);
+    } else {
+      setTimeout(() => {
+        const respDiv = document.createElement('div');
+        respDiv.className = 'chat-msg';
+        respDiv.innerHTML = `<span class="c-user" style="color: #ffd700;">@IMXNOOBX:</span> [Heroku Mesh] Telemetry synchronized @${user}.`;
+        msgBox.appendChild(respDiv);
+        msgBox.scrollTop = msgBox.scrollHeight;
+      }, 1000);
+    }
   };
 })();
